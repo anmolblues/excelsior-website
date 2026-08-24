@@ -1,0 +1,17 @@
+{
+  "name": "excelsior-enrichment-program",
+  "version": "1.0.0",
+  "description": "Excelsior Enrichment Program website with class listings, search/filters, sign-up, login, booking, and admin panel.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "cookie-parser": "^1.4.6"
+  }
+}
