@@ -1,2 +1,7 @@
 node_modules/
+package-lock.json
 .env
+data/users.json
+data/bookings.json
+data/counters.json
+*.tmp
