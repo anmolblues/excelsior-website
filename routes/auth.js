@@ -32,6 +32,7 @@ router.post('/signup', (req, res) => {
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Name, email, and password are all required.' });
   }
+
   if (!isStrongPassword(password)) {
     return res.status(400).json({
       error: 'Password must be at least 8 characters and include an uppercase letter, lowercase letter, number, and symbol (e.g. !@#$).',
