@@ -1,0 +1,26 @@
+[
+  {
+    "id": 2,
+    "name": "pre",
+    "email": "preetysthapit@gmail.com",
+    "passwordHash": "$2a$10$SkIQDPmneegkqOxRiGbIz.FiUmI7h/MC80gsjWjsemvDt2cY/mbSK",
+    "role": "parent",
+    "createdAt": "2026-06-22T21:17:20.586Z"
+  },
+  {
+    "id": 1,
+    "name": "contact",
+    "email": "contact@eepcenter.com",
+    "passwordHash": "$2a$10$SkIQDPmneegkqOxRiGbIz.FiUmI7h/MC80gsjWjsemvDt2cY/mbSK",
+    "role": "admin",
+    "createdAt": "2026-06-22T21:17:20.586Z"
+  },
+  {
+    "id": 3,
+    "name": "mytest",
+    "email": "mytest@gmail.com",
+    "passwordHash": "$2a$10$jtTW3nfrhpKE42QyVWBFReg8a/RFYgqpt.h/vME.N8PQSwjVUqJK2",
+    "role": "parent",
+    "createdAt": "2026-06-24T20:04:02.419Z"
+  }
+]

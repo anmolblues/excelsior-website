@@ -1,0 +1,228 @@
+// admin.js — admin dashboard logic
+
+let adminUser = null;
+
+function showToast(message, isError = false) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.remove('hidden', 'bg-gray-900', 'bg-red-600');
+  toast.classList.add(isError ? 'bg-red-600' : 'bg-gray-900');
+  setTimeout(() => toast.classList.add('hidden'), 3500);
+}
+
+async function api(path, options = {}) {
+  const res = await fetch('/api' + path, {
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    ...options,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+  return data;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
+}
+
+// ---------- Auth / view switching ----------
+
+async function checkAdmin() {
+  try {
+    const data = await api('/auth/me');
+    if (data.user.role !== 'admin') {
+      showToast('This account is not an admin.', true);
+      return false;
+    }
+    adminUser = data.user;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function showCorrectScreen() {
+  const isAdmin = await checkAdmin();
+  if (isAdmin) {
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    document.getElementById('logoutBtn').classList.remove('hidden');
+    await loadClasses();
+    await loadBookings();
+  } else {
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('dashboard').classList.add('hidden');
+    document.getElementById('logoutBtn').classList.add('hidden');
+  }
+}
+
+document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errorEl = document.getElementById('loginError');
+  errorEl.classList.add('hidden');
+
+  try {
+    const data = await api('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: document.getElementById('adminEmail').value,
+        password: document.getElementById('adminPassword').value,
+      }),
+    });
+    if (data.user.role !== 'admin') {
+      errorEl.textContent = 'This account does not have admin access.';
+      errorEl.classList.remove('hidden');
+      await api('/auth/logout', { method: 'POST' });
+      return;
+    }
+    await showCorrectScreen();
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.remove('hidden');
+  }
+});
+
+async function adminLogout() {
+  await api('/auth/logout', { method: 'POST' });
+  await showCorrectScreen();
+}
+
+// ---------- Classes ----------
+
+let allClasses = [];
+
+async function loadClasses() {
+  const data = await api('/classes');
+  allClasses = data.classes;
+  const tbody = document.getElementById('classesTableBody');
+  tbody.innerHTML = '';
+
+  allClasses.forEach(cls => {
+    const tr = document.createElement('tr');
+    tr.className = 'border-t';
+    tr.innerHTML = `
+      <td class="px-4 py-3 font-medium">${escapeHtml(cls.title)}</td>
+      <td class="px-4 py-3">${escapeHtml(cls.subject)}</td>
+      <td class="px-4 py-3">${cls.ageMin}-${cls.ageMax}</td>
+      <td class="px-4 py-3 capitalize">${escapeHtml(cls.format)}</td>
+      <td class="px-4 py-3">$${cls.price}</td>
+      <td class="px-4 py-3">${cls.spotsLeft} / ${cls.capacity}</td>
+      <td class="px-4 py-3 text-right whitespace-nowrap">
+        <button onclick="openClassForm(${cls.id})" class="text-blue-600 hover:underline mr-3">Edit</button>
+        <button onclick="deleteClass(${cls.id})" class="text-red-600 hover:underline">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function openClassForm(id) {
+  const card = document.getElementById('classFormCard');
+  const form = document.getElementById('classForm');
+  form.reset();
+  card.classList.remove('hidden');
+
+  if (id) {
+    const cls = allClasses.find(c => c.id === id);
+    document.getElementById('classFormTitle').textContent = 'Edit Class';
+    document.getElementById('classId').value = cls.id;
+    document.getElementById('classTitle').value = cls.title;
+    document.getElementById('classDescription').value = cls.description || '';
+    document.getElementById('classSubject').value = cls.subject;
+    document.getElementById('classFormat').value = cls.format;
+    document.getElementById('classAgeMin').value = cls.ageMin;
+    document.getElementById('classAgeMax').value = cls.ageMax;
+    document.getElementById('classPrice').value = cls.price;
+    document.getElementById('classPriceUnit').value = cls.priceUnit || '';
+    document.getElementById('classCapacity').value = cls.capacity;
+    document.getElementById('classRating').value = cls.rating ?? '';
+    document.getElementById('classSchedule').value = cls.schedule || '';
+    document.getElementById('classImage').value = cls.image || '';
+  } else {
+    document.getElementById('classFormTitle').textContent = 'Add Class';
+    document.getElementById('classId').value = '';
+  }
+
+  card.scrollIntoView({ behavior: 'smooth' });
+}
+
+function closeClassForm() {
+  document.getElementById('classFormCard').classList.add('hidden');
+}
+
+document.getElementById('classForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const id = document.getElementById('classId').value;
+  const payload = {
+    title: document.getElementById('classTitle').value,
+    description: document.getElementById('classDescription').value,
+    subject: document.getElementById('classSubject').value,
+    format: document.getElementById('classFormat').value,
+    ageMin: document.getElementById('classAgeMin').value,
+    ageMax: document.getElementById('classAgeMax').value,
+    price: document.getElementById('classPrice').value,
+    priceUnit: document.getElementById('classPriceUnit').value || 'per class',
+    capacity: document.getElementById('classCapacity').value,
+    rating: document.getElementById('classRating').value || null,
+    schedule: document.getElementById('classSchedule').value,
+    image: document.getElementById('classImage').value,
+  };
+
+  try {
+    if (id) {
+      await api(`/classes/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+      showToast('Class updated.');
+    } else {
+      await api('/classes', { method: 'POST', body: JSON.stringify(payload) });
+      showToast('Class created.');
+    }
+    closeClassForm();
+    await loadClasses();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+});
+
+async function deleteClass(id) {
+  if (!confirm('Delete this class? This cannot be undone.')) return;
+  try {
+    await api(`/classes/${id}`, { method: 'DELETE' });
+    showToast('Class deleted.');
+    await loadClasses();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+// ---------- Bookings ----------
+
+async function loadBookings() {
+  const data = await api('/bookings');
+  const tbody = document.getElementById('bookingsTableBody');
+  tbody.innerHTML = '';
+
+  if (data.bookings.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">No bookings yet.</td></tr>';
+    return;
+  }
+
+  data.bookings.forEach(b => {
+    const tr = document.createElement('tr');
+    tr.className = 'border-t';
+    const statusColor = b.status === 'cancelled' ? 'text-red-500' : 'text-green-600';
+    tr.innerHTML = `
+      <td class="px-4 py-3 font-medium">${escapeHtml(b.class ? b.class.title : '—')}</td>
+      <td class="px-4 py-3">${escapeHtml(b.studentName)}${b.studentAge ? ' (' + b.studentAge + ')' : ''}</td>
+      <td class="px-4 py-3">${b.parent ? escapeHtml(b.parent.name) + '<br><span class="text-xs text-gray-400">' + escapeHtml(b.parent.email) + '</span>' : '—'}</td>
+      <td class="px-4 py-3 ${statusColor} capitalize">${escapeHtml(b.status)}</td>
+      <td class="px-4 py-3 text-xs text-gray-400">${new Date(b.createdAt).toLocaleDateString()}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ---------- Init ----------
+showCorrectScreen();

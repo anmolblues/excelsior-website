@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excelsior Enrichment Program - In-person or Live Online Classes for Kids</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
+
+        :root {
+            --eep-blue: #6B46C1;
+        }
+
+        .hero-bg {
+            background: linear-gradient(135deg, #2047bb 0%, #241d95 100%);
+        }
+
+        .class-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .class-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        .nav-link {
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: #6B46C1;
+        }
+
+        .nav-link.active {
+            color: #2047bb;
+        }
+
+        .modal-backdrop {
+            background: rgba(15, 23, 42, 0.6);
+        }
+
+        .filter-pill.active {
+            background-color: #2047bb;
+            color: white;
+        }
+
+        .toast {
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="font-sans bg-white text-gray-900">
+
+    <!-- Top Banner -->
+    <div class="bg-blue-700 text-white text-center py-2 text-sm font-medium">
+        Where Curiosity Sparks Creativity!
+    </div>
+
+    <!-- Navigation -->
+    <nav class="border-b bg-white sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex items-center justify-between h-16 gap-4">
+                <!-- Logo -->
+                <a href="#" class="flex items-center gap-2 shrink-0">
+                    <div class="w-10 h-10 bg-yellow-400 rounded-3xl flex items-center justify-center font-bold text-2xl text-blue-800 shadow-md overflow-hidden">
+                        <img src="images/eep_short_logo.jpg"
+                             alt="Excelsior Enrichment Program logo"
+                             class="rounded-3xl shadow-2xl w-full h-full object-cover"
+                             onerror="this.parentElement.innerHTML='EEP'">
+                    </div>
+                    <span class="text-sm font-bold tracking-tighter text-blue-700 leading-tight">
+                        <b>Excelsior<br>
+                        <span class="inline-block pl-3">Enrichment</span><br>
+                        <span class="inline-block pl-6">Program</span></b>
+                    </span>
+                </a>
+
+                <!-- Menu -->
+                <div class="hidden lg:flex items-center gap-6 text-sm font-medium shrink-0">
+                    <a href="#classes" class="nav-link"><b>Browse</b></a>
+                    <a href="#" data-age-filter="8-18" class="nav-link category-filter-link"><b>For Ages 8-18</b></a>
+                    <a href="#" data-format-filter="online" class="nav-link category-filter-link"><b>Online</b></a>
+                    <a href="#" data-format-filter="in-person" class="nav-link category-filter-link"><b>In-person</b></a>
+                </div>
+
+                <div class="flex items-center gap-3 flex-1 justify-end">
+                    <div class="relative w-full max-w-xs hidden sm:block">
+                        <input type="text"
+                               id="navSearchInput"
+                               class="w-full bg-gray-100 border border-gray-300 rounded-full py-3 px-5 pl-12 text-sm focus:outline-none focus:border-blue-500"
+                               placeholder="What's your child's interest?">
+                        <button id="navSearchBtn" class="absolute left-5 top-3.5 text-gray-400 hover:text-blue-600">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </button>
+                    </div>
+
+                    <!-- Logged-out state -->
+                    <div id="authButtons" class="flex items-center gap-2 shrink-0">
+                        <button onclick="openAuthModal('login')" class="hidden md:block text-sm font-medium px-4 py-2 hover:bg-gray-100 rounded-full"><b>Log In</b></button>
+                        <button onclick="openAuthModal('signup')"
+                           class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl text-sm font-semibold transition">
+                            Sign Up Free
+                        </button>
+                    </div>
+
+                    <!-- Logged-in state -->
+                    <div id="userMenu" class="hidden items-center gap-2 shrink-0 relative">
+                        <button onclick="toggleAccountDropdown()" class="flex items-center gap-2 text-sm font-medium px-4 py-2 hover:bg-gray-100 rounded-full">
+                            <i class="fa-solid fa-circle-user text-lg"></i>
+                            <span id="userMenuName" class="hidden md:inline font-semibold"></span>
+                            <i class="fa-solid fa-chevron-down text-xs"></i>
+                        </button>
+                        <div id="accountDropdown" class="hidden absolute right-0 top-12 bg-white border border-gray-200 rounded-2xl shadow-xl py-2 w-48 z-50">
+                            <button onclick="openBookingsModal()" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">
+                                <i class="fa-solid fa-calendar-check mr-2 text-blue-600"></i> My Bookings
+                            </button>
+                            <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">
+                                <i class="fa-solid fa-right-from-bracket mr-2 text-gray-500"></i> Log Out
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Mobile search -->
+            <div class="sm:hidden pb-3">
+                <div class="relative">
+                    <input type="text"
+                           id="navSearchInputMobile"
+                           class="w-full bg-gray-100 border border-gray-300 rounded-full py-3 px-5 pl-12 text-sm focus:outline-none focus:border-blue-500"
+                           placeholder="What's your child's interest?">
+                    <i class="fa-solid fa-magnifying-glass absolute left-5 top-3.5 text-gray-400"></i>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-bg text-white py-24">
+        <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+            <div class="space-y-8">
+                <h1 class="text-6xl md:text-7xl font-bold leading-none tracking-tighter">
+                    Personalized routes nurturing complete kid development
+                </h1>
+
+                <p class="text-xl text-blue-100 max-w-md">
+                    Live online and in-person classes with dedicated instructors. Build confidence, fuel curiosity, and open doors to new adventures.
+                </p>
+
+                <div class="flex flex-wrap gap-4">
+                    <a href="#classes"
+                            class="bg-white text-blue-700 hover:bg-blue-50 px-8 py-4 rounded-2xl font-semibold text-lg flex items-center gap-3">
+                        Find Classes
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                    <button class="border border-white/70 hover:bg-white/10 px-8 py-4 rounded-2xl font-medium text-lg">
+                        Watch Video
+                    </button>
+                </div>
+            </div>
+
+            <div class="relative">
+                <img src="images/lc_img1.png"
+                     alt="Kids learning online with Excelsior Enrichment Program"
+                     class="rounded-3xl shadow-2xl w-full object-cover"
+                     onerror="this.style.display='none'">
+            </div>
+        </div>
+    </section>
+
+    <!-- Categories -->
+    <section class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-3xl font-semibold text-center mb-10">Explore by Subject</h2>
+
+            <div id="subjectCategoryGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                <!-- Filled in dynamically from the subjects in the data, but with sensible fallbacks -->
+                <a href="#classes" data-subject-filter="Math" class="subject-link group bg-white rounded-3xl p-6 text-center hover:shadow-xl transition-all">
+                    <div class="text-5xl mb-4">🧮</div>
+                    <div class="font-semibold">Math</div>
+                </a>
+                <a href="#classes" data-subject-filter="Science" class="subject-link group bg-white rounded-3xl p-6 text-center hover:shadow-xl transition-all">
+                    <div class="text-5xl mb-4">🧪</div>
+                    <div class="font-semibold">Science</div>
+                </a>
+                <a href="#classes" data-subject-filter="English" class="subject-link group bg-white rounded-3xl p-6 text-center hover:shadow-xl transition-all">
+                    <div class="text-5xl mb-4">📖</div>
+                    <div class="font-semibold">English</div>
+                </a>
+                <a href="#classes" data-subject-filter="Coding" class="subject-link group bg-white rounded-3xl p-6 text-center hover:shadow-xl transition-all">
+                    <div class="text-5xl mb-4">💻</div>
+                    <div class="font-semibold">Coding</div>
+                </a>
+                <a href="#classes" data-subject-filter="Debate" class="subject-link group bg-white rounded-3xl p-6 text-center hover:shadow-xl transition-all">
+                    <div class="text-5xl mb-4">🗣️</div>
+                    <div class="font-semibold">Debate</div>
+                </a>
+                <a href="#classes" data-subject-filter="Public Speaking" class="subject-link group bg-white rounded-3xl p-6 text-center hover:shadow-xl transition-all">
+                    <div class="text-6xl mb-4">📢</div>
+                    <div class="font-semibold">Public Speaking</div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Classes -->
+    <section id="classes" class="py-16">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex flex-wrap justify-between items-end gap-4 mb-8">
+                <div>
+                    <h2 class="text-3xl font-semibold">Find a class</h2>
+                    <p id="resultsCount" class="text-gray-500 text-sm mt-1"></p>
+                </div>
+            </div>
+
+            <!-- Filter bar -->
+            <div class="bg-gray-50 border border-gray-100 rounded-3xl p-5 mb-10 grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div class="lg:col-span-2">
+                    <label class="block text-xs font-semibold text-gray-500 mb-1">Search</label>
+                    <input id="filterSearch" type="text" placeholder="e.g. Python, art, debate..."
+                           class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 mb-1">Subject</label>
+                    <select id="filterSubject" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
+                        <option value="">All subjects</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 mb-1">Format</label>
+                    <select id="filterFormat" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
+                        <option value="">Online or in-person</option>
+                        <option value="online">Online</option>
+                        <option value="in-person">In-person</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 mb-1">Child's age</label>
+                    <select id="filterAge" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
+                        <option value="">Any age</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                        <option value="13">13</option>
+                        <option value="14">14</option>
+                        <option value="15">15</option>
+                        <option value="16">16</option>
+                        <option value="17">17</option>
+                        <option value="18">18</option>
+                    </select>
+                </div>
+                <div class="lg:col-span-5 flex items-center gap-3">
+                    <label class="block text-xs font-semibold text-gray-500">Max price</label>
+                    <input id="filterMaxPrice" type="range" min="10" max="60" step="1" value="60" class="flex-1 accent-blue-600">
+                    <span id="filterMaxPriceLabel" class="text-sm font-semibold w-24 text-right">Any price</span>
+                    <button onclick="resetFilters()" class="text-sm text-blue-600 hover:underline whitespace-nowrap">Reset filters</button>
+                </div>
+            </div>
+
+            <!-- Class cards grid -->
+            <div id="classesGrid" class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Populated by JS -->
+            </div>
+
+            <div id="loadingClasses" class="text-center text-gray-400 py-10">
+                <i class="fa-solid fa-spinner fa-spin text-2xl"></i>
+                <p class="mt-2 text-sm">Loading classes...</p>
+            </div>
+
+            <div id="noClasses" class="hidden text-center text-gray-400 py-10">
+                <i class="fa-solid fa-magnifying-glass text-3xl mb-3"></i>
+                <p>No classes match your filters yet. Try adjusting them!</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why eep -->
+    <section class="py-20 bg-blue-50">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <h2 class="text-4xl font-semibold mb-6">We are here for you</h2>
+            <div class="grid md:grid-cols-3 gap-10 max-w-4xl mx-auto">
+                <div>
+                    <div class="text-6xl mb-6">👩‍🏫</div>
+                    <h3 class="font-semibold text-xl mb-3">Real Instructors</h3>
+                    <p class="text-gray-600">Passionate experts who love teaching kids — not just algorithms.</p>
+                </div>
+                <div>
+                    <div class="text-6xl mb-6">🕒</div>
+                    <h3 class="font-semibold text-xl mb-3">Flexible Schedule</h3>
+                    <p class="text-gray-600">Classes that fit your family's life. Live or self-paced options.</p>
+                </div>
+                <div>
+                    <div class="text-6xl mb-6">🌟</div>
+                    <h3 class="font-semibold text-xl mb-3">Build Confidence</h3>
+                    <p class="text-gray-600">Small classes where every child is seen and celebrated.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-300 py-16">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid md:grid-cols-5 gap-10">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-10 h-10 bg-yellow-400 rounded-3xl flex items-center justify-center font-bold text-sm text-blue-800 shadow-md">
+                            EEP
+                        </div>
+                        <span class="text-sm font-bold tracking-tighter text-blue-400 leading-tight">
+                            <b>Excelsior<br>
+                            <span class="inline-block pl-3">Enrichment</span><br>
+                            <span class="inline-block pl-6">Program</span></b>
+                        </span>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-4">Explore</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#classes" class="hover:text-white">All Classes</a></li>
+                        <li><a href="#" class="hover:text-white">Summer 2026</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-4">Company</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-white">About Us</a></li>
+                        <li><a href="#" class="hover:text-white">Blog</a></li>
+                        <li><a href="#" class="hover:text-white">Careers</a></li>
+                        <li><a href="#" class="hover:text-white">Press</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-4">Support</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-white">Help Center</a></li>
+                        <li><a href="#" class="hover:text-white">Safety</a></li>
+                        <li><a href="#" class="hover:text-white">Contact Us</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-4">Job Opportunity</h4>
+                    <button class="bg-white text-gray-900 px-6 py-3 rounded-2xl font-medium text-sm w-full">
+                        Join our team
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-16 pt-8 border-t border-gray-800 text-xs flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>© 2026 Excelsior Enrichment Program</div>
+                <div class="flex gap-6">
+                    <a href="#" class="hover:text-white">Privacy</a>
+                    <a href="#" class="hover:text-white">Terms</a>
+                    <a href="#" class="hover:text-white">Accessibility</a>
+                    <a href="/admin.html" class="hover:text-white text-gray-500">Admin</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ===================== MODALS ===================== -->
+
+    <!-- Auth Modal (Login / Sign Up) -->
+    <div id="authModal" class="hidden fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative">
+            <button onclick="closeModal('authModal')" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <div class="flex gap-2 mb-6">
+                <button id="authTabLogin" onclick="showAuthTab('login')" class="flex-1 py-2 rounded-xl font-semibold text-sm bg-blue-600 text-white">Log In</button>
+                <button id="authTabSignup" onclick="showAuthTab('signup')" class="flex-1 py-2 rounded-xl font-semibold text-sm bg-gray-100 text-gray-600">Sign Up</button>
+            </div>
+
+            <p id="authError" class="hidden bg-red-50 text-red-600 text-sm rounded-xl px-4 py-2 mb-4"></p>
+
+            <!-- LOGIN PANEL -->
+            <div id="loginPanel">
+                <form id="loginForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Email</label>
+                        <input type="email" required class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500" id="loginEmail">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Password</label>
+                        <input type="password" required class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500" id="loginPassword">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-2xl font-semibold">Log In</button>
+                </form>
+            </div>
+
+            <!-- SIGNUP PANEL -->
+            <div id="signupPanel" class="hidden">
+                <form id="signupForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Your name</label>
+                        <input type="text" required class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500" id="signupName">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Email</label>
+                        <input type="email" required class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500" id="signupEmail">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Password</label>
+                        <div class="relative">
+                            <input type="password" required minlength="8" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 pr-10" id="signupPassword" oninput="checkPasswordStrength()">
+                            <button type="button" onclick="togglePasswordVisibility('signupPassword', 'toggleSignupPw')" class="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600">
+                                <i id="toggleSignupPw" class="fa-solid fa-eye text-sm"></i>
+                            </button>
+                        </div>
+                        <div class="mt-2 space-y-1">
+                            <div class="flex gap-1">
+                                <div id="bar1" class="h-1.5 flex-1 rounded-full bg-gray-200 transition-all"></div>
+                                <div id="bar2" class="h-1.5 flex-1 rounded-full bg-gray-200 transition-all"></div>
+                                <div id="bar3" class="h-1.5 flex-1 rounded-full bg-gray-200 transition-all"></div>
+                                <div id="bar4" class="h-1.5 flex-1 rounded-full bg-gray-200 transition-all"></div>
+                            </div>
+                            <p id="strengthLabel" class="text-xs text-gray-400">At least 8 characters with uppercase, lowercase, number, and symbol.</p>
+                        </div>
+                        <ul class="mt-2 space-y-1 text-xs">
+                            <li id="req-length" class="flex items-center gap-1.5 text-gray-400"><i class="fa-solid fa-circle text-[6px]"></i> At least 8 characters</li>
+                            <li id="req-upper"  class="flex items-center gap-1.5 text-gray-400"><i class="fa-solid fa-circle text-[6px]"></i> One uppercase letter (A-Z)</li>
+                            <li id="req-lower"  class="flex items-center gap-1.5 text-gray-400"><i class="fa-solid fa-circle text-[6px]"></i> One lowercase letter (a-z)</li>
+                            <li id="req-number" class="flex items-center gap-1.5 text-gray-400"><i class="fa-solid fa-circle text-[6px]"></i> One number (0-9)</li>
+                            <li id="req-symbol" class="flex items-center gap-1.5 text-gray-400"><i class="fa-solid fa-circle text-[6px]"></i> One symbol (!@#$...)</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Confirm password</label>
+                        <div class="relative">
+                            <input type="password" required minlength="8" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 pr-10" id="signupConfirmPassword" oninput="checkPasswordMatch()">
+                            <button type="button" onclick="togglePasswordVisibility('signupConfirmPassword', 'toggleConfirmPw')" class="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600">
+                                <i id="toggleConfirmPw" class="fa-solid fa-eye text-sm"></i>
+                            </button>
+                        </div>
+                        <p id="matchLabel" class="hidden text-xs mt-1"></p>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-2xl font-semibold">Create Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="hidden fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative">
+            <button onclick="closeModal('bookingModal')" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <h3 class="text-xl font-semibold mb-1">Enroll in class</h3>
+            <p id="bookingClassTitle" class="text-blue-600 font-medium mb-6"></p>
+
+            <p id="bookingError" class="hidden bg-red-50 text-red-600 text-sm rounded-xl px-4 py-2 mb-4"></p>
+            <p id="bookingSuccess" class="hidden bg-green-50 text-green-700 text-sm rounded-xl px-4 py-2 mb-4"></p>
+
+            <form id="bookingForm" class="space-y-4">
+                <input type="hidden" id="bookingClassId">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Student's name</label>
+                    <input type="text" required class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500" id="bookingStudentName">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Student's age</label>
+                    <input type="number" min="0" max="25" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500" id="bookingStudentAge">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Notes for the instructor (optional)</label>
+                    <textarea class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500" id="bookingNotes" rows="2"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-2xl font-semibold">Confirm Enrollment</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- My Bookings Modal -->
+    <div id="bookingsModal" class="hidden fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-8 relative max-h-[85vh] overflow-y-auto">
+            <button onclick="closeModal('bookingsModal')" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 class="text-xl font-semibold mb-6">My Bookings</h3>
+            <div id="bookingsList" class="space-y-4">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div id="toast" class="toast hidden fixed bottom-6 right-6 bg-gray-900 text-white px-6 py-4 rounded-2xl shadow-xl z-[200] text-sm"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
