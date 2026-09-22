@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excelsior Enrichment Program - Program Calendar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+        :root {
+            --eep-blue: #6B46C1;
+            --cal-ink:#111827;
+            --cal-ink-soft:#4b5563;
+            --cal-ink-faint:#9ca3af;
+            --cal-line:#e5e7eb;
+            --cal-line-soft:#f3f4f6;
+            --cal-panel-soft:#f9fafb;
+            --cal-accent:#2563eb;
+            --cal-accent-hover:#1d4ed8;
+            --cal-success:#16a34a;
+            --cal-success-bg:#dcfce7;
+            --cal-warn:#d97706;
+            --cal-warn-bg:#fef3c7;
+            --cal-full:#dc2626;
+            --cal-full-bg:#fee2e2;
+            --cal-testprep:#4338ca;      --cal-testprep-bg:#e0e7ff;
+            --cal-enrichment:#047857;    --cal-enrichment-bg:#d1fae5;
+            --cal-workshop:#6d28d9;      --cal-workshop-bg:#ede9fe;
+            --cal-info:#be123c;          --cal-info-bg:#ffe4e6;
+        }
+
+        .nav-link { transition: color 0.2s; }
+        .nav-link:hover { color: #6B46C1; }
+        .nav-link.active { color: #2047bb; }
+
+        .cal-h { font-family:"Playfair Display", Georgia, serif; text-wrap:balance; }
+        .cal-mono { font-family:"IBM Plex Mono", ui-monospace, monospace; font-variant-numeric:tabular-nums; }
+
+        .cal-controls{
+            padding:16px 18px; background:#fff; border:1px solid var(--cal-line);
+            border-radius:16px; box-shadow:0 1px 2px rgba(17,24,39,.04), 0 8px 20px -12px rgba(17,24,39,.15);
+            display:flex; flex-direction:column; gap:14px;
+        }
+        .cal-search{
+            flex:1 1 220px; display:flex; align-items:center; gap:8px;
+            border:1px solid var(--cal-line); border-radius:999px; padding:9px 14px;
+            background:var(--cal-panel-soft);
+        }
+        .cal-search input{ border:0; background:transparent; outline:none; width:100%; font:inherit; color:var(--cal-ink); font-size:14px; }
+        .cal-search input::placeholder{ color:var(--cal-ink-faint); }
+
+        .cal-viewtoggle{ display:flex; border:1px solid var(--cal-line); border-radius:999px; overflow:hidden; flex:none; }
+        .cal-viewtoggle button{ font:inherit; font-size:13.5px; font-weight:600; padding:8px 18px; border:0; background:#fff; color:var(--cal-ink-soft); cursor:pointer; }
+        .cal-viewtoggle button.active{ background:var(--cal-accent); color:#fff; }
+
+        .cal-pill{
+            font:inherit; font-size:13px; font-weight:500; cursor:pointer;
+            padding:6px 14px; border-radius:999px; border:1px solid var(--cal-line);
+            background:var(--cal-panel-soft); color:var(--cal-ink-soft);
+        }
+        .cal-pill:hover{ border-color:var(--cal-ink-faint); }
+        .cal-pill.active{ background:var(--cal-ink); color:#fff; border-color:var(--cal-ink); }
+
+        .cal-datefilter{
+            display:inline-flex; align-items:center; gap:6px;
+            background:var(--cal-info-bg); color:var(--cal-info);
+            border-radius:999px; padding:4px 10px 4px 12px; font-size:12.5px; font-weight:600;
+        }
+        .cal-datefilter button{ border:0; background:transparent; color:inherit; cursor:pointer; font-size:14px; line-height:1; padding:0; }
+
+        .cal-card{
+            display:flex; gap:18px; background:#fff; border:1px solid var(--cal-line);
+            border-radius:16px; padding:18px;
+            box-shadow:0 1px 2px rgba(17,24,39,.04), 0 8px 20px -12px rgba(17,24,39,.15);
+        }
+        .cal-datestamp{ flex:none; width:66px; text-align:center; padding-top:2px; }
+        .cal-datestamp .mon{ font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--cal-accent); font-weight:600; }
+        .cal-datestamp .day{ font-family:"Playfair Display",serif; font-size:32px; font-weight:700; line-height:1.05; color:var(--cal-ink); }
+        .cal-datestamp .wk{ font-size:11.5px; color:var(--cal-ink-faint); }
+
+        .cal-chip{ font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:999px; }
+        .cal-chip.grade{ border:1px solid var(--cal-line); color:var(--cal-ink-soft); background:transparent; }
+
+        .cal-bar{ height:7px; border-radius:999px; background:var(--cal-line-soft); overflow:hidden; }
+        .cal-bar > span{ display:block; height:100%; border-radius:999px 0 0 999px; background:var(--cal-success); }
+        .cal-bar > span.warn{ background:var(--cal-warn); }
+        .cal-bar > span.full{ background:var(--cal-full); }
+
+        .cal-btn{
+            font:inherit; font-size:13.5px; font-weight:600; cursor:pointer;
+            padding:10px 20px; border-radius:14px; border:1px solid transparent;
+            background:var(--cal-accent); color:#fff; white-space:nowrap;
+        }
+        .cal-btn:hover{ background:var(--cal-accent-hover); }
+        .cal-btn.ghost{ background:transparent; border-color:var(--cal-line); color:var(--cal-ink); }
+        .cal-btn.waitlist{ background:var(--cal-full-bg); color:var(--cal-full); }
+
+        @media (max-width:640px){
+            .cal-card{ flex-direction:column; }
+            .cal-datestamp{ flex-direction:row; width:auto; display:flex; gap:8px; align-items:baseline; }
+            .cal-btn{ width:100%; }
+        }
+
+        .cal-grid7{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; background:#fff; border:1px solid var(--cal-line); border-radius:16px; padding:14px;
+            box-shadow:0 1px 2px rgba(17,24,39,.04), 0 8px 20px -12px rgba(17,24,39,.15); }
+        .cal-grid7 .dow{ text-align:center; font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--cal-ink-faint); padding-bottom:6px; }
+        .cal-daycell{ min-height:96px; border-radius:10px; padding:6px 6px; border:1px solid transparent; display:flex; flex-direction:column; gap:3px; }
+        .cal-daycell.inmonth{ background:var(--cal-panel-soft); }
+        .cal-daycell .num{ font-size:12.5px; color:var(--cal-ink-soft); font-variant-numeric:tabular-nums; padding:0 1px 2px; }
+        .cal-daycell.hasEvents{ cursor:pointer; border-color:var(--cal-line); }
+        .cal-daycell.hasEvents:hover{ border-color:var(--cal-accent); }
+        .cal-evchip{
+            font-size:10.5px; line-height:1.35; font-weight:600; padding:2px 6px; border-radius:6px;
+            white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;
+        }
+        .cal-evchip:hover{ filter:brightness(0.94); }
+        .cal-evchip .t{ font-family:"IBM Plex Mono",monospace; font-weight:500; opacity:.8; margin-right:3px; }
+        .cal-more{ font-size:10.5px; font-weight:600; color:var(--cal-ink-faint); padding:1px 6px; cursor:pointer; }
+        .cal-more:hover{ color:var(--cal-accent); }
+
+        .cal-overlay{ position:fixed; inset:0; background:rgba(17,24,39,.5); display:none; align-items:center; justify-content:center; padding:20px; z-index:100; }
+        .cal-overlay.open{ display:flex; }
+        .cal-modal{ background:#fff; border-radius:20px; width:100%; max-width:440px; padding:26px; border:1px solid var(--cal-line); max-height:90vh; overflow-y:auto; }
+        .cal-field{ margin-top:16px; }
+        .cal-field label{ display:block; font-size:12.5px; font-weight:600; color:var(--cal-ink-soft); margin-bottom:6px; }
+        .cal-field input, .cal-field textarea{
+            width:100%; font:inherit; font-size:14.5px; padding:10px 14px;
+            border:1px solid var(--cal-line); border-radius:12px; background:var(--cal-panel-soft); color:var(--cal-ink);
+        }
+        .cal-field textarea{ resize:vertical; min-height:56px; }
+        .cal-field input:focus, .cal-field textarea:focus{ outline:2px solid var(--cal-accent); outline-offset:1px; }
+        .cal-success-tick{ width:46px; height:46px; border-radius:50%; background:var(--cal-success-bg); color:var(--cal-success); display:flex; align-items:center; justify-content:center; margin:0 auto 14px; }
+    </style>
+</head>
+<body class="font-sans bg-white text-gray-900">
+
+    <!-- Navigation -->
+    <nav class="border-b bg-white sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex items-center justify-between h-16 gap-4">
+                <a href="/index.html" class="flex items-center gap-2 shrink-0">
+                    <div class="w-10 h-10 bg-yellow-400 rounded-3xl flex items-center justify-center font-bold text-2xl text-blue-800 shadow-md overflow-hidden">
+                        <img src="images/eep_short_logo.jpg" alt="Excelsior Enrichment Program logo" class="rounded-3xl shadow-2xl w-full h-full object-cover" onerror="this.parentElement.innerHTML='EEP'">
+                    </div>
+                    <span class="text-sm font-bold tracking-tighter text-blue-700 leading-tight">
+                        <b>Excelsior<br>
+                        <span class="inline-block pl-3">Enrichment</span><br>
+                        <span class="inline-block pl-6">Program</span></b>
+                    </span>
+                </a>
+                <div class="hidden lg:flex items-center gap-6 text-sm font-medium shrink-0">
+                    <a href="/index.html#classes" class="nav-link"><b>Browse</b></a>
+                    <a href="/calendar.html" class="nav-link active"><b>Calendar</b></a>
+                </div>
+                <div class="flex items-center gap-3 flex-1 justify-end">
+                    <a href="/index.html" class="text-sm font-medium px-4 py-2 hover:bg-gray-100 rounded-full"><b>&larr; Back to site</b></a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-6 py-12">
+        <div class="flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-blue-700 mb-3">
+            <i class="fa-solid fa-calendar-days"></i> Excelsior Enrichment Program
+        </div>
+        <h1 class="cal-h text-4xl font-bold text-gray-900">Program calendar</h1>
+        <p class="mt-3 max-w-2xl text-gray-600 leading-relaxed">Browse upcoming test-prep bootcamps, enrichment labs, and workshops for grades 5&ndash;12. Seats update as sessions fill &mdash; register directly from a session card.</p>
+        <div class="inline-flex items-center gap-2 mt-4 px-3 py-1.5 rounded-full border border-gray-200 text-xs text-gray-500">
+            <i class="fa-regular fa-circle-question"></i> Sample schedule for preview &mdash; not yet connected to the live events sheet
+        </div>
+
+        <div class="cal-controls mt-8">
+            <div class="flex flex-wrap gap-3 items-center justify-between">
+                <div class="cal-search">
+                    <i class="fa-solid fa-magnifying-glass text-gray-400 text-sm"></i>
+                    <input id="searchInput" type="text" placeholder="Search sessions&hellip;" aria-label="Search sessions">
+                </div>
+                <div class="cal-viewtoggle" role="group" aria-label="Calendar view">
+                    <button id="btnListView" class="active" onclick="setView('list')">List</button>
+                    <button id="btnMonthView" onclick="setView('month')">Month</button>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2 items-center">
+                <span class="cal-mono text-[11px] uppercase tracking-wider text-gray-400 mr-1">Category</span>
+                <div id="categoryPills" class="flex flex-wrap gap-2"></div>
+            </div>
+            <div class="flex flex-wrap gap-2 items-center">
+                <span class="cal-mono text-[11px] uppercase tracking-wider text-gray-400 mr-1">Grade</span>
+                <div id="gradePills" class="flex flex-wrap gap-2"></div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 mt-6 mb-3 text-sm text-gray-600" id="resultsLine"></div>
+
+        <div id="listView" class="grid gap-4"></div>
+
+        <div id="monthView" style="display:none">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="cal-h text-xl font-bold" id="monthLabel"></h2>
+                <div class="flex gap-2">
+                    <button onclick="shiftMonth(-1)" aria-label="Previous month" class="w-8 h-8 rounded-lg border border-gray-200 hover:bg-gray-50"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+                    <button onclick="shiftMonth(1)" aria-label="Next month" class="w-8 h-8 rounded-lg border border-gray-200 hover:bg-gray-50"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+                </div>
+            </div>
+            <div class="cal-grid7" id="monthGrid"></div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-300 py-16">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid md:grid-cols-5 gap-10">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-10 h-10 bg-yellow-400 rounded-3xl flex items-center justify-center font-bold text-sm text-blue-800 shadow-md">EEP</div>
+                        <span class="text-sm font-bold tracking-tighter text-blue-400 leading-tight">
+                            <b>Excelsior<br>
+                            <span class="inline-block pl-3">Enrichment</span><br>
+                            <span class="inline-block pl-6">Program</span></b>
+                        </span>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-4">Explore</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/index.html#classes" class="hover:text-white">All Classes</a></li>
+                        <li><a href="/calendar.html" class="hover:text-white">Program Calendar</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-4">Company</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-white">About Us</a></li>
+                        <li><a href="#" class="hover:text-white">Blog</a></li>
+                        <li><a href="#" class="hover:text-white">Careers</a></li>
+                        <li><a href="#" class="hover:text-white">Press</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-4">Support</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-white">Help Center</a></li>
+                        <li><a href="#" class="hover:text-white">Safety</a></li>
+                        <li><a href="#" class="hover:text-white">Contact Us</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-4">Job Opportunity</h4>
+                    <button class="bg-white text-gray-900 px-6 py-3 rounded-2xl font-medium text-sm w-full">Join our team</button>
+                </div>
+            </div>
+            <div class="mt-16 pt-8 border-t border-gray-800 text-xs flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>© 2026 Excelsior Enrichment Program</div>
+                <div class="flex gap-6">
+                    <a href="#" class="hover:text-white">Privacy</a>
+                    <a href="#" class="hover:text-white">Terms</a>
+                    <a href="#" class="hover:text-white">Accessibility</a>
+                    <a href="/admin.html" class="hover:text-white text-gray-500">Admin</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <div class="cal-overlay" id="overlay" onclick="if(event.target===this) closeModal()">
+        <div class="cal-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <div class="flex justify-between gap-3 items-start mb-1">
+                <div>
+                    <h3 class="cal-h text-xl font-bold" id="modalTitle">Register</h3>
+                    <p class="text-sm text-gray-500 mt-0.5" id="modalSub"></p>
+                </div>
+                <button onclick="closeModal()" aria-label="Close" class="text-gray-400 hover:text-gray-700 text-xl leading-none">&times;</button>
+            </div>
+            <div id="modalFormWrap">
+                <form id="bookingForm" onsubmit="return submitBooking(event)">
+                    <div class="cal-field">
+                        <label for="fName">Full name</label>
+                        <input id="fName" required autocomplete="name">
+                    </div>
+                    <div class="cal-field">
+                        <label for="fPhone">Phone number</label>
+                        <input id="fPhone" required type="tel" autocomplete="tel" placeholder="(555) 555-0123">
+                    </div>
+                    <div class="cal-field">
+                        <label for="fAddress">Home address</label>
+                        <textarea id="fAddress" required autocomplete="street-address" placeholder="Street, city, state"></textarea>
+                    </div>
+                    <p id="modalError" class="text-sm mt-3" style="display:none;color:var(--cal-full)"></p>
+                    <button type="submit" class="cal-btn w-full mt-5" id="submitBtn">Confirm registration</button>
+                </form>
+            </div>
+            <div id="modalSuccessWrap" style="display:none"></div>
+        </div>
+    </div>
+
+<script>
+  var CATEGORIES = [
+    {id:'testprep', label:'Test Prep'},
+    {id:'enrichment', label:'Enrichment'},
+    {id:'workshop', label:'Workshop'},
+    {id:'info', label:'Info Session'}
+  ];
+  var GRADES = ['5-6','7-8','9-10','11-12'];
+
+  // Deployed Apps Script Web App URL (from events-backend.gs) — the live
+  // source of events + registrations. See the CORS note in that file:
+  // POSTs below are sent as text/plain on purpose, not application/json.
+  var EVENTS_API_URL = 'https://script.google.com/macros/s/AKfycbzI3f5UfT_z5m8cRvhWHCrqT3V3tVd84S1NYeaZOUtaviq9qpktPi8o6GGSoFSEnUvs/exec';
+
+  var EVENTS = [];
+  var state = { cats:new Set(), grades:new Set(), q:'', view:'list', dateFilter:null, monthCursor:new Date(2026,9,1) };
+  var activeEventId = null;
+
+  var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var DOWS=['S','M','T','W','T','F','S'];
+
+  function catMeta(id){ return CATEGORIES.find(function(c){return c.id===id;}); }
+  function parseDate(s){ var p=s.split('-'); return new Date(+p[0],+p[1]-1,+p[2]); }
+  function fmtDow(d){ return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]; }
+  function escapeAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
+  function loadEvents(){
+    document.getElementById('resultsLine').innerHTML = '';
+    document.getElementById('listView').innerHTML = '<div style="padding:32px 0;color:var(--cal-ink-faint);text-align:center;font-size:14px;">Loading sessions&hellip;</div>';
+    fetch(EVENTS_API_URL)
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(!data.ok) throw new Error(data.error || 'Failed to load the schedule.');
+        EVENTS = data.events;
+        render();
+      })
+      .catch(function(err){
+        document.getElementById('listView').innerHTML = '<div style="padding:32px 0;color:var(--cal-full);text-align:center;font-size:14px;">Couldn&rsquo;t load the schedule right now'+(err && err.message ? ' ('+err.message+')' : '')+'. Please refresh to try again.</div>';
+      });
+  }
+
+  function buildPills(){
+    var catWrap=document.getElementById('categoryPills');
+    CATEGORIES.forEach(function(c){
+      var b=document.createElement('button');
+      b.className='cal-pill'; b.textContent=c.label; b.dataset.id=c.id;
+      b.onclick=function(){ togglePill(state.cats,c.id,b); render(); };
+      catWrap.appendChild(b);
+    });
+    var gradeWrap=document.getElementById('gradePills');
+    GRADES.forEach(function(g){
+      var b=document.createElement('button');
+      b.className='cal-pill'; b.textContent=g; b.dataset.id=g;
+      b.onclick=function(){ togglePill(state.grades,g,b); render(); };
+      gradeWrap.appendChild(b);
+    });
+  }
+  function togglePill(set,val,btn){
+    if(set.has(val)){ set.delete(val); btn.classList.remove('active'); }
+    else{ set.add(val); btn.classList.add('active'); }
+  }
+
+  function filteredEvents(){
+    return EVENTS.filter(function(e){
+      if(state.cats.size && !state.cats.has(e.cat)) return false;
+      if(state.grades.size && !e.grades.some(function(g){return state.grades.has(g);})) return false;
+      if(state.q && e.name.toLowerCase().indexOf(state.q.toLowerCase())===-1) return false;
+      if(state.dateFilter && e.date!==state.dateFilter) return false;
+      return true;
+    }).sort(function(a,b){ return a.date.localeCompare(b.date); });
+  }
+
+  function seatState(e){
+    var left=e.capacity-e.booked;
+    var pct=Math.min(100, Math.round((e.booked/e.capacity)*100));
+    var cls = left<=0 ? 'full' : (left/e.capacity<=0.2 ? 'warn' : '');
+    return {left:left, pct:pct, cls:cls};
+  }
+
+  function renderResultsLine(){
+    var list=filteredEvents();
+    var line=document.getElementById('resultsLine');
+    var html = list.length + (list.length===1?' session':' sessions');
+    if(state.dateFilter){
+      var d=parseDate(state.dateFilter);
+      html += ' &nbsp; <span class="cal-datefilter">'+ MONTHS[d.getMonth()].slice(0,3)+' '+d.getDate()+'<button onclick="clearDateFilter()" aria-label="Clear date filter">&times;</button></span>';
+    }
+    line.innerHTML=html;
+  }
+
+  function renderList(){
+    var host=document.getElementById('listView');
+    var list=filteredEvents();
+    if(!list.length){
+      host.innerHTML='<div style="padding:32px 0;color:var(--cal-ink-faint);text-align:center;font-size:14px;">No sessions match these filters.</div>';
+      return;
+    }
+    host.innerHTML=list.map(function(e){
+      var d=parseDate(e.date);
+      var cat=catMeta(e.cat) || {label: e.cat || 'Other'}; // guards against a category typo in the Sheet
+      var ss=seatState(e);
+      var gradesChips=e.grades.map(function(g){return '<span class="cal-chip grade">Gr '+g+'</span>';}).join('');
+      var seatLabel = ss.left<=0 ? 'Full' : ss.left+' of '+e.capacity+' seats available';
+      // Event IDs are free-text slugs from the Sheet, so they're passed via a
+      // data attribute (and picked up by a delegated click listener below)
+      // rather than interpolated into an inline onclick, which would break
+      // on an id containing a quote or other special character.
+      var actionBtn = ss.left<=0
+        ? '<button class="cal-btn waitlist" data-register-id="'+escapeAttr(e.id)+'">Join waitlist</button>'
+        : '<button class="cal-btn" data-register-id="'+escapeAttr(e.id)+'">Register</button>';
+      return '' +
+      '<div class="cal-card">' +
+        '<div class="cal-datestamp"><div class="mon">'+MONTHS[d.getMonth()].slice(0,3)+'</div><div class="day">'+d.getDate()+'</div><div class="wk">'+fmtDow(d)+'</div></div>' +
+        '<div class="flex-1 min-w-0">' +
+          '<h3 class="text-lg font-semibold text-gray-900">'+e.name+'</h3>' +
+          '<div class="flex flex-wrap gap-2 items-center mt-1.5 text-sm text-gray-600">' +
+            '<span class="cal-mono text-[12.5px]">'+e.start+'&ndash;'+e.end+'</span>' +
+            '<span class="cal-chip" style="background:var(--cal-'+e.cat+'-bg);color:var(--cal-'+e.cat+')">'+cat.label+'</span>' +
+            gradesChips +
+          '</div>' +
+          '<div class="mt-3.5 max-w-sm">' +
+            '<div class="flex justify-between items-baseline mb-1.5 text-xs"><span>'+seatLabel+'</span><span class="cal-mono font-semibold">'+e.booked+'/'+e.capacity+'</span></div>' +
+            '<div class="cal-bar"><span class="'+ss.cls+'" style="width:'+ss.pct+'%"></span></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="flex items-end">'+actionBtn+'</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderMonth(){
+    var cur=state.monthCursor;
+    document.getElementById('monthLabel').textContent = MONTHS[cur.getMonth()]+' '+cur.getFullYear();
+    var grid=document.getElementById('monthGrid');
+    grid.innerHTML = DOWS.map(function(d){return '<div class="dow">'+d+'</div>';}).join('');
+
+    var firstDow = new Date(cur.getFullYear(),cur.getMonth(),1).getDay();
+    var daysInMonth = new Date(cur.getFullYear(),cur.getMonth()+1,0).getDate();
+    var evByDate = {};
+    EVENTS.forEach(function(e){ (evByDate[e.date]=evByDate[e.date]||[]).push(e); });
+
+    var MAX_CHIPS_PER_DAY = 3;
+
+    for(var i=0;i<firstDow;i++){ grid.appendChild(elt('div','cal-daycell')); }
+    for(var day=1; day<=daysInMonth; day++){
+      var iso = cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+      var evs = (evByDate[iso]||[]).slice().sort(function(a,b){ return (a.start||'').localeCompare(b.start||''); });
+      var cell = elt('div','cal-daycell inmonth'+(evs.length?' hasEvents':''));
+      cell.setAttribute('data-date', iso);
+
+      // Event IDs are free-text slugs from the Sheet, so they go through a
+      // data attribute + the delegated listener below, not an inline onclick
+      // (see the same note on the Register buttons in renderList).
+      var chipsHtml = evs.slice(0, MAX_CHIPS_PER_DAY).map(function(e){
+        var cat = catMeta(e.cat) || {label: e.cat || 'Other'};
+        var ss = seatState(e);
+        var tooltip = (e.start ? e.start+' – ' : '') + e.name + (ss.left<=0 ? ' (Waitlist)' : '');
+        return '<div class="cal-evchip" data-open-id="'+escapeAttr(e.id)+'" title="'+escapeAttr(tooltip)+'" ' +
+          'style="background:var(--cal-'+e.cat+'-bg);color:var(--cal-'+e.cat+')">' +
+          e.name + (ss.left<=0 ? ' • waitlist' : '') +
+          '</div>';
+      }).join('');
+      var moreHtml = evs.length > MAX_CHIPS_PER_DAY
+        ? '<div class="cal-more" data-filter-date="'+iso+'">+'+(evs.length-MAX_CHIPS_PER_DAY)+' more</div>'
+        : '';
+
+      cell.innerHTML = '<div class="num">'+day+'</div>' + chipsHtml + moreHtml;
+      grid.appendChild(cell);
+    }
+  }
+  function elt(tag,cls){ var d=document.createElement(tag); d.className=cls; return d; }
+
+  function setView(v){
+    state.view=v;
+    document.getElementById('btnListView').classList.toggle('active', v==='list');
+    document.getElementById('btnMonthView').classList.toggle('active', v==='month');
+    document.getElementById('listView').style.display = v==='list' ? 'grid' : 'none';
+    document.getElementById('monthView').style.display = v==='month' ? 'block' : 'none';
+    render();
+  }
+  function clearDateFilter(){ state.dateFilter=null; render(); }
+  function shiftMonth(n){ state.monthCursor=new Date(state.monthCursor.getFullYear(), state.monthCursor.getMonth()+n, 1); renderMonth(); }
+
+  function render(){
+    renderResultsLine();
+    if(state.view==='list') renderList(); else renderMonth();
+  }
+
+  function openModal(id){
+    activeEventId=id;
+    var e=EVENTS.find(function(x){return x.id===id;});
+    var ss=seatState(e);
+    var waitlist = ss.left<=0;
+    document.getElementById('modalTitle').textContent = waitlist ? 'Join waitlist' : 'Register';
+    var d=parseDate(e.date);
+    document.getElementById('modalSub').textContent = e.name+' · '+MONTHS[d.getMonth()]+' '+d.getDate()+', '+e.start+'–'+e.end;
+    document.getElementById('submitBtn').textContent = waitlist ? 'Join waitlist' : 'Confirm registration';
+    document.getElementById('bookingForm').reset();
+    var errEl=document.getElementById('modalError');
+    errEl.style.display='none'; errEl.textContent='';
+    document.getElementById('modalFormWrap').style.display='block';
+    document.getElementById('modalSuccessWrap').style.display='none';
+    document.getElementById('overlay').classList.add('open');
+  }
+  function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
+  document.addEventListener('keydown', function(ev){ if(ev.key==='Escape') closeModal(); });
+
+  document.getElementById('monthGrid').addEventListener('click', function(ev){
+    var chip = ev.target.closest('[data-open-id]');
+    if(chip){ openModal(chip.getAttribute('data-open-id')); return; }
+    var more = ev.target.closest('[data-filter-date]');
+    if(more){ state.dateFilter = more.getAttribute('data-filter-date'); setView('list'); return; }
+    var cell = ev.target.closest('.cal-daycell.hasEvents');
+    if(cell){
+      // Clicked the day background (not a specific chip) — jump to the list
+      // view filtered to that date.
+      state.dateFilter = cell.getAttribute('data-date');
+      setView('list');
+    }
+  });
+
+  document.getElementById('listView').addEventListener('click', function(ev){
+    var btn = ev.target.closest('[data-register-id]');
+    if(btn) openModal(btn.getAttribute('data-register-id'));
+  });
+
+  function submitBooking(ev){
+    ev.preventDefault();
+    var e=EVENTS.find(function(x){return x.id===activeEventId;});
+    var ss=seatState(e);
+    var waitlist = ss.left<=0;
+    var submitBtn=document.getElementById('submitBtn');
+    var errEl=document.getElementById('modalError');
+    errEl.style.display='none'; errEl.textContent='';
+    submitBtn.disabled=true;
+    submitBtn.textContent='Submitting…';
+
+    var payload = {
+      eventId: e.id,
+      name: document.getElementById('fName').value.trim(),
+      phone: document.getElementById('fPhone').value.trim(),
+      address: document.getElementById('fAddress').value.trim()
+      // No "optIn" field yet — add it here once the opt-in checkbox is on the form.
+    };
+
+    // Sent as text/plain on purpose — see the CORS note near EVENTS_API_URL.
+    fetch(EVENTS_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(!data.ok) throw new Error(data.error || 'Could not complete registration.');
+        e.booked = data.capacity - data.seatsLeft;
+        var wasWaitlisted = data.status === 'Waitlist';
+        document.getElementById('modalFormWrap').style.display='none';
+        var wrap=document.getElementById('modalSuccessWrap');
+        wrap.style.display='block';
+        wrap.innerHTML = '<div class="text-center py-3">' +
+          '<div class="cal-success-tick"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10.5l4 4 8-9"/></svg></div>' +
+          '<h3 class="cal-h text-lg font-bold">'+(wasWaitlisted?'You’re on the waitlist':'You’re registered')+'</h3>' +
+          '<p class="text-sm text-gray-500 mt-1.5">'+(wasWaitlisted ? 'We’ll reach out if a seat opens up for '+e.name+'.' : 'A confirmation would normally be emailed for '+e.name+'.')+'</p>' +
+          '<button class="cal-btn ghost mt-5" onclick="closeModal()">Close</button>' +
+        '</div>';
+        render();
+      })
+      .catch(function(err){
+        submitBtn.disabled=false;
+        submitBtn.textContent = waitlist ? 'Join waitlist' : 'Confirm registration';
+        errEl.textContent = err.message || 'Something went wrong — please try again.';
+        errEl.style.display='block';
+      });
+
+    return false;
+  }
+
+  document.getElementById('searchInput').addEventListener('input', function(ev){ state.q=ev.target.value; render(); });
+
+  buildPills();
+  loadEvents();
+</script>
+</body>
+</html>
