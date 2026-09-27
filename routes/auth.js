@@ -2,7 +2,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const { readTable, writeTable, nextId } = require('../db');
-const { signToken, requireAuth } = require('../middleware/auth');
+const { signToken, requireAuth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -101,6 +101,19 @@ router.post('/logout', (req, res) => {
 // GET /api/auth/me — returns the current logged-in user (or 401)
 router.get('/me', requireAuth, (req, res) => {
   res.json({ user: req.user });
+});
+
+// GET /api/auth/users — admin-only: list every registered account.
+// Never includes passwordHash — only safe-to-display fields.
+router.get('/users', requireAdmin, (req, res) => {
+  const users = readTable('users').map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    createdAt: u.createdAt,
+  }));
+  res.json({ users });
 });
 
 module.exports = router;

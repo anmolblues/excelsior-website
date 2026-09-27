@@ -51,6 +51,7 @@ async function showCorrectScreen() {
     document.getElementById('logoutBtn').classList.remove('hidden');
     await loadClasses();
     await loadBookings();
+    await loadUsers();
   } else {
     document.getElementById('loginScreen').classList.remove('hidden');
     document.getElementById('dashboard').classList.add('hidden');
@@ -219,6 +220,31 @@ async function loadBookings() {
       <td class="px-4 py-3">${b.parent ? escapeHtml(b.parent.name) + '<br><span class="text-xs text-gray-400">' + escapeHtml(b.parent.email) + '</span>' : '—'}</td>
       <td class="px-4 py-3 ${statusColor} capitalize">${escapeHtml(b.status)}</td>
       <td class="px-4 py-3 text-xs text-gray-400">${new Date(b.createdAt).toLocaleDateString()}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ---------- Users ----------
+
+async function loadUsers() {
+  const data = await api('/auth/users');
+  const tbody = document.getElementById('usersTableBody');
+  tbody.innerHTML = '';
+
+  if (data.users.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-6 text-center text-gray-400">No users yet.</td></tr>';
+    return;
+  }
+
+  data.users.forEach(u => {
+    const tr = document.createElement('tr');
+    tr.className = 'border-t';
+    tr.innerHTML = `
+      <td class="px-4 py-3 font-medium">${escapeHtml(u.name)}</td>
+      <td class="px-4 py-3">${escapeHtml(u.email)}</td>
+      <td class="px-4 py-3 capitalize">${escapeHtml(u.role)}</td>
+      <td class="px-4 py-3 text-xs text-gray-400">${new Date(u.createdAt).toLocaleDateString()}</td>
     `;
     tbody.appendChild(tr);
   });
