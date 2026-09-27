@@ -491,6 +491,7 @@
     var d=parseDate(e.date);
     document.getElementById('modalSub').textContent = e.name+' · '+MONTHS[d.getMonth()]+' '+d.getDate()+', '+e.start+'–'+e.end;
     document.getElementById('submitBtn').textContent = waitlist ? 'Join waitlist' : 'Confirm registration';
+    document.getElementById('submitBtn').disabled = false;   // clears a stuck disabled state left by a prior successful submission
     document.getElementById('bookingForm').reset();
     var errEl=document.getElementById('modalError');
     errEl.style.display='none'; errEl.textContent='';
