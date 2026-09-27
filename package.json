@@ -6,11 +6,13 @@
   "type": "commonjs",
   "scripts": {
     "start": "node server.js",
-    "seed": "node seed.js"
+    "seed": "node seed.js",
+    "migrate": "node migrate-json-to-sqlite.js"
   },
   "dependencies": {
     "express": "^4.19.2",
     "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^13.0.3",
     "jsonwebtoken": "^9.0.2",
     "cookie-parser": "^1.4.6"
   }

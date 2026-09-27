@@ -4,4 +4,7 @@ package-lock.json
 data/users.json
 data/bookings.json
 data/counters.json
+data/eep.db
+data/eep.db-wal
+data/eep.db-shm
 *.tmp

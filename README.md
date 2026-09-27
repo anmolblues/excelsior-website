@@ -50,14 +50,44 @@ Press `Ctrl+C` in the terminal to stop the server.
 
 ## 4. How data is stored
 
-This project stores everything in simple JSON files inside the `data/` folder
-(`classes.json`, `users.json`, `bookings.json`). This keeps things dependency-free
-and easy to back up — just copy the `data/` folder. If your site grows a lot
-(thousands of users/bookings), you can later swap `db.js` for a real database
-(Postgres, MySQL, etc.) without changing the rest of the app, since everything
-goes through `db.js`.
+This project stores everything in a single SQLite database file at
+`data/eep.db` (tables: `users`, `classes`, `bookings`, plus an internal
+`counters` table for auto-incrementing ids). SQLite is a real, embedded
+SQL database — no separate database server to run or configure — and
+`data/eep.db` is git-ignored, so it's never committed.
 
-**Back up the `data/` folder regularly once this is live** — it's your database!
+The database and its schema are created automatically the first time the
+app runs (`node server.js` or `npm run seed`) — there's no separate
+"create the database" step.
+
+**Migrating from an older JSON-file version of this project:** if you have
+existing `data/users.json`, `data/classes.json`, and/or `data/bookings.json`
+files (from before this project used SQLite), run this once:
+
+```bash
+npm run migrate
+```
+
+This imports their contents into `data/eep.db` and preserves ids (so
+existing bookings still point at the right class/user). It's safe to run
+more than once — it only imports a table if `data/eep.db` doesn't already
+have rows in it, and it refuses (with a clear error) rather than silently
+corrupting data if a JSON file has a duplicate `id` in it. The old JSON
+files are left untouched; once you've confirmed the site works correctly,
+you can archive or delete them.
+
+**Back up `data/eep.db` regularly once this is live** — it's your entire
+database in one file. Copying that one file (the app should be stopped, or
+use SQLite's `.backup` command, to avoid copying it mid-write) is a
+complete backup and restore is just copying it back. (An automated
+off-server backup, e.g. a nightly copy to S3, is a good next step — ask
+if you want that set up.)
+
+**Rebuilding the whole system from scratch:** the code and the
+`better-sqlite3` dependency are both in this repo/`package.json`, so
+`git clone` + `npm install` fully reproduces the app. Your actual data
+(real users/classes/bookings) is *not* in git — you'd restore that from
+whatever backup of `data/eep.db` you have.
 
 ## 5. Managing classes
 
@@ -81,15 +111,26 @@ and `public/images/lc_img1.png` — add your own files there with those names
 
 The simplest way: log in to `/admin.html` with the seeded credentials, then —
 since there's currently no "change password" UI — ask a developer to add one,
-or temporarily edit `data/users.json` and replace the admin's `passwordHash`
-with a new bcrypt hash. You can generate one by running:
+or update the admin's `passwordHash` directly in `data/eep.db`. Generate a new
+hash by running:
 
 ```bash
 node -e "console.log(require('bcryptjs').hashSync('YourNewPassword123', 10))"
 ```
 
-Copy the output string into `passwordHash` for the admin user in
-`data/users.json`, then restart the server.
+Then update the row (stop the server first):
+
+```bash
+node -e "
+const { readTable, writeTable } = require('./db');
+const users = readTable('users').map(u =>
+  u.email === 'admin@excelsiorenrichment.example'
+    ? { ...u, passwordHash: 'PASTE_THE_HASH_FROM_ABOVE' }
+    : u
+);
+writeTable('users', users);
+"
+```
 
 ## 7. Before going live (deploying for real families to use)
 
@@ -111,23 +152,24 @@ A few important things to change before this is a public, real-world site:
 4. **Email notifications.** Right now, enrolling doesn't send a confirmation
    email. Adding this requires an email-sending service (e.g. Postmark,
    SendGrid, Resend).
-5. **Back up `data/`** regularly, or migrate to a managed database if you
-   expect a lot of traffic.
+5. **Back up `data/eep.db`** regularly (see "How data is stored" above), or
+   migrate to a managed database if you expect a lot of traffic.
 
 ## 8. Project structure
 
 ```
 excelsior-website/
-├── server.js          # Express server & route wiring
-├── db.js              # simple JSON-file "database" helper
-├── seed.js            # creates admin account + sample classes
+├── server.js                    # Express server & route wiring
+├── db.js                        # SQLite "database" helper (data/eep.db)
+├── migrate-json-to-sqlite.js    # one-time import from the old JSON files
+├── seed.js                      # creates admin account + sample classes
 ├── middleware/
 │   └── auth.js        # JWT auth helpers
 ├── routes/
 │   ├── auth.js         # /api/auth/* (signup, login, logout, me)
 │   ├── classes.js      # /api/classes/* (listing, search/filter, admin CRUD)
 │   └── bookings.js     # /api/bookings/* (enroll, my bookings, cancel, admin view)
-├── data/               # JSON "database" files (back this up!)
+├── data/               # eep.db lives here (back this up!)
 └── public/
     ├── index.html       # main site
     ├── app.js           # main site frontend logic
