@@ -7,4 +7,5 @@ data/counters.json
 data/eep.db
 data/eep.db-wal
 data/eep.db-shm
+data/*.bak*
 *.tmp
