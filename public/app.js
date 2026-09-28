@@ -640,9 +640,20 @@ document.querySelectorAll('.category-filter-link').forEach(link => {
 
 // ---------- Init ----------
 
+// Other pages (calendar, blog, about) link to /index.html?format=online#classes
+// or ?format=in-person#classes so that clicking "Online"/"In-person" there
+// actually pre-filters the class list here, not just navigates to the page.
+function applyFormatFromQuery() {
+  const format = new URLSearchParams(window.location.search).get('format');
+  if (format) document.getElementById('filterFormat').value = format;
+  return format;
+}
+
 (async function init() {
   updateMaxPriceLabel();
   await checkAuth();
   await loadSubjects();
+  const formatFromQuery = applyFormatFromQuery();
   await loadClasses();
+  if (formatFromQuery) scrollToClasses();
 })();
