@@ -182,6 +182,26 @@ Optional variables:
 - `MAIL_FROM_NAME` — display name on the "From" line (defaults to
   "Excelsior Enrichment Program")
 - `MAIL_FROM_ADDRESS` — From address, if different from `SMTP_USER`
+- `SITE_URL` — the public base URL used to build links inside emails (for
+  example, the password reset link). **Strongly recommended in production**:
+  ```bash
+  export SITE_URL="https://excelsiorenrichmentprogram.com"
+  ```
+  Without it, the app falls back to guessing the URL from the incoming
+  request (`req.protocol` + the `Host` header), which works for local dev
+  but can produce a broken link — e.g. `http://localhost:3000/...` — if the
+  app runs behind a reverse proxy that doesn't forward the original `Host`
+  header. On EC2, add this to `ecosystem.config.js` alongside `SMTP_USER`/
+  `SMTP_PASS`. When adding a brand-new variable to `ecosystem.config.js`,
+  PM2 needs to fully reload its process definition from the file — a plain
+  `pm2 restart excelsior-website` (even with `--update-env`) reuses the
+  config PM2 already has cached from whenever it was first started, so it
+  won't pick up the new key. Instead run:
+  ```bash
+  pm2 delete excelsior-website
+  pm2 start ecosystem.config.js
+  pm2 save
+  ```
 
 The email logic lives in `mailer.js` (`sendMail`, `sendWelcomeEmail`) — it
 never throws, so a misconfigured or down mail server can't break signup,

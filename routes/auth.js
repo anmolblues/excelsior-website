@@ -150,7 +150,13 @@ router.post('/forgot-password', (req, res) => {
   });
   writeTable('passwordResets', resets);
 
-  const resetLink = `${req.protocol}://${req.get('host')}/reset-password.html?token=${rawToken}`;
+  // Prefer an explicitly configured public URL over the request's Host
+  // header — behind a reverse proxy (Nginx, a load balancer, etc.) that
+  // doesn't forward the original Host, req.get('host') can silently
+  // resolve to an internal address like localhost:3000, baking a broken
+  // link into the email. SITE_URL sidesteps that entirely.
+  const baseUrl = process.env.SITE_URL || `${req.protocol}://${req.get('host')}`;
+  const resetLink = `${baseUrl}/reset-password.html?token=${rawToken}`;
 
   // Fire-and-forget, same as the welcome email — never blocks or fails the response.
   sendPasswordResetEmail(user, resetLink);
