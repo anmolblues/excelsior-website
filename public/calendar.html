@@ -285,6 +285,9 @@
                 <button onclick="closeModal()" aria-label="Close" class="text-gray-400 hover:text-gray-700 text-xl leading-none">&times;</button>
             </div>
             <div id="modalFormWrap">
+                <p id="regAuthHint" class="hidden" style="background:#eff6ff;color:#1d4ed8;font-size:12.5px;border-radius:12px;padding:10px 14px;margin-bottom:14px">
+                    Tell us who's registering — you'll log in or create a free account on the next step to confirm.
+                </p>
                 <form id="bookingForm" onsubmit="return submitBooking(event)">
                     <div class="cal-field">
                         <label for="fName">Full name</label>
@@ -315,6 +318,8 @@
                 </div>
                 <button onclick="closeAuthModal()" aria-label="Close" class="text-gray-400 hover:text-gray-700 text-xl leading-none">&times;</button>
             </div>
+
+            <p id="authContextMsg" style="display:none;background:#eff6ff;color:#1d4ed8;font-size:13.5px;border-radius:12px;padding:10px 14px;margin-top:14px"></p>
 
             <div class="flex gap-2 mt-4">
                 <button type="button" class="cal-btn" style="flex:1" id="authTabLogin" onclick="showAuthTab('login')">Log in</button>
@@ -373,7 +378,11 @@
   var state = { cats:new Set(), grades:new Set(), q:'', view:'list', dateFilter:null, monthCursor:new Date(2026,9,1) };
   var activeEventId = null;
   var currentUser = null;
-  var pendingEventId = null;
+  // Registration details captured before the user logs in / signs up — same
+  // pattern class enrollment uses on index.html (see pendingBooking there):
+  // ask who's registering first, only ask for an account right before it's
+  // actually submitted.
+  var pendingRegistration = null;
 
   var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
   var DOWS=['S','M','T','W','T','F','S'];
@@ -420,17 +429,22 @@
     fetch('/api/auth/logout', { method:'POST', credentials:'include' }).then(function(){ currentUser=null; updateAuthUI(); });
   }
 
-  function openAuthModal(){
+  function openAuthModal(tab, contextMsg){
     document.getElementById('loginForm').reset();
     document.getElementById('signupForm').reset();
     document.getElementById('loginError').style.display='none';
     document.getElementById('signupError').style.display='none';
-    showAuthTab('login');
+    var ctxEl = document.getElementById('authContextMsg');
+    if(contextMsg){ ctxEl.textContent = contextMsg; ctxEl.style.display='block'; }
+    else { ctxEl.style.display='none'; }
+    showAuthTab(tab || 'login');
     document.getElementById('authOverlay').classList.add('open');
   }
+  // Closing the auth modal by hand (the X button) abandons any registration
+  // that was waiting on login/signup — we don't silently register it later.
   function closeAuthModal(){
     document.getElementById('authOverlay').classList.remove('open');
-    pendingEventId = null;
+    pendingRegistration = null;
   }
   function showAuthTab(tab){
     var isLogin = tab==='login';
@@ -441,13 +455,90 @@
   }
 
   // After a successful login/signup: close the auth modal, and if the
-  // person got here by clicking "Register"/"Join waitlist" while logged
-  // out, pick up right where they left off and open that event's form.
+  // person got here through the "who's registering" form (see submitBooking
+  // below), finish that registration automatically now that they have an
+  // account — they've already told us who's registering, so there's nothing
+  // left to ask.
   function afterAuthSuccess(){
     // Grab this before closeAuthModal() clears it.
-    var id = pendingEventId;
+    var reg = pendingRegistration;
     closeAuthModal();
-    if(id) openModal(id);
+    if(reg) completePendingRegistration(reg);
+  }
+
+  // Submits a registration payload and returns a promise resolving to the
+  // response body ({ok, status, seatsLeft, capacity}) or rejecting with an
+  // Error. Shared by the "already logged in" path in submitBooking and the
+  // "just logged in/signed up" path in completePendingRegistration.
+  function submitRegistration(payload){
+    return fetch('/api/events/' + encodeURIComponent(payload.eventId) + '/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ name: payload.name, phone: payload.phone, address: payload.address })
+    })
+      .then(function(res){ return res.json().then(function(data){ return {status:res.status, data:data}; }); })
+      .then(function(r){
+        if(r.status===401){
+          // Rare: the session vanished between confirming the account and
+          // this call actually landing. Send them back through sign-in
+          // rather than failing silently — same info, no retyping needed.
+          currentUser=null; updateAuthUI();
+          closeModal();
+          pendingRegistration = payload;
+          openAuthModal('login', 'Please log in again to confirm this registration.');
+          throw new Error('__handled__');
+        }
+        if(!r.data.ok) throw new Error(r.data.error || 'Could not complete registration.');
+        return r.data;
+      });
+  }
+
+  // Renders the "you're registered" / "you're on the waitlist" confirmation
+  // inside the registration modal, and refreshes the seat counts.
+  function showRegistrationSuccess(eventLike, data){
+    var e = EVENTS.find(function(x){ return x.id===eventLike.id; }) || eventLike;
+    e.booked = data.capacity - data.seatsLeft;
+    var wasWaitlisted = data.status === 'Waitlist';
+    document.getElementById('modalFormWrap').style.display='none';
+    var wrap=document.getElementById('modalSuccessWrap');
+    wrap.style.display='block';
+    wrap.innerHTML = '<div class="text-center py-3">' +
+      '<div class="cal-success-tick"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10.5l4 4 8-9"/></svg></div>' +
+      '<h3 class="cal-h text-lg font-bold">'+(wasWaitlisted?'You’re on the waitlist':'You’re registered')+'</h3>' +
+      '<p class="text-sm text-gray-500 mt-1.5">'+(wasWaitlisted ? 'We’ll reach out if a seat opens up for '+e.name+'.' : 'A confirmation would normally be emailed for '+e.name+'.')+'</p>' +
+      '<button class="cal-btn ghost mt-5" onclick="closeModal()">Close</button>' +
+    '</div>';
+    render();
+    // Pick up the phone/address the server just saved to the account, so
+    // the next registration this session pre-fills with it too.
+    checkAuth();
+  }
+
+  // Finishes a registration that was captured before the user logged in /
+  // signed up (mirrors completePendingBooking() in app.js). Reopens the
+  // registration modal already in a "confirming" state — no need to make
+  // them look at the form again, they already filled it in.
+  function completePendingRegistration(reg){
+    activeEventId = reg.eventId;
+    var e = EVENTS.find(function(x){ return x.id===reg.eventId; });
+    document.getElementById('modalTitle').textContent = 'Confirming…';
+    document.getElementById('modalSub').textContent = e ? e.name : reg.eventName;
+    document.getElementById('modalFormWrap').style.display='none';
+    var wrap = document.getElementById('modalSuccessWrap');
+    wrap.style.display='block';
+    wrap.innerHTML = '<div style="padding:24px 0;color:var(--cal-ink-faint);text-align:center;font-size:14px;">Confirming your registration&hellip;</div>';
+    document.getElementById('overlay').classList.add('open');
+
+    submitRegistration(reg)
+      .then(function(data){ showRegistrationSuccess(e || {id:reg.eventId, name:reg.eventName}, data); })
+      .catch(function(err){
+        if(err.message === '__handled__') return;
+        wrap.innerHTML = '<div class="text-center py-3">' +
+          '<p class="text-sm mt-1.5" style="color:var(--cal-full)">'+(err.message || 'Something went wrong — please try again.')+'</p>' +
+          '<button class="cal-btn ghost mt-5" onclick="closeModal()">Close</button>' +
+        '</div>';
+      });
   }
 
   function submitLogin(ev){
@@ -491,13 +582,6 @@
       .then(afterAuthSuccess)
       .catch(function(err){ errEl.textContent = err.message; errEl.style.display='block'; });
     return false;
-  }
-
-  // Gate registering behind an account — if logged out, remember which
-  // event was clicked and prompt sign-in/sign-up first.
-  function handleRegisterClick(id){
-    if(!currentUser){ pendingEventId = id; openAuthModal(); return; }
-    openModal(id);
   }
 
   function buildPills(){
@@ -660,12 +744,15 @@
     document.getElementById('bookingForm').reset();
     // Signed-in users get their saved name/phone/address pre-filled — see
     // checkAuth()/GET /api/auth/me — so a second (or fifth) registration is
-    // a one-click confirm instead of retyping everything.
+    // a one-click confirm instead of retyping everything. Logged-out
+    // visitors just get a heads-up that login comes right before confirming
+    // (see submitBooking) — they can fill this in first either way.
     if(currentUser){
       document.getElementById('fName').value = currentUser.name || '';
       document.getElementById('fPhone').value = currentUser.phone || '';
       document.getElementById('fAddress').value = currentUser.address || '';
     }
+    document.getElementById('regAuthHint').classList.toggle('hidden', !!currentUser);
     var errEl=document.getElementById('modalError');
     errEl.style.display='none'; errEl.textContent='';
     document.getElementById('modalFormWrap').style.display='block';
@@ -677,7 +764,7 @@
 
   document.getElementById('monthGrid').addEventListener('click', function(ev){
     var chip = ev.target.closest('[data-open-id]');
-    if(chip){ handleRegisterClick(chip.getAttribute('data-open-id')); return; }
+    if(chip){ openModal(chip.getAttribute("data-open-id")); return; }
     var more = ev.target.closest('[data-filter-date]');
     if(more){ state.dateFilter = more.getAttribute('data-filter-date'); setView('list'); return; }
     var cell = ev.target.closest('.cal-daycell.hasEvents');
@@ -691,62 +778,44 @@
 
   document.getElementById('listView').addEventListener('click', function(ev){
     var btn = ev.target.closest('[data-register-id]');
-    if(btn) handleRegisterClick(btn.getAttribute('data-register-id'));
+    if(btn) openModal(btn.getAttribute("data-register-id"));
   });
 
+  // Anyone can fill this in and submit it — we only ask for login/signup
+  // right before it's actually sent, so the "who's registering" info comes
+  // first (same pattern as class enrollment's openBookingModal/pendingBooking
+  // in app.js).
   function submitBooking(ev){
     ev.preventDefault();
     var e=EVENTS.find(function(x){return x.id===activeEventId;});
-    var ss=seatState(e);
-    var waitlist = ss.left<=0;
-    var submitBtn=document.getElementById('submitBtn');
     var errEl=document.getElementById('modalError');
     errEl.style.display='none'; errEl.textContent='';
-    submitBtn.disabled=true;
-    submitBtn.textContent='Submitting…';
 
     var payload = {
+      eventId: e.id,
+      eventName: e.name,
       name: document.getElementById('fName').value.trim(),
       phone: document.getElementById('fPhone').value.trim(),
       address: document.getElementById('fAddress').value.trim()
       // No "optIn" field yet — add it here once the opt-in checkbox is on the form.
     };
 
-    fetch('/api/events/' + encodeURIComponent(e.id) + '/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(payload)
-    })
-      .then(function(res){ return res.json().then(function(data){ return {status:res.status, data:data}; }); })
-      .then(function(r){
-        if(r.status===401){
-          // Session expired between opening the form and submitting it —
-          // send them back through sign-in, then reopen this same event.
-          currentUser=null; updateAuthUI();
-          closeModal();
-          pendingEventId = e.id;
-          openAuthModal();
-          throw new Error('__handled__');
-        }
-        if(!r.data.ok) throw new Error(r.data.error || 'Could not complete registration.');
-        var data = r.data;
-        e.booked = data.capacity - data.seatsLeft;
-        var wasWaitlisted = data.status === 'Waitlist';
-        document.getElementById('modalFormWrap').style.display='none';
-        var wrap=document.getElementById('modalSuccessWrap');
-        wrap.style.display='block';
-        wrap.innerHTML = '<div class="text-center py-3">' +
-          '<div class="cal-success-tick"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10.5l4 4 8-9"/></svg></div>' +
-          '<h3 class="cal-h text-lg font-bold">'+(wasWaitlisted?'You’re on the waitlist':'You’re registered')+'</h3>' +
-          '<p class="text-sm text-gray-500 mt-1.5">'+(wasWaitlisted ? 'We’ll reach out if a seat opens up for '+e.name+'.' : 'A confirmation would normally be emailed for '+e.name+'.')+'</p>' +
-          '<button class="cal-btn ghost mt-5" onclick="closeModal()">Close</button>' +
-        '</div>';
-        render();
-        // Pick up the phone/address the server just saved to the account,
-        // so the next registration this session pre-fills with it too.
-        checkAuth();
-      })
+    if(!currentUser){
+      // Hold onto what they've entered and ask them to confirm via login/signup.
+      pendingRegistration = payload;
+      closeModal();
+      openAuthModal('signup', 'Almost done! Log in or create a free account to confirm '+(payload.name || 'your')+'’s spot in '+e.name+'.');
+      return false;
+    }
+
+    var ss=seatState(e);
+    var waitlist = ss.left<=0;
+    var submitBtn=document.getElementById('submitBtn');
+    submitBtn.disabled=true;
+    submitBtn.textContent='Submitting…';
+
+    submitRegistration(payload)
+      .then(function(data){ showRegistrationSuccess(e, data); })
       .catch(function(err){
         if(err.message === '__handled__') return;
         submitBtn.disabled=false;
