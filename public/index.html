@@ -389,7 +389,7 @@
 
             <p id="authContextMsg" class="hidden bg-blue-50 text-blue-700 text-sm rounded-xl px-4 py-3 mb-4"></p>
 
-            <div class="flex gap-2 mb-6">
+            <div id="authTabsRow" class="flex gap-2 mb-6">
                 <button id="authTabLogin" onclick="showAuthTab('login')" class="flex-1 py-2 rounded-xl font-semibold text-sm bg-blue-600 text-white">Log In</button>
                 <button id="authTabSignup" onclick="showAuthTab('signup')" class="flex-1 py-2 rounded-xl font-semibold text-sm bg-gray-100 text-gray-600">Sign Up</button>
             </div>
@@ -407,8 +407,25 @@
                         <label class="block text-sm font-medium mb-1">Password</label>
                         <input type="password" required class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500" id="loginPassword">
                     </div>
+                    <div class="text-right -mt-2">
+                        <button type="button" onclick="showForgotPanel()" class="text-xs text-blue-600 hover:underline">Forgot password?</button>
+                    </div>
                     <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-2xl font-semibold">Log In</button>
                 </form>
+            </div>
+
+            <!-- FORGOT PASSWORD PANEL -->
+            <div id="forgotPanel" class="hidden">
+                <p class="text-sm text-gray-500 mb-4">Enter your account email and we'll send you a link to reset your password.</p>
+                <form id="forgotPasswordForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Email</label>
+                        <input type="email" required class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500" id="forgotEmail">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-2xl font-semibold">Send Reset Link</button>
+                </form>
+                <p id="forgotSuccessMsg" class="hidden bg-green-50 text-green-700 text-sm rounded-xl px-4 py-3 mt-4"></p>
+                <button type="button" onclick="showAuthTab('login')" class="w-full text-sm text-blue-600 hover:underline mt-4">&larr; Back to Log In</button>
             </div>
 
             <!-- SIGNUP PANEL -->

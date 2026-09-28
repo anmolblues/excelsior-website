@@ -67,6 +67,18 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_bookings_classId ON bookings(classId);
   CREATE INDEX IF NOT EXISTS idx_bookings_userId ON bookings(userId);
 
+  CREATE TABLE IF NOT EXISTS passwordResets (
+    id        INTEGER PRIMARY KEY,
+    userId    INTEGER NOT NULL,
+    tokenHash TEXT NOT NULL,
+    expiresAt TEXT NOT NULL,
+    used      INTEGER NOT NULL DEFAULT 0,
+    createdAt TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_passwordResets_tokenHash ON passwordResets(tokenHash);
+  CREATE INDEX IF NOT EXISTS idx_passwordResets_userId ON passwordResets(userId);
+
   CREATE TABLE IF NOT EXISTS counters (
     name  TEXT PRIMARY KEY,
     value INTEGER NOT NULL DEFAULT 0
@@ -79,6 +91,7 @@ const TABLE_COLUMNS = {
   users: ['id', 'name', 'email', 'passwordHash', 'role', 'createdAt'],
   classes: ['id', 'title', 'description', 'subject', 'ageMin', 'ageMax', 'format', 'price', 'priceUnit', 'schedule', 'image', 'capacity', 'rating', 'createdAt'],
   bookings: ['id', 'classId', 'userId', 'studentName', 'studentAge', 'notes', 'status', 'createdAt'],
+  passwordResets: ['id', 'userId', 'tokenHash', 'expiresAt', 'used', 'createdAt'],
 };
 
 const seedCounter = db.prepare('INSERT OR IGNORE INTO counters (name, value) VALUES (?, 0)');

@@ -87,4 +87,28 @@ function sendWelcomeEmail(user) {
   return sendMail({ to: user.email, subject, html, text });
 }
 
-module.exports = { sendMail, sendWelcomeEmail };
+function sendPasswordResetEmail(user, resetLink) {
+  const name = escapeHtml(user.name);
+  const safeLink = escapeHtml(resetLink);
+  const subject = 'Reset your Excelsior Enrichment Program password';
+  const html = `
+    <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1f2937;">
+      <h2 style="color:#2047bb; margin-bottom: 4px;">Reset your password</h2>
+      <p>Hi ${name}, we received a request to reset the password on your <strong>Excelsior Enrichment Program</strong> account.</p>
+      <p>
+        <a href="${safeLink}" style="display:inline-block; background:#2047bb; color:#ffffff; text-decoration:none; padding:12px 20px; border-radius:12px; font-weight:600; margin: 12px 0;">
+          Reset Password
+        </a>
+      </p>
+      <p style="font-size: 13px; color:#6b7280;">This link expires in 1 hour. If you didn't request this, you can safely ignore this email — your password won't be changed.</p>
+    </div>`;
+  const text =
+    `Hi ${user.name},\n\n` +
+    `We received a request to reset the password on your Excelsior Enrichment Program account.\n\n` +
+    `Reset your password here (expires in 1 hour):\n${resetLink}\n\n` +
+    `If you didn't request this, you can safely ignore this email — your password won't be changed.`;
+
+  return sendMail({ to: user.email, subject, html, text });
+}
+
+module.exports = { sendMail, sendWelcomeEmail, sendPasswordResetEmail };

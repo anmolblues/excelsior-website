@@ -98,6 +98,10 @@ function showAuthTab(tab) {
   const activeClass = 'flex-1 py-2 rounded-xl font-semibold text-sm bg-blue-600 text-white';
   const inactiveClass = 'flex-1 py-2 rounded-xl font-semibold text-sm bg-gray-100 text-gray-600';
 
+  // Coming back from the forgot-password panel — restore the tab row.
+  document.getElementById('authTabsRow').classList.remove('hidden');
+  document.getElementById('forgotPanel').classList.add('hidden');
+
   if (tab === 'login') {
     loginTab.className  = activeClass;
     signupTab.className = inactiveClass;
@@ -142,6 +146,40 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     document.getElementById('authContextMsg').classList.add('hidden');
     showToast(`Welcome back, ${currentUser.name.split(' ')[0]}!`);
     await completePendingBooking();
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.remove('hidden');
+  }
+});
+
+// ---------- Forgot password panel ----------
+
+function showForgotPanel() {
+  document.getElementById('authError').classList.add('hidden');
+  document.getElementById('authTabsRow').classList.add('hidden');
+  document.getElementById('loginPanel').classList.add('hidden');
+  document.getElementById('signupPanel').classList.add('hidden');
+  document.getElementById('forgotPanel').classList.remove('hidden');
+
+  // reset panel state each time it's opened
+  document.getElementById('forgotEmail').value = '';
+  document.getElementById('forgotPasswordForm').classList.remove('hidden');
+  document.getElementById('forgotSuccessMsg').classList.add('hidden');
+}
+
+document.getElementById('forgotPasswordForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errorEl = document.getElementById('authError');
+  errorEl.classList.add('hidden');
+  try {
+    const data = await api('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: document.getElementById('forgotEmail').value }),
+    });
+    document.getElementById('forgotPasswordForm').classList.add('hidden');
+    const successEl = document.getElementById('forgotSuccessMsg');
+    successEl.textContent = data.message || 'If that email is registered, a reset link has been sent — check your inbox.';
+    successEl.classList.remove('hidden');
   } catch (err) {
     errorEl.textContent = err.message;
     errorEl.classList.remove('hidden');
