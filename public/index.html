@@ -12,6 +12,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Excelsior Enrichment Program - In-person or Live Online Classes for Kids</title>
+    <meta name="description" content="Excelsior Enrichment Program offers live online and in-person enrichment classes and test prep for kids in grades 5-12 — math, science, coding, debate, public speaking, and more. Real instructors, flexible schedules.">
+    <link rel="canonical" href="https://excelsiorenrichmentprogram.com/">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Excelsior Enrichment Program - Classes for Kids Grades 5-12">
+    <meta property="og:description" content="Live online and in-person enrichment classes and test prep for kids in grades 5-12. Build confidence, fuel curiosity.">
+    <meta property="og:url" content="https://excelsiorenrichmentprogram.com/">
+    <meta property="og:image" content="https://excelsiorenrichmentprogram.com/images/lc_img1.jpg">
+    <meta name="twitter:card" content="summary_large_image">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -74,7 +82,7 @@
                 <!-- Logo -->
                 <a href="#" class="flex items-center gap-2 shrink-0">
                     <div class="w-10 h-10 bg-yellow-400 rounded-3xl flex items-center justify-center font-bold text-2xl text-blue-800 shadow-md overflow-hidden">
-                        <img src="images/eep_short_logo.jpg"
+                        <img src="images/eep_short_logo.png"
                              alt="Excelsior Enrichment Program logo"
                              class="rounded-3xl shadow-2xl w-full h-full object-cover"
                              onerror="this.parentElement.innerHTML='EEP'">
@@ -171,7 +179,7 @@
             </div>
 
             <div class="relative">
-                <img src="images/lc_img1.png"
+                <img src="images/lc_img1.jpg"
                      alt="Kids learning online with Excelsior Enrichment Program"
                      class="rounded-3xl shadow-2xl w-full object-cover"
                      onerror="this.style.display='none'">
@@ -334,24 +342,22 @@
                     <h4 class="font-semibold text-white mb-4">Explore</h4>
                     <ul class="space-y-2 text-sm">
                         <li><a href="#classes" class="hover:text-white">All Classes</a></li>
-                        <li><a href="#" class="hover:text-white">Summer 2026</a></li>
+                        <li><a href="/calendar.html" class="hover:text-white">Events Calendar</a></li>
                     </ul>
                 </div>
                 <div>
                     <h4 class="font-semibold text-white mb-4">Company</h4>
                     <ul class="space-y-2 text-sm">
-                        <li><a href="#" class="hover:text-white">About Us</a></li>
-                        <li><a href="#" class="hover:text-white">Blog</a></li>
-                        <li><a href="#" class="hover:text-white">Careers</a></li>
-                        <li><a href="#" class="hover:text-white">Press</a></li>
+                        <li><a href="/about.html" class="hover:text-white">About Us</a></li>
+                        <li><a href="/blog.html" class="hover:text-white">Blog</a></li>
                     </ul>
                 </div>
                 <div>
                     <h4 class="font-semibold text-white mb-4">Support</h4>
                     <ul class="space-y-2 text-sm">
-                        <li><a href="#" class="hover:text-white">Help Center</a></li>
-                        <li><a href="#" class="hover:text-white">Safety</a></li>
-                        <li><a href="#" class="hover:text-white">Contact Us</a></li>
+                        <li><a href="/about.html#faq" class="hover:text-white">FAQ</a></li>
+                        <!-- TODO(Anmol): swap in your real public contact email/phone once confirmed -->
+                        <li class="text-gray-500">Contact Us (coming soon)</li>
                     </ul>
                 </div>
                 <div>
@@ -365,10 +371,8 @@
             <div class="mt-16 pt-8 border-t border-gray-800 text-xs flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>© 2026 Excelsior Enrichment Program</div>
                 <div class="flex gap-6">
-                    <a href="#" class="hover:text-white">Privacy</a>
-                    <a href="#" class="hover:text-white">Terms</a>
-                    <a href="#" class="hover:text-white">Accessibility</a>
-                    <a href="/admin.html" class="hover:text-white text-gray-500">Admin</a>
+                    <a href="/privacy.html" class="hover:text-white">Privacy</a>
+                    <a href="/terms.html" class="hover:text-white">Terms</a>
                 </div>
             </div>
         </div>
@@ -379,9 +383,11 @@
     <!-- Auth Modal (Login / Sign Up) -->
     <div id="authModal" class="hidden fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative">
-            <button onclick="closeModal('authModal')" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700">
+            <button onclick="closeAuthModal()" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700">
                 <i class="fa-solid fa-xmark text-xl"></i>
             </button>
+
+            <p id="authContextMsg" class="hidden bg-blue-50 text-blue-700 text-sm rounded-xl px-4 py-3 mb-4"></p>
 
             <div class="flex gap-2 mb-6">
                 <button id="authTabLogin" onclick="showAuthTab('login')" class="flex-1 py-2 rounded-xl font-semibold text-sm bg-blue-600 text-white">Log In</button>
@@ -465,7 +471,12 @@
             </button>
 
             <h3 class="text-xl font-semibold mb-1">Enroll in class</h3>
-            <p id="bookingClassTitle" class="text-blue-600 font-medium mb-6"></p>
+            <p id="bookingClassTitle" class="text-blue-600 font-medium mb-4"></p>
+
+            <p id="bookingAuthHint" class="hidden bg-blue-50 text-blue-700 text-xs rounded-xl px-4 py-3 mb-4">
+                <i class="fa-solid fa-circle-info mr-1"></i>
+                Tell us about your student first — you'll log in or create a free account on the next step to confirm.
+            </p>
 
             <p id="bookingError" class="hidden bg-red-50 text-red-600 text-sm rounded-xl px-4 py-2 mb-4"></p>
             <p id="bookingSuccess" class="hidden bg-green-50 text-green-700 text-sm rounded-xl px-4 py-2 mb-4"></p>

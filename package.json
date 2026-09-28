@@ -10,10 +10,11 @@
     "migrate": "node migrate-json-to-sqlite.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^12.11.1",
+    "cookie-parser": "^1.4.6",
+    "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
-    "cookie-parser": "^1.4.6"
+    "nodemailer": "^10.0.11"
   }
 }

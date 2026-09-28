@@ -3,6 +3,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const { readTable, writeTable, nextId } = require('../db');
 const { signToken, requireAuth, requireAdmin } = require('../middleware/auth');
+const { sendWelcomeEmail } = require('../mailer');
 
 const router = express.Router();
 
@@ -66,6 +67,10 @@ router.post('/signup', (req, res) => {
     token,
     user: { id: newUser.id, name: newUser.name, email: newUser.email, role: newUser.role },
   });
+
+  // Fire-and-forget: never delays the response or fails signup if email
+  // sending has a problem (mailer.js logs errors internally).
+  sendWelcomeEmail(newUser);
 });
 
 // POST /api/auth/login

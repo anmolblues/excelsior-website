@@ -2,6 +2,7 @@
 
 let currentUser = null;
 let debounceTimer = null;
+let pendingBooking = null; // booking details captured before the user logs in / signs up
 
 // ---------- Helpers ----------
 
@@ -75,8 +76,17 @@ document.addEventListener('click', (e) => {
 
 function openAuthModal(tab) {
   document.getElementById('authError').classList.add('hidden');
+  document.getElementById('authContextMsg').classList.add('hidden');
   showAuthTab(tab);
   openModal('authModal');
+}
+
+// Closing the auth modal by hand (the X button) abandons any enrollment
+// that was waiting on login/signup — we don't silently book it later.
+function closeAuthModal() {
+  pendingBooking = null;
+  document.getElementById('authContextMsg').classList.add('hidden');
+  closeModal('authModal');
 }
 
 // showAuthTab: switches which panel is visible and resets both forms cleanly
@@ -129,7 +139,9 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     currentUser = data.user;
     updateAuthUI();
     closeModal('authModal');
+    document.getElementById('authContextMsg').classList.add('hidden');
     showToast(`Welcome back, ${currentUser.name.split(' ')[0]}!`);
+    await completePendingBooking();
   } catch (err) {
     errorEl.textContent = err.message;
     errorEl.classList.remove('hidden');
@@ -272,12 +284,28 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
     currentUser = data.user;
     updateAuthUI();
     closeModal('authModal');
+    document.getElementById('authContextMsg').classList.add('hidden');
     showToast(`Welcome to Excelsior, ${currentUser.name.split(' ')[0]}!`);
+    await completePendingBooking();
   } catch (err) {
     errorEl.textContent = err.message;
     errorEl.classList.remove('hidden');
   }
 });
+
+// Finishes an enrollment that was captured before the user logged in / signed up.
+async function completePendingBooking() {
+  if (!pendingBooking) return;
+  const { classTitle, ...bookingData } = pendingBooking;
+  pendingBooking = null;
+  try {
+    await api('/bookings', { method: 'POST', body: JSON.stringify(bookingData) });
+    showToast(`You're enrolled in ${classTitle}! 🎉`);
+    loadClasses();
+  } catch (err) {
+    showToast(`We couldn't complete that enrollment: ${err.message}`, true);
+  }
+}
 
 async function logout() {
   try { await api('/auth/logout', { method: 'POST' }); } catch {}
@@ -428,18 +456,16 @@ function updateMaxPriceLabel() {
 
 // ---------- Booking ----------
 
+// Anyone can open this and fill it in — we only ask for login/signup right
+// before submitting, so the class details and student info come first.
 function openBookingModal(classId, classTitle) {
-  if (!currentUser) {
-    showToast('Please log in or sign up to enroll.', true);
-    openAuthModal('login');
-    return;
-  }
   document.getElementById('bookingForm').reset();
   document.getElementById('bookingClassId').value    = classId;
   document.getElementById('bookingClassTitle').textContent = classTitle;
   document.getElementById('bookingError').classList.add('hidden');
   document.getElementById('bookingSuccess').classList.add('hidden');
   document.getElementById('bookingForm').classList.remove('hidden');
+  document.getElementById('bookingAuthHint').classList.toggle('hidden', !!currentUser);
   openModal('bookingModal');
 }
 
@@ -450,16 +476,28 @@ document.getElementById('bookingForm').addEventListener('submit', async (e) => {
   errorEl.classList.add('hidden');
   successEl.classList.add('hidden');
 
+  const bookingData = {
+    classId:     document.getElementById('bookingClassId').value,
+    studentName: document.getElementById('bookingStudentName').value,
+    studentAge:  document.getElementById('bookingStudentAge').value || null,
+    notes:       document.getElementById('bookingNotes').value,
+  };
+  const classTitle = document.getElementById('bookingClassTitle').textContent;
+
+  if (!currentUser) {
+    // Hold onto what they've entered and ask them to confirm via login/signup.
+    pendingBooking = { ...bookingData, classTitle };
+    closeModal('bookingModal');
+    openAuthModal('signup');
+    const contextMsg = document.getElementById('authContextMsg');
+    contextMsg.textContent =
+      `Almost done! Log in or create a free account to confirm ${bookingData.studentName || 'your student'}'s spot in ${classTitle}.`;
+    contextMsg.classList.remove('hidden');
+    return;
+  }
+
   try {
-    await api('/bookings', {
-      method: 'POST',
-      body: JSON.stringify({
-        classId:     document.getElementById('bookingClassId').value,
-        studentName: document.getElementById('bookingStudentName').value,
-        studentAge:  document.getElementById('bookingStudentAge').value || null,
-        notes:       document.getElementById('bookingNotes').value,
-      }),
-    });
+    await api('/bookings', { method: 'POST', body: JSON.stringify(bookingData) });
     successEl.textContent = "You're enrolled! We'll see you in class. 🎉";
     successEl.classList.remove('hidden');
     document.getElementById('bookingForm').classList.add('hidden');

@@ -103,8 +103,8 @@ The `image` field for each class accepts any image URL. You can use:
 - A local file — put your image in `public/images/` and reference it as
   `images/your-photo.jpg`
 
-The site's logo and hero image are referenced at `public/images/eep_short_logo.jpg`
-and `public/images/lc_img1.png` — add your own files there with those names
+The site's logo and hero image are referenced at `public/images/eep_short_logo.png`
+and `public/images/lc_img1.jpg` — add your own files there with those names
 (or update the `<img>` tags in `public/index.html` to point elsewhere).
 
 ## 6. Changing the admin password
@@ -132,7 +132,40 @@ writeTable('users', users);
 "
 ```
 
-## 7. Before going live (deploying for real families to use)
+## 7. Sending emails (welcome email on sign-up)
+
+New accounts get a welcome email, sent through your own Google Workspace
+account (`eepcenter.com`) via SMTP — no third-party email service needed.
+
+**Without any setup**, signup still works fine: the email is just logged to
+the console (`[mailer] (not configured) would send "..." to ...`) instead of
+actually sent. This is the default for local development.
+
+**To actually send emails**, this project sends from `registrations@eepcenter.com`
+(an existing mailbox — no need to create a new one). One-time setup:
+
+1. Sign in to `registrations@eepcenter.com` and turn on **2-Step Verification**
+   (Google Account → Security) — required to generate an app password.
+2. Still under Security, generate an **App Password** for "Mail" — a
+   16-character code separate from the mailbox's normal login password.
+3. Set these environment variables wherever the app runs:
+   ```bash
+   export SMTP_USER="registrations@eepcenter.com"
+   export SMTP_PASS="the 16-character app password"
+   ```
+   On EC2, add these to `ecosystem.config.js` alongside `JWT_SECRET` (see
+   "Before going live" below), then `pm2 restart excelsior-website`.
+
+Optional variables:
+- `MAIL_FROM_NAME` — display name on the "From" line (defaults to
+  "Excelsior Enrichment Program")
+- `MAIL_FROM_ADDRESS` — From address, if different from `SMTP_USER`
+
+The email logic lives in `mailer.js` (`sendMail`, `sendWelcomeEmail`) — it
+never throws, so a misconfigured or down mail server can't break signup,
+login, or bookings; failures are only logged to the console.
+
+## 8. Before going live (deploying for real families to use)
 
 A few important things to change before this is a public, real-world site:
 
@@ -149,18 +182,20 @@ A few important things to change before this is a public, real-world site:
    processing. If you want to actually charge cards, you'll want to add a
    payment provider (e.g. Stripe Checkout) to the booking flow — that's a
    separate integration we can add when you're ready.
-4. **Email notifications.** Right now, enrolling doesn't send a confirmation
-   email. Adding this requires an email-sending service (e.g. Postmark,
-   SendGrid, Resend).
+4. **Email notifications.** A welcome email now sends on sign-up (see
+   "Sending emails" above) once `SMTP_USER`/`SMTP_PASS` are set. Booking
+   confirmation emails aren't built yet — same `mailer.js` pattern would
+   extend to those.
 5. **Back up `data/eep.db`** regularly (see "How data is stored" above), or
    migrate to a managed database if you expect a lot of traffic.
 
-## 8. Project structure
+## 9. Project structure
 
 ```
 excelsior-website/
 ├── server.js                    # Express server & route wiring
 ├── db.js                        # SQLite "database" helper (data/eep.db)
+├── mailer.js                    # sends transactional email (SMTP_USER/SMTP_PASS)
 ├── migrate-json-to-sqlite.js    # one-time import from the old JSON files
 ├── seed.js                      # creates admin account + sample classes
 ├── middleware/
