@@ -76,6 +76,28 @@ corrupting data if a JSON file has a duplicate `id` in it. The old JSON
 files are left untouched; once you've confirmed the site works correctly,
 you can archive or delete them.
 
+**Reference: what a `users` row looks like.** This is for documentation only —
+the app reads/writes this via `db.js`, not a JSON file; there's no `data/users.json`
+in this project anymore (see below).
+
+```json
+{
+  "id": 1,
+  "name": "Admin",
+  "email": "admin@eepcenter.com",
+  "passwordHash": "<bcrypt hash — never plain text, never committed to git>",
+  "role": "admin",
+  "createdAt": "2026-01-01T00:00:00.000Z"
+}
+```
+
+`data/users.json` existed very early in this project's history but was deleted
+from git on purpose — it held real account data (names, emails, and password
+hashes), which shouldn't live in version control. That's the same reason
+`data/eep.db` is git-ignored today. If you're looking for the actual admin
+account, it's the row in `data/eep.db` where `role` is `"admin"` — see
+"Changing the admin password" below for how to read/update it directly.
+
 **Back up `data/eep.db` regularly once this is live** — it's your entire
 database in one file. Copying that one file (the app should be stopped, or
 use SQLite's `.backup` command, to avoid copying it mid-write) is a
