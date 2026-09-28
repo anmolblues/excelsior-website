@@ -51,6 +51,7 @@ async function showCorrectScreen() {
     document.getElementById('logoutBtn').classList.remove('hidden');
     await loadClasses();
     await loadBookings();
+    await loadEventRegistrations();
     await loadUsers();
   } else {
     document.getElementById('loginScreen').classList.remove('hidden');
@@ -220,6 +221,38 @@ async function loadBookings() {
       <td class="px-4 py-3">${b.parent ? escapeHtml(b.parent.name) + '<br><span class="text-xs text-gray-400">' + escapeHtml(b.parent.email) + '</span>' : '—'}</td>
       <td class="px-4 py-3 ${statusColor} capitalize">${escapeHtml(b.status)}</td>
       <td class="px-4 py-3 text-xs text-gray-400">${new Date(b.createdAt).toLocaleDateString()}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ---------- Workshop Event Registrations ----------
+// Events themselves are still managed in the Google Sheet (see
+// events-backend.gs) — this is just the registrations, which now live in
+// this app's own database instead of the Sheet's Bookings tab, tied to a
+// real account. See routes/events.js.
+
+async function loadEventRegistrations() {
+  const data = await api('/events/registrations');
+  const tbody = document.getElementById('eventRegistrationsTableBody');
+  tbody.innerHTML = '';
+
+  if (data.registrations.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-gray-400">No registrations yet.</td></tr>';
+    return;
+  }
+
+  data.registrations.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.className = 'border-t';
+    const statusColor = r.status === 'cancelled' ? 'text-red-500' : (r.status === 'waitlist' ? 'text-amber-600' : 'text-green-600');
+    tr.innerHTML = `
+      <td class="px-4 py-3 font-medium">${escapeHtml(r.eventName)}<br><span class="text-xs text-gray-400">${escapeHtml(r.eventDate)}</span></td>
+      <td class="px-4 py-3">${escapeHtml(r.name)}</td>
+      <td class="px-4 py-3 text-xs text-gray-500">${escapeHtml(r.phone)}<br>${escapeHtml(r.address)}</td>
+      <td class="px-4 py-3">${r.parent ? escapeHtml(r.parent.name) + '<br><span class="text-xs text-gray-400">' + escapeHtml(r.parent.email) + '</span>' : '—'}</td>
+      <td class="px-4 py-3 ${statusColor} capitalize">${escapeHtml(r.status)}</td>
+      <td class="px-4 py-3 text-xs text-gray-400">${new Date(r.createdAt).toLocaleDateString()}</td>
     `;
     tbody.appendChild(tr);
   });

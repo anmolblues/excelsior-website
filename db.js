@@ -33,6 +33,8 @@ db.exec(`
     email        TEXT NOT NULL UNIQUE,
     passwordHash TEXT NOT NULL,
     role         TEXT NOT NULL DEFAULT 'parent',
+    phone        TEXT,
+    address      TEXT,
     createdAt    TEXT NOT NULL
   );
 
@@ -79,19 +81,55 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_passwordResets_tokenHash ON passwordResets(tokenHash);
   CREATE INDEX IF NOT EXISTS idx_passwordResets_userId ON passwordResets(userId);
 
+  -- Workshop Event registrations. Events themselves still live in the
+  -- Google Sheet the Apps Script backend reads (events-backend.gs) — that
+  -- part didn't change, and is still where you add/edit events. Only
+  -- *registrations* moved here, so they can be tied to a real account
+  -- (userId) instead of being anonymous rows in the Sheet's Bookings tab.
+  CREATE TABLE IF NOT EXISTS eventRegistrations (
+    id        INTEGER PRIMARY KEY,
+    userId    INTEGER NOT NULL,
+    eventId   TEXT NOT NULL,
+    eventName TEXT NOT NULL,
+    eventDate TEXT NOT NULL,
+    name      TEXT NOT NULL,
+    phone     TEXT NOT NULL,
+    address   TEXT NOT NULL,
+    optIn     INTEGER NOT NULL DEFAULT 0,
+    status    TEXT NOT NULL DEFAULT 'confirmed',
+    createdAt TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_eventRegistrations_eventId ON eventRegistrations(eventId);
+  CREATE INDEX IF NOT EXISTS idx_eventRegistrations_userId ON eventRegistrations(userId);
+
   CREATE TABLE IF NOT EXISTS counters (
     name  TEXT PRIMARY KEY,
     value INTEGER NOT NULL DEFAULT 0
   );
 `);
 
+// Additive migration for databases that already existed before phone/address
+// were added to `users` (everyone's production database, most likely) —
+// CREATE TABLE IF NOT EXISTS above only shapes a brand-new database, so an
+// existing `users` table needs these columns added by hand. Safe to run on
+// every startup: it only ALTERs when the column isn't already there.
+const existingUserColumns = db.prepare("PRAGMA table_info(users)").all().map((c) => c.name);
+if (!existingUserColumns.includes('phone')) {
+  db.exec('ALTER TABLE users ADD COLUMN phone TEXT');
+}
+if (!existingUserColumns.includes('address')) {
+  db.exec('ALTER TABLE users ADD COLUMN address TEXT');
+}
+
 // Column order per table — matches the field names routes/*.js already
 // uses on plain JS objects, so writeTable() can stay fully generic.
 const TABLE_COLUMNS = {
-  users: ['id', 'name', 'email', 'passwordHash', 'role', 'createdAt'],
+  users: ['id', 'name', 'email', 'passwordHash', 'role', 'phone', 'address', 'createdAt'],
   classes: ['id', 'title', 'description', 'subject', 'ageMin', 'ageMax', 'format', 'price', 'priceUnit', 'schedule', 'image', 'capacity', 'rating', 'createdAt'],
   bookings: ['id', 'classId', 'userId', 'studentName', 'studentAge', 'notes', 'status', 'createdAt'],
   passwordResets: ['id', 'userId', 'tokenHash', 'expiresAt', 'used', 'createdAt'],
+  eventRegistrations: ['id', 'userId', 'eventId', 'eventName', 'eventDate', 'name', 'phone', 'address', 'optIn', 'status', 'createdAt'],
 };
 
 const seedCounter = db.prepare('INSERT OR IGNORE INTO counters (name, value) VALUES (?, 0)');

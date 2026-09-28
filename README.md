@@ -6,7 +6,9 @@ A full website for Excelsior Enrichment Program with:
 - **Sign up / Log in** for parents (secure password hashing + sessions)
 - **Booking ("Enroll")** flow — logged-in parents enroll a student in a class, with capacity limits
 - **My Bookings** page for parents to view/cancel their bookings
-- **Admin panel** (`/admin.html`) to add, edit, and delete classes, and view all bookings
+- **Workshop Events** (`/calendar.html`) — events are edited in a Google Sheet, but registering
+  requires the same account as classes do, so a signed-in parent's info pre-fills every time
+- **Admin panel** (`/admin.html`) to add, edit, and delete classes, and view all bookings and event registrations
 
 ## 1. Requirements
 
@@ -51,10 +53,14 @@ Press `Ctrl+C` in the terminal to stop the server.
 ## 4. How data is stored
 
 This project stores everything in a single SQLite database file at
-`data/eep.db` (tables: `users`, `classes`, `bookings`, plus an internal
-`counters` table for auto-incrementing ids). SQLite is a real, embedded
-SQL database — no separate database server to run or configure — and
-`data/eep.db` is git-ignored, so it's never committed.
+`data/eep.db` (tables: `users`, `classes`, `bookings`, `eventRegistrations`,
+plus an internal `counters` table for auto-incrementing ids). SQLite is a
+real, embedded SQL database — no separate database server to run or
+configure — and `data/eep.db` is git-ignored, so it's never committed.
+
+(Workshop Events themselves — the actual list of sessions people register
+for — are the one thing that's *not* in this database. They're still
+managed in a Google Sheet; see "Workshop Events registrations" below.)
 
 The database and its schema are created automatically the first time the
 app runs (`node server.js` or `npm run seed`) — there's no separate
@@ -118,6 +124,8 @@ Go to `/admin.html`, log in with your admin account, and you can:
   price, schedule, image URL, capacity, rating)
 - **Edit / Delete** any class from the table
 - View **All Bookings** — see who enrolled in what, and cancel bookings if needed
+- View **Workshop Event Registrations** — see who registered for which Workshop Event
+  (see "Workshop Events registrations" below)
 
 ### Images
 The `image` field for each class accepts any image URL. You can use:
@@ -207,7 +215,49 @@ The email logic lives in `mailer.js` (`sendMail`, `sendWelcomeEmail`) — it
 never throws, so a misconfigured or down mail server can't break signup,
 login, or bookings; failures are only logged to the console.
 
-## 8. Before going live (deploying for real families to use)
+## 8. Workshop Events registrations
+
+`/calendar.html` (labeled "Workshop Events" in the nav) is a separate system
+from classes, with its own backend split across two places:
+
+- **Events** — the actual list of sessions, their dates/times/capacity — are
+  still authored in a Google Sheet, read through the Apps Script Web App in
+  `events-backend.gs` (see that file for the full setup instructions). That
+  part is unchanged: add/edit events in the Sheet exactly as before.
+- **Registrations** — who signed up for what — live in this app's own
+  database (the `eventRegistrations` table), not the Sheet's `Bookings` tab
+  anymore. Registering now requires being logged in (the same account used
+  for class bookings), which is what lets a parent register for a second or
+  third event without retyping their name/phone/address — the form
+  pre-fills from their account (`GET /api/auth/me`), and any new/changed
+  phone or address gets saved back to the account when they submit.
+
+This is a deliberate split: you keep the easy, no-code way of managing
+events (the Sheet), while registrations get the same account system, seat
+tracking, and admin visibility (`/admin.html` → "Workshop Event
+Registrations") that class bookings already have.
+
+**What this means day to day:**
+- Keep adding/editing events in the Google Sheet exactly as you do now.
+- Check who's registered in `/admin.html` instead of the Sheet's `Bookings`
+  tab — new registrations no longer get written there.
+- A parent needs an account to register (the calendar page prompts
+  sign-in/sign-up right at the "Register" button if they aren't logged in
+  yet).
+
+**Optional environment variable:**
+- `EVENTS_API_URL` — the Apps Script Web App URL events are read from.
+  Defaults to the URL already in use, so no setup is needed unless you
+  redeploy that Apps Script to a new URL:
+  ```bash
+  export EVENTS_API_URL="https://script.google.com/macros/s/.../exec"
+  ```
+  On EC2, add this to `ecosystem.config.js` the same way as `SMTP_USER` —
+  and remember, adding a **new** key needs the full `pm2 delete` /
+  `pm2 start` / `pm2 save` sequence described under "Sending emails" above,
+  not a plain restart.
+
+## 9. Before going live (deploying for real families to use)
 
 A few important things to change before this is a public, real-world site:
 
@@ -231,7 +281,7 @@ A few important things to change before this is a public, real-world site:
 5. **Back up `data/eep.db`** regularly (see "How data is stored" above), or
    migrate to a managed database if you expect a lot of traffic.
 
-## 9. Project structure
+## 10. Project structure
 
 ```
 excelsior-website/
@@ -245,11 +295,13 @@ excelsior-website/
 ├── routes/
 │   ├── auth.js         # /api/auth/* (signup, login, logout, me)
 │   ├── classes.js      # /api/classes/* (listing, search/filter, admin CRUD)
-│   └── bookings.js     # /api/bookings/* (enroll, my bookings, cancel, admin view)
+│   ├── bookings.js     # /api/bookings/* (enroll, my bookings, cancel, admin view)
+│   └── events.js       # /api/events/* (Workshop Events: list, register, cancel, admin view)
 ├── data/               # eep.db lives here (back this up!)
 └── public/
     ├── index.html       # main site
     ├── app.js           # main site frontend logic
+    ├── calendar.html     # Workshop Events page (its own self-contained script)
     ├── admin.html        # admin dashboard
     └── admin.js          # admin dashboard logic
 ```

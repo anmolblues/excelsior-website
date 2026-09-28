@@ -7,6 +7,7 @@ const { attachUser } = require('./middleware/auth');
 const authRoutes = require('./routes/auth');
 const classRoutes = require('./routes/classes');
 const bookingRoutes = require('./routes/bookings');
+const eventRoutes = require('./routes/events');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,6 +20,7 @@ app.use(attachUser); // attaches req.user if a valid token is present
 app.use('/api/auth', authRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/events', eventRoutes);
 
 // Serve the website (HTML/CSS/JS/images) from /public
 app.use(express.static(path.join(__dirname, 'public')));

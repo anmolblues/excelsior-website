@@ -111,8 +111,27 @@ router.post('/logout', (req, res) => {
 });
 
 // GET /api/auth/me — returns the current logged-in user (or 401)
+//
+// Looks up the live database row rather than just returning the JWT
+// payload, because the token (signed once at login, valid up to 7 days)
+// doesn't carry phone/address — those can change any time a user registers
+// for a workshop event with different info. This is what lets a returning
+// user's registration form pre-fill with their latest saved info.
 router.get('/me', requireAuth, (req, res) => {
-  res.json({ user: req.user });
+  const user = readTable('users').find((u) => u.id === req.user.id);
+  if (!user) {
+    return res.status(401).json({ error: 'Account no longer exists.' });
+  }
+  res.json({
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone || '',
+      address: user.address || '',
+    },
+  });
 });
 
 // POST /api/auth/forgot-password
@@ -210,6 +229,8 @@ router.get('/users', requireAdmin, (req, res) => {
     name: u.name,
     email: u.email,
     role: u.role,
+    phone: u.phone || '',
+    address: u.address || '',
     createdAt: u.createdAt,
   }));
   res.json({ users });

@@ -166,6 +166,7 @@
                     <a href="/index.html?format=in-person#classes" class="nav-link"><b>In-person</b></a>
                 </div>
                 <div class="flex items-center gap-3 flex-1 justify-end">
+                    <span id="authStatus" class="text-sm"></span>
                     <a href="/index.html" class="text-sm font-medium px-4 py-2 hover:bg-gray-100 rounded-full"><b>&larr; Back to site</b></a>
                 </div>
             </div>
@@ -305,6 +306,54 @@
         </div>
     </div>
 
+    <div class="cal-overlay" id="authOverlay" onclick="if(event.target===this) closeAuthModal()">
+        <div class="cal-modal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle" style="max-width:400px">
+            <div class="flex justify-between gap-3 items-start mb-1">
+                <div>
+                    <h3 class="cal-h text-xl font-bold" id="authModalTitle">Log in to register</h3>
+                    <p class="text-sm text-gray-500 mt-0.5">One account works for classes and workshop events, so you only enter your info once.</p>
+                </div>
+                <button onclick="closeAuthModal()" aria-label="Close" class="text-gray-400 hover:text-gray-700 text-xl leading-none">&times;</button>
+            </div>
+
+            <div class="flex gap-2 mt-4">
+                <button type="button" class="cal-btn" style="flex:1" id="authTabLogin" onclick="showAuthTab('login')">Log in</button>
+                <button type="button" class="cal-btn ghost" style="flex:1" id="authTabSignup" onclick="showAuthTab('signup')">Sign up</button>
+            </div>
+
+            <form id="loginForm" onsubmit="return submitLogin(event)">
+                <div class="cal-field">
+                    <label for="loginEmail">Email</label>
+                    <input id="loginEmail" type="email" required autocomplete="email">
+                </div>
+                <div class="cal-field">
+                    <label for="loginPassword">Password</label>
+                    <input id="loginPassword" type="password" required autocomplete="current-password">
+                </div>
+                <p id="loginError" class="text-sm mt-3" style="display:none;color:var(--cal-full)"></p>
+                <button type="submit" class="cal-btn w-full mt-5">Log in</button>
+            </form>
+
+            <form id="signupForm" style="display:none" onsubmit="return submitSignup(event)">
+                <div class="cal-field">
+                    <label for="signupName">Full name</label>
+                    <input id="signupName" required autocomplete="name">
+                </div>
+                <div class="cal-field">
+                    <label for="signupEmail">Email</label>
+                    <input id="signupEmail" type="email" required autocomplete="email">
+                </div>
+                <div class="cal-field">
+                    <label for="signupPassword">Password</label>
+                    <input id="signupPassword" type="password" required autocomplete="new-password">
+                </div>
+                <p class="text-xs text-gray-400 mt-2">At least 8 characters, with an uppercase letter, lowercase letter, number, and symbol.</p>
+                <p id="signupError" class="text-sm mt-3" style="display:none;color:var(--cal-full)"></p>
+                <button type="submit" class="cal-btn w-full mt-5">Create account</button>
+            </form>
+        </div>
+    </div>
+
 <script>
   var CATEGORIES = [
     {id:'testprep', label:'Test Prep'},
@@ -314,14 +363,17 @@
   ];
   var GRADES = ['5-6','7-8','9-10','11-12'];
 
-  // Deployed Apps Script Web App URL (from events-backend.gs) — the live
-  // source of events + registrations. See the CORS note in that file:
-  // POSTs below are sent as text/plain on purpose, not application/json.
-  var EVENTS_API_URL = 'https://script.google.com/macros/s/AKfycbzI3f5UfT_z5m8cRvhWHCrqT3V3tVd84S1NYeaZOUtaviq9qpktPi8o6GGSoFSEnUvs/exec';
+  // Events still come from the Google Sheet (via events-backend.gs), but
+  // through our own server now — routes/events.js fetches that Sheet and
+  // merges in live seat counts from OUR database, since registrations no
+  // longer get written to the Sheet's Bookings tab at all (see that file
+  // for why). Registering is handled the same way: our server, not Google.
 
   var EVENTS = [];
   var state = { cats:new Set(), grades:new Set(), q:'', view:'list', dateFilter:null, monthCursor:new Date(2026,9,1) };
   var activeEventId = null;
+  var currentUser = null;
+  var pendingEventId = null;
 
   var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
   var DOWS=['S','M','T','W','T','F','S'];
@@ -334,7 +386,7 @@
   function loadEvents(){
     document.getElementById('resultsLine').innerHTML = '';
     document.getElementById('listView').innerHTML = '<div style="padding:32px 0;color:var(--cal-ink-faint);text-align:center;font-size:14px;">Loading sessions&hellip;</div>';
-    fetch(EVENTS_API_URL)
+    fetch('/api/events')
       .then(function(res){ return res.json(); })
       .then(function(data){
         if(!data.ok) throw new Error(data.error || 'Failed to load the schedule.');
@@ -344,6 +396,108 @@
       .catch(function(err){
         document.getElementById('listView').innerHTML = '<div style="padding:32px 0;color:var(--cal-full);text-align:center;font-size:14px;">Couldn&rsquo;t load the schedule right now'+(err && err.message ? ' ('+err.message+')' : '')+'. Please refresh to try again.</div>';
       });
+  }
+
+  // ---------- Account (login/signup) ----------
+
+  function checkAuth(){
+    return fetch('/api/auth/me', { credentials:'include' })
+      .then(function(res){ if(!res.ok) throw new Error(); return res.json(); })
+      .then(function(data){ currentUser = data.user; updateAuthUI(); })
+      .catch(function(){ currentUser = null; updateAuthUI(); });
+  }
+
+  function updateAuthUI(){
+    var el = document.getElementById('authStatus');
+    if(currentUser){
+      el.innerHTML = 'Hi, '+escapeAttr(currentUser.name.split(' ')[0])+' &middot; <a href="#" onclick="logout(); return false;" class="text-gray-500 hover:text-gray-800">Log out</a>';
+    } else {
+      el.innerHTML = '<a href="#" onclick="openAuthModal(); return false;">Log in</a>';
+    }
+  }
+
+  function logout(){
+    fetch('/api/auth/logout', { method:'POST', credentials:'include' }).then(function(){ currentUser=null; updateAuthUI(); });
+  }
+
+  function openAuthModal(){
+    document.getElementById('loginForm').reset();
+    document.getElementById('signupForm').reset();
+    document.getElementById('loginError').style.display='none';
+    document.getElementById('signupError').style.display='none';
+    showAuthTab('login');
+    document.getElementById('authOverlay').classList.add('open');
+  }
+  function closeAuthModal(){
+    document.getElementById('authOverlay').classList.remove('open');
+    pendingEventId = null;
+  }
+  function showAuthTab(tab){
+    var isLogin = tab==='login';
+    document.getElementById('loginForm').style.display = isLogin ? 'block' : 'none';
+    document.getElementById('signupForm').style.display = isLogin ? 'none' : 'block';
+    document.getElementById('authTabLogin').className = 'cal-btn'+(isLogin?'':' ghost');
+    document.getElementById('authTabSignup').className = 'cal-btn'+(isLogin?' ghost':'');
+  }
+
+  // After a successful login/signup: close the auth modal, and if the
+  // person got here by clicking "Register"/"Join waitlist" while logged
+  // out, pick up right where they left off and open that event's form.
+  function afterAuthSuccess(){
+    // Grab this before closeAuthModal() clears it.
+    var id = pendingEventId;
+    closeAuthModal();
+    if(id) openModal(id);
+  }
+
+  function submitLogin(ev){
+    ev.preventDefault();
+    var errEl=document.getElementById('loginError');
+    errEl.style.display='none';
+    fetch('/api/auth/login', {
+      method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
+      body: JSON.stringify({
+        email: document.getElementById('loginEmail').value.trim(),
+        password: document.getElementById('loginPassword').value
+      })
+    })
+      .then(function(res){ return res.json().then(function(data){ return {ok:res.ok, data:data}; }); })
+      .then(function(r){
+        if(!r.ok) throw new Error(r.data.error || 'Invalid email or password.');
+        return checkAuth();
+      })
+      .then(afterAuthSuccess)
+      .catch(function(err){ errEl.textContent = err.message; errEl.style.display='block'; });
+    return false;
+  }
+
+  function submitSignup(ev){
+    ev.preventDefault();
+    var errEl=document.getElementById('signupError');
+    errEl.style.display='none';
+    fetch('/api/auth/signup', {
+      method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
+      body: JSON.stringify({
+        name: document.getElementById('signupName').value.trim(),
+        email: document.getElementById('signupEmail').value.trim(),
+        password: document.getElementById('signupPassword').value
+      })
+    })
+      .then(function(res){ return res.json().then(function(data){ return {ok:res.ok, data:data}; }); })
+      .then(function(r){
+        if(!r.ok) throw new Error(r.data.error || 'Could not create your account.');
+        return checkAuth();
+      })
+      .then(afterAuthSuccess)
+      .catch(function(err){ errEl.textContent = err.message; errEl.style.display='block'; });
+    return false;
+  }
+
+  // Gate registering behind an account — if logged out, remember which
+  // event was clicked and prompt sign-in/sign-up first.
+  function handleRegisterClick(id){
+    if(!currentUser){ pendingEventId = id; openAuthModal(); return; }
+    openModal(id);
   }
 
   function buildPills(){
@@ -504,6 +658,14 @@
     document.getElementById('submitBtn').textContent = waitlist ? 'Join waitlist' : 'Confirm registration';
     document.getElementById('submitBtn').disabled = false;   // clears a stuck disabled state left by a prior successful submission
     document.getElementById('bookingForm').reset();
+    // Signed-in users get their saved name/phone/address pre-filled — see
+    // checkAuth()/GET /api/auth/me — so a second (or fifth) registration is
+    // a one-click confirm instead of retyping everything.
+    if(currentUser){
+      document.getElementById('fName').value = currentUser.name || '';
+      document.getElementById('fPhone').value = currentUser.phone || '';
+      document.getElementById('fAddress').value = currentUser.address || '';
+    }
     var errEl=document.getElementById('modalError');
     errEl.style.display='none'; errEl.textContent='';
     document.getElementById('modalFormWrap').style.display='block';
@@ -511,11 +673,11 @@
     document.getElementById('overlay').classList.add('open');
   }
   function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
-  document.addEventListener('keydown', function(ev){ if(ev.key==='Escape') closeModal(); });
+  document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ closeModal(); closeAuthModal(); } });
 
   document.getElementById('monthGrid').addEventListener('click', function(ev){
     var chip = ev.target.closest('[data-open-id]');
-    if(chip){ openModal(chip.getAttribute('data-open-id')); return; }
+    if(chip){ handleRegisterClick(chip.getAttribute('data-open-id')); return; }
     var more = ev.target.closest('[data-filter-date]');
     if(more){ state.dateFilter = more.getAttribute('data-filter-date'); setView('list'); return; }
     var cell = ev.target.closest('.cal-daycell.hasEvents');
@@ -529,7 +691,7 @@
 
   document.getElementById('listView').addEventListener('click', function(ev){
     var btn = ev.target.closest('[data-register-id]');
-    if(btn) openModal(btn.getAttribute('data-register-id'));
+    if(btn) handleRegisterClick(btn.getAttribute('data-register-id'));
   });
 
   function submitBooking(ev){
@@ -544,22 +706,31 @@
     submitBtn.textContent='Submitting…';
 
     var payload = {
-      eventId: e.id,
       name: document.getElementById('fName').value.trim(),
       phone: document.getElementById('fPhone').value.trim(),
       address: document.getElementById('fAddress').value.trim()
       // No "optIn" field yet — add it here once the opt-in checkbox is on the form.
     };
 
-    // Sent as text/plain on purpose — see the CORS note near EVENTS_API_URL.
-    fetch(EVENTS_API_URL, {
+    fetch('/api/events/' + encodeURIComponent(e.id) + '/register', {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(payload)
     })
-      .then(function(res){ return res.json(); })
-      .then(function(data){
-        if(!data.ok) throw new Error(data.error || 'Could not complete registration.');
+      .then(function(res){ return res.json().then(function(data){ return {status:res.status, data:data}; }); })
+      .then(function(r){
+        if(r.status===401){
+          // Session expired between opening the form and submitting it —
+          // send them back through sign-in, then reopen this same event.
+          currentUser=null; updateAuthUI();
+          closeModal();
+          pendingEventId = e.id;
+          openAuthModal();
+          throw new Error('__handled__');
+        }
+        if(!r.data.ok) throw new Error(r.data.error || 'Could not complete registration.');
+        var data = r.data;
         e.booked = data.capacity - data.seatsLeft;
         var wasWaitlisted = data.status === 'Waitlist';
         document.getElementById('modalFormWrap').style.display='none';
@@ -572,8 +743,12 @@
           '<button class="cal-btn ghost mt-5" onclick="closeModal()">Close</button>' +
         '</div>';
         render();
+        // Pick up the phone/address the server just saved to the account,
+        // so the next registration this session pre-fills with it too.
+        checkAuth();
       })
       .catch(function(err){
+        if(err.message === '__handled__') return;
         submitBtn.disabled=false;
         submitBtn.textContent = waitlist ? 'Join waitlist' : 'Confirm registration';
         errEl.textContent = err.message || 'Something went wrong — please try again.';
@@ -586,6 +761,7 @@
   document.getElementById('searchInput').addEventListener('input', function(ev){ state.q=ev.target.value; render(); });
 
   buildPills();
+  checkAuth();
   loadEvents();
 </script>
 </body>
