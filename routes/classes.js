@@ -30,7 +30,11 @@ router.get('/', (req, res) => {
   }
 
   if (format) {
-    classes = classes.filter(c => c.format.toLowerCase() === format.toLowerCase());
+    // Some classes are offered both ways and store a compound format like
+    // "online/in-person" or "in-person/online" — a class like that should
+    // match whichever single format the visitor filters by, not just an
+    // exact string match against the whole value.
+    classes = classes.filter(c => c.format.toLowerCase().includes(format.toLowerCase()));
   }
 
   if (age) {
