@@ -227,10 +227,16 @@ from classes, with its own backend split across two places:
 - **Registrations** — who signed up for what — live in this app's own
   database (the `eventRegistrations` table), not the Sheet's `Bookings` tab
   anymore. Registering now requires being logged in (the same account used
-  for class bookings), which is what lets a parent register for a second or
-  third event without retyping their name/phone/address — the form
-  pre-fills from their account (`GET /api/auth/me`), and any new/changed
-  phone or address gets saved back to the account when they submit.
+  for class bookings), which is what lets one parent account register
+  multiple events — or multiple children for the same event — without
+  creating a new account each time.
+
+The registration form asks for the student's name, grade, and age
+(optional), the same information class enrollment asks for, not the
+parent account's contact info — the account (email/password) is only
+needed to confirm the registration, which is why it's asked for on a
+second step, right after the student's details, mirroring class
+enrollment's own sign-up flow.
 
 This is a deliberate split: you keep the easy, no-code way of managing
 events (the Sheet), while registrations get the same account system, seat
@@ -241,9 +247,9 @@ Registrations") that class bookings already have.
 - Keep adding/editing events in the Google Sheet exactly as you do now.
 - Check who's registered in `/admin.html` instead of the Sheet's `Bookings`
   tab — new registrations no longer get written there.
-- A parent needs an account to register (the calendar page prompts
-  sign-in/sign-up right at the "Register" button if they aren't logged in
-  yet).
+- A parent needs an account to register (the calendar page asks for the
+  student's name/grade/age first, then prompts sign-in/sign-up to confirm
+  if they aren't logged in yet).
 
 **Optional environment variable:**
 - `EVENTS_API_URL` — the Apps Script Web App URL events are read from.

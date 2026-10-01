@@ -6,10 +6,10 @@
 // moved here: they're stored in our own database (see the
 // eventRegistrations table in db.js), linked to a real account, instead of
 // landing as anonymous rows in the Sheet's Bookings tab. That's what lets
-// a signed-in user register for a second event without retyping their
-// name/phone/address, and it's why "seats left" below is computed from our
-// own database, not the Sheet's (which no longer hears about registrations
-// at all).
+// a signed-in parent register more than one child for an event without
+// creating a second account, and it's why "seats left" below is computed
+// from our own database, not the Sheet's (which no longer hears about
+// registrations at all).
 const express = require('express');
 const { readTable, writeTable, nextId } = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
@@ -92,18 +92,17 @@ router.delete('/registrations/:id', requireAuth, (req, res) => {
 
 // POST /api/events/:id/register — must be logged in (see middleware/auth.js
 // requireAuth). Saves the registration to our database tied to the
-// account, and — if the submitted phone/address are new or different —
-// saves them to the account too, so the *next* registration (for this
-// event or any other) can pre-fill without retyping.
+// account. Asks for the student (name/grade/age), same as class enrollment
+// (routes/bookings.js) — the account is the parent, not the registrant.
 router.post('/:id/register', requireAuth, async (req, res) => {
   const eventId = req.params.id;
-  const name = (req.body.name || '').trim();
-  const phone = (req.body.phone || '').trim();
-  const address = (req.body.address || '').trim();
+  const studentName = (req.body.studentName || '').trim();
+  const studentGrade = (req.body.studentGrade || '').trim();
+  const studentAge = req.body.studentAge != null && req.body.studentAge !== '' ? Number(req.body.studentAge) : null;
   const optIn = !!req.body.optIn;
 
-  if (!name || !phone || !address) {
-    return res.status(400).json({ ok: false, error: 'Name, phone, and address are all required.' });
+  if (!studentName || !studentGrade) {
+    return res.status(400).json({ ok: false, error: 'Student name and grade are required.' });
   }
 
   let sheetEvents;
@@ -122,11 +121,18 @@ router.post('/:id/register', requireAuth, async (req, res) => {
 
   const registrations = readTable('eventRegistrations');
 
+  // Avoid the same parent double-registering the same child for the same
+  // event — but let one parent register multiple different children for
+  // it (mirrors routes/bookings.js's duplicate check for class enrollment).
   const duplicate = registrations.find(
-    (r) => r.eventId === eventId && r.userId === req.user.id && r.status !== 'cancelled'
+    (r) =>
+      r.eventId === eventId &&
+      r.userId === req.user.id &&
+      r.studentName.toLowerCase() === studentName.toLowerCase() &&
+      r.status !== 'cancelled'
   );
   if (duplicate) {
-    return res.status(409).json({ ok: false, error: 'You’re already registered for this session.' });
+    return res.status(409).json({ ok: false, error: `${studentName} is already registered for this session.` });
   }
 
   const bookedCount = registrations.filter((r) => r.eventId === eventId && r.status !== 'cancelled').length;
@@ -138,27 +144,15 @@ router.post('/:id/register', requireAuth, async (req, res) => {
     eventId,
     eventName: event.name,
     eventDate: event.date,
-    name,
-    phone,
-    address,
+    studentName,
+    studentGrade,
+    studentAge,
     optIn: optIn ? 1 : 0,
     status: status.toLowerCase(),
     createdAt: new Date().toISOString(),
   };
   registrations.push(registration);
   writeTable('eventRegistrations', registrations);
-
-  // Keep the account's saved info current so a future registration (or a
-  // class booking) can reuse it without retyping.
-  const users = readTable('users');
-  const idx = users.findIndex((u) => u.id === req.user.id);
-  if (idx !== -1) {
-    const u = users[idx];
-    if (u.phone !== phone || u.address !== address || (name && u.name !== name)) {
-      users[idx] = { ...u, name: name || u.name, phone, address };
-      writeTable('users', users);
-    }
-  }
 
   const seatsLeft = Math.max(0, event.capacity - bookedCount - (status === 'Confirmed' ? 1 : 0));
   res.status(201).json({ ok: true, status, seatsLeft, capacity: event.capacity });

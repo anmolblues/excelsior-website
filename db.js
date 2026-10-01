@@ -26,6 +26,20 @@ const DB_PATH = path.join(DATA_DIR, 'eep.db');
 const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL'); // safer under concurrent reads/writes, and faster
 
+// If an existing eventRegistrations table still has the old
+// name/phone/address shape (before registration was changed to ask for
+// student name/grade/age, matching class enrollment), drop it so the
+// CREATE TABLE below recreates it with the new shape. This table only
+// ever held test data at this point (confirmed with the user), so a
+// one-time reset is safe — no column-by-column migration needed.
+const existingTableNames = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map((t) => t.name);
+if (existingTableNames.includes('eventRegistrations')) {
+  const eventRegCols = db.prepare('PRAGMA table_info(eventRegistrations)').all().map((c) => c.name);
+  if (!eventRegCols.includes('studentName')) {
+    db.exec('DROP TABLE eventRegistrations');
+  }
+}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id           INTEGER PRIMARY KEY,
@@ -86,18 +100,20 @@ db.exec(`
   -- part didn't change, and is still where you add/edit events. Only
   -- *registrations* moved here, so they can be tied to a real account
   -- (userId) instead of being anonymous rows in the Sheet's Bookings tab.
+  -- Fields mirror class enrollment's bookings table (student name/age)
+  -- plus a grade, since this is about the student, not the parent account.
   CREATE TABLE IF NOT EXISTS eventRegistrations (
-    id        INTEGER PRIMARY KEY,
-    userId    INTEGER NOT NULL,
-    eventId   TEXT NOT NULL,
-    eventName TEXT NOT NULL,
-    eventDate TEXT NOT NULL,
-    name      TEXT NOT NULL,
-    phone     TEXT NOT NULL,
-    address   TEXT NOT NULL,
-    optIn     INTEGER NOT NULL DEFAULT 0,
-    status    TEXT NOT NULL DEFAULT 'confirmed',
-    createdAt TEXT NOT NULL
+    id           INTEGER PRIMARY KEY,
+    userId       INTEGER NOT NULL,
+    eventId      TEXT NOT NULL,
+    eventName    TEXT NOT NULL,
+    eventDate    TEXT NOT NULL,
+    studentName  TEXT NOT NULL,
+    studentGrade TEXT NOT NULL,
+    studentAge   INTEGER,
+    optIn        INTEGER NOT NULL DEFAULT 0,
+    status       TEXT NOT NULL DEFAULT 'confirmed',
+    createdAt    TEXT NOT NULL
   );
 
   CREATE INDEX IF NOT EXISTS idx_eventRegistrations_eventId ON eventRegistrations(eventId);
@@ -129,7 +145,7 @@ const TABLE_COLUMNS = {
   classes: ['id', 'title', 'description', 'subject', 'ageMin', 'ageMax', 'format', 'price', 'priceUnit', 'schedule', 'image', 'capacity', 'rating', 'createdAt'],
   bookings: ['id', 'classId', 'userId', 'studentName', 'studentAge', 'notes', 'status', 'createdAt'],
   passwordResets: ['id', 'userId', 'tokenHash', 'expiresAt', 'used', 'createdAt'],
-  eventRegistrations: ['id', 'userId', 'eventId', 'eventName', 'eventDate', 'name', 'phone', 'address', 'optIn', 'status', 'createdAt'],
+  eventRegistrations: ['id', 'userId', 'eventId', 'eventName', 'eventDate', 'studentName', 'studentGrade', 'studentAge', 'optIn', 'status', 'createdAt'],
 };
 
 const seedCounter = db.prepare('INSERT OR IGNORE INTO counters (name, value) VALUES (?, 0)');

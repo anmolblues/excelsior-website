@@ -248,8 +248,8 @@ async function loadEventRegistrations() {
     const statusColor = r.status === 'cancelled' ? 'text-red-500' : (r.status === 'waitlist' ? 'text-amber-600' : 'text-green-600');
     tr.innerHTML = `
       <td class="px-4 py-3 font-medium">${escapeHtml(r.eventName)}<br><span class="text-xs text-gray-400">${escapeHtml(r.eventDate)}</span></td>
-      <td class="px-4 py-3">${escapeHtml(r.name)}</td>
-      <td class="px-4 py-3 text-xs text-gray-500">${escapeHtml(r.phone)}<br>${escapeHtml(r.address)}</td>
+      <td class="px-4 py-3">${escapeHtml(r.studentName)}${r.studentAge ? ' (' + r.studentAge + ')' : ''}</td>
+      <td class="px-4 py-3">${escapeHtml(r.studentGrade)}</td>
       <td class="px-4 py-3">${r.parent ? escapeHtml(r.parent.name) + '<br><span class="text-xs text-gray-400">' + escapeHtml(r.parent.email) + '</span>' : '—'}</td>
       <td class="px-4 py-3 ${statusColor} capitalize">${escapeHtml(r.status)}</td>
       <td class="px-4 py-3 text-xs text-gray-400">${new Date(r.createdAt).toLocaleDateString()}</td>

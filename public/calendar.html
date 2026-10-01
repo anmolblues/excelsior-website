@@ -133,12 +133,12 @@
         .cal-modal{ background:#fff; border-radius:20px; width:100%; max-width:440px; padding:26px; border:1px solid var(--cal-line); max-height:90vh; overflow-y:auto; }
         .cal-field{ margin-top:16px; }
         .cal-field label{ display:block; font-size:12.5px; font-weight:600; color:var(--cal-ink-soft); margin-bottom:6px; }
-        .cal-field input, .cal-field textarea{
+        .cal-field input, .cal-field textarea, .cal-field select{
             width:100%; font:inherit; font-size:14.5px; padding:10px 14px;
             border:1px solid var(--cal-line); border-radius:12px; background:var(--cal-panel-soft); color:var(--cal-ink);
         }
         .cal-field textarea{ resize:vertical; min-height:56px; }
-        .cal-field input:focus, .cal-field textarea:focus{ outline:2px solid var(--cal-accent); outline-offset:1px; }
+        .cal-field input:focus, .cal-field textarea:focus, .cal-field select:focus{ outline:2px solid var(--cal-accent); outline-offset:1px; }
         .cal-success-tick{ width:46px; height:46px; border-radius:50%; background:var(--cal-success-bg); color:var(--cal-success); display:flex; align-items:center; justify-content:center; margin:0 auto 14px; }
     </style>
 </head>
@@ -286,20 +286,22 @@
             </div>
             <div id="modalFormWrap">
                 <p id="regAuthHint" class="hidden" style="background:#eff6ff;color:#1d4ed8;font-size:12.5px;border-radius:12px;padding:10px 14px;margin-bottom:14px">
-                    Tell us who's registering — you'll log in or create a free account on the next step to confirm.
+                    Tell us about your student first — you'll log in or create a free account on the next step to confirm.
                 </p>
                 <form id="bookingForm" onsubmit="return submitBooking(event)">
                     <div class="cal-field">
-                        <label for="fName">Full name</label>
-                        <input id="fName" required autocomplete="name">
+                        <label for="fStudentName">Student's name</label>
+                        <input id="fStudentName" required autocomplete="off">
                     </div>
                     <div class="cal-field">
-                        <label for="fPhone">Phone number</label>
-                        <input id="fPhone" required type="tel" autocomplete="tel" placeholder="(555) 555-0123">
+                        <label for="fStudentGrade">Student's grade</label>
+                        <select id="fStudentGrade" required>
+                            <option value="" disabled selected>Select grade&hellip;</option>
+                        </select>
                     </div>
                     <div class="cal-field">
-                        <label for="fAddress">Home address</label>
-                        <textarea id="fAddress" required autocomplete="street-address" placeholder="Street, city, state"></textarea>
+                        <label for="fStudentAge">Student's age (optional)</label>
+                        <input id="fStudentAge" type="number" min="0" max="25">
                     </div>
                     <p id="modalError" class="text-sm mt-3" style="display:none;color:var(--cal-full)"></p>
                     <button type="submit" class="cal-btn w-full mt-5" id="submitBtn">Confirm registration</button>
@@ -475,7 +477,7 @@
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ name: payload.name, phone: payload.phone, address: payload.address })
+      body: JSON.stringify({ studentName: payload.studentName, studentGrade: payload.studentGrade, studentAge: payload.studentAge })
     })
       .then(function(res){ return res.json().then(function(data){ return {status:res.status, data:data}; }); })
       .then(function(r){
@@ -510,9 +512,6 @@
       '<button class="cal-btn ghost mt-5" onclick="closeModal()">Close</button>' +
     '</div>';
     render();
-    // Pick up the phone/address the server just saved to the account, so
-    // the next registration this session pre-fills with it too.
-    checkAuth();
   }
 
   // Finishes a registration that was captured before the user logged in /
@@ -582,6 +581,17 @@
       .then(afterAuthSuccess)
       .catch(function(err){ errEl.textContent = err.message; errEl.style.display='block'; });
     return false;
+  }
+
+  // Fills the registration form's grade <select> from the same grade
+  // bands used for filtering above, so the two stay in sync.
+  function buildGradeOptions(){
+    var sel = document.getElementById('fStudentGrade');
+    GRADES.forEach(function(g){
+      var opt = document.createElement('option');
+      opt.value = g; opt.textContent = 'Grade '+g;
+      sel.appendChild(opt);
+    });
   }
 
   function buildPills(){
@@ -742,16 +752,11 @@
     document.getElementById('submitBtn').textContent = waitlist ? 'Join waitlist' : 'Confirm registration';
     document.getElementById('submitBtn').disabled = false;   // clears a stuck disabled state left by a prior successful submission
     document.getElementById('bookingForm').reset();
-    // Signed-in users get their saved name/phone/address pre-filled — see
-    // checkAuth()/GET /api/auth/me — so a second (or fifth) registration is
-    // a one-click confirm instead of retyping everything. Logged-out
-    // visitors just get a heads-up that login comes right before confirming
-    // (see submitBooking) — they can fill this in first either way.
-    if(currentUser){
-      document.getElementById('fName').value = currentUser.name || '';
-      document.getElementById('fPhone').value = currentUser.phone || '';
-      document.getElementById('fAddress').value = currentUser.address || '';
-    }
+    // The form always starts blank, logged in or not — the account is the
+    // parent, not the student being registered, so there's nothing on the
+    // account to pre-fill here (same as class enrollment's booking modal
+    // on index.html). Logged-out visitors just get a heads-up that login
+    // comes right after this (see submitBooking).
     document.getElementById('regAuthHint').classList.toggle('hidden', !!currentUser);
     var errEl=document.getElementById('modalError');
     errEl.style.display='none'; errEl.textContent='';
@@ -791,12 +796,13 @@
     var errEl=document.getElementById('modalError');
     errEl.style.display='none'; errEl.textContent='';
 
+    var ageVal = document.getElementById('fStudentAge').value;
     var payload = {
       eventId: e.id,
       eventName: e.name,
-      name: document.getElementById('fName').value.trim(),
-      phone: document.getElementById('fPhone').value.trim(),
-      address: document.getElementById('fAddress').value.trim()
+      studentName: document.getElementById('fStudentName').value.trim(),
+      studentGrade: document.getElementById('fStudentGrade').value,
+      studentAge: ageVal ? Number(ageVal) : null
       // No "optIn" field yet — add it here once the opt-in checkbox is on the form.
     };
 
@@ -804,7 +810,7 @@
       // Hold onto what they've entered and ask them to confirm via login/signup.
       pendingRegistration = payload;
       closeModal();
-      openAuthModal('signup', 'Almost done! Log in or create a free account to confirm '+(payload.name || 'your')+'’s spot in '+e.name+'.');
+      openAuthModal('signup', 'Almost done! Log in or create a free account to confirm '+(payload.studentName || 'your student')+'’s spot in '+e.name+'.');
       return false;
     }
 
@@ -830,6 +836,7 @@
   document.getElementById('searchInput').addEventListener('input', function(ev){ state.q=ev.target.value; render(); });
 
   buildPills();
+  buildGradeOptions();
   checkAuth();
   loadEvents();
 </script>
