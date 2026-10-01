@@ -548,6 +548,31 @@ document.getElementById('bookingForm').addEventListener('submit', async (e) => {
 });
 
 // ---------- My Bookings ----------
+// Shows everything the signed-in account has signed a student up for —
+// both class enrollments (routes/bookings.js) and Workshop Event
+// registrations (routes/events.js). These live in two separate tables
+// (see db.js), so this pulls both and renders them as two sections.
+
+function bookingRow(title, sub, scheduleLine, cancelled, onCancel) {
+  const row = document.createElement('div');
+  row.className = 'border border-gray-100 rounded-2xl p-4 flex justify-between items-center gap-4';
+  row.innerHTML = `
+    <div>
+      <div class="font-semibold ${cancelled ? 'line-through text-gray-400' : ''}">${escapeHtml(title)}</div>
+      <div class="text-sm text-gray-500">${escapeHtml(sub)}</div>
+      ${scheduleLine ? `<div class="text-xs text-gray-400">${escapeHtml(scheduleLine)}</div>` : ''}
+      ${cancelled ? '<div class="text-xs text-red-500 mt-1">Cancelled</div>' : ''}
+    </div>
+  `;
+  if (!cancelled) {
+    const btn = document.createElement('button');
+    btn.className = 'text-sm text-red-600 hover:underline whitespace-nowrap';
+    btn.textContent = 'Cancel';
+    btn.onclick = onCancel;
+    row.appendChild(btn);
+  }
+  return row;
+}
 
 async function openBookingsModal() {
   document.getElementById('accountDropdown').classList.add('hidden');
@@ -556,27 +581,52 @@ async function openBookingsModal() {
   openModal('bookingsModal');
 
   try {
-    const data = await api('/bookings/me');
-    if (data.bookings.length === 0) {
-      list.innerHTML = '<p class="text-gray-400 text-sm">No bookings yet — go enroll in a class!</p>';
+    const [bookingsData, registrationsData] = await Promise.all([
+      api('/bookings/me'),
+      api('/events/my-registrations'),
+    ]);
+    const bookings = bookingsData.bookings || [];
+    const registrations = registrationsData.registrations || [];
+
+    if (bookings.length === 0 && registrations.length === 0) {
+      list.innerHTML = '<p class="text-gray-400 text-sm">No bookings yet — go enroll in a class or register for a Workshop Event!</p>';
       return;
     }
+
     list.innerHTML = '';
-    data.bookings.forEach(b => {
-      const row = document.createElement('div');
-      row.className = 'border border-gray-100 rounded-2xl p-4 flex justify-between items-center gap-4';
-      const cancelled = b.status === 'cancelled';
-      row.innerHTML = `
-        <div>
-          <div class="font-semibold ${cancelled ? 'line-through text-gray-400' : ''}">${escapeHtml(b.class ? b.class.title : 'Class')}</div>
-          <div class="text-sm text-gray-500">Student: ${escapeHtml(b.studentName)}${b.studentAge ? ', age ' + b.studentAge : ''}</div>
-          <div class="text-xs text-gray-400">${escapeHtml(b.class ? b.class.schedule : '')}</div>
-          ${cancelled ? '<div class="text-xs text-red-500 mt-1">Cancelled</div>' : ''}
-        </div>
-        ${cancelled ? '' : `<button onclick="cancelBooking(${b.id})" class="text-sm text-red-600 hover:underline whitespace-nowrap">Cancel</button>`}
-      `;
-      list.appendChild(row);
-    });
+
+    if (bookings.length) {
+      const h = document.createElement('div');
+      h.className = 'text-xs font-semibold uppercase tracking-wide text-gray-400 mt-2 first:mt-0';
+      h.textContent = 'Classes';
+      list.appendChild(h);
+      bookings.forEach(b => {
+        list.appendChild(bookingRow(
+          b.class ? b.class.title : 'Class',
+          `Student: ${b.studentName}${b.studentAge ? ', age ' + b.studentAge : ''}`,
+          b.class ? b.class.schedule : '',
+          b.status === 'cancelled',
+          () => cancelBooking(b.id)
+        ));
+      });
+    }
+
+    if (registrations.length) {
+      const h = document.createElement('div');
+      h.className = 'text-xs font-semibold uppercase tracking-wide text-gray-400 mt-5 first:mt-0';
+      h.textContent = 'Workshop Events';
+      list.appendChild(h);
+      registrations.forEach(r => {
+        const statusNote = r.status === 'waitlist' ? ' (waitlisted)' : '';
+        list.appendChild(bookingRow(
+          r.eventName + statusNote,
+          `Student: ${r.studentName}, grade ${r.studentGrade}${r.studentAge ? ', age ' + r.studentAge : ''}`,
+          r.eventDate,
+          r.status === 'cancelled',
+          () => cancelEventRegistration(r.id)
+        ));
+      });
+    }
   } catch (err) {
     list.innerHTML = `<p class="text-red-500 text-sm">${escapeHtml(err.message)}</p>`;
   }
@@ -589,6 +639,17 @@ async function cancelBooking(id) {
     showToast('Booking cancelled.');
     openBookingsModal();
     loadClasses();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+async function cancelEventRegistration(id) {
+  if (!confirm('Cancel this registration?')) return;
+  try {
+    await api(`/events/registrations/${id}`, { method: 'DELETE' });
+    showToast('Registration cancelled.');
+    openBookingsModal();
   } catch (err) {
     showToast(err.message, true);
   }
