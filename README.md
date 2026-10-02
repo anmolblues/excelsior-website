@@ -54,7 +54,11 @@ Press `Ctrl+C` in the terminal to stop the server.
 
 This project stores everything in a single SQLite database file at
 `data/eep.db` (tables: `users`, `classes`, `bookings`, `eventRegistrations`,
-plus an internal `counters` table for auto-incrementing ids). SQLite is a
+`students`, plus an internal `counters` table for auto-incrementing ids).
+`students` holds a parent's saved children (name/grade/age), managed from
+"My Students" in the account menu — it's not required or auto-filled into
+bookings/registrations yet, those still take a name typed on the form each
+time. SQLite is a
 real, embedded SQL database — no separate database server to run or
 configure — and `data/eep.db` is git-ignored, so it's never committed.
 
@@ -302,7 +306,8 @@ excelsior-website/
 │   ├── auth.js         # /api/auth/* (signup, login, logout, me)
 │   ├── classes.js      # /api/classes/* (listing, search/filter, admin CRUD)
 │   ├── bookings.js     # /api/bookings/* (enroll, my bookings, cancel, admin view)
-│   └── events.js       # /api/events/* (Workshop Events: list, register, cancel, admin view)
+│   ├── events.js       # /api/events/* (Workshop Events: list, register, cancel, admin view)
+│   └── students.js     # /api/students/* (a parent's saved children: list, add, edit, remove)
 ├── data/               # eep.db lives here (back this up!)
 └── public/
     ├── index.html       # main site

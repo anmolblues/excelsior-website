@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const classRoutes = require('./routes/classes');
 const bookingRoutes = require('./routes/bookings');
 const eventRoutes = require('./routes/events');
+const studentRoutes = require('./routes/students');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,6 +22,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/students', studentRoutes);
 
 // Serve the website (HTML/CSS/JS/images) from /public
 app.use(express.static(path.join(__dirname, 'public')));

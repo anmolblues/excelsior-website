@@ -134,6 +134,9 @@
                             <button onclick="openBookingsModal()" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">
                                 <i class="fa-solid fa-calendar-check mr-2 text-blue-600"></i> My Bookings
                             </button>
+                            <button onclick="openStudentsModal()" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">
+                                <i class="fa-solid fa-children mr-2 text-blue-600"></i> My Students
+                            </button>
                             <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50">
                                 <i class="fa-solid fa-right-from-bracket mr-2 text-gray-500"></i> Log Out
                             </button>
@@ -527,6 +530,58 @@
             <div id="bookingsList" class="space-y-4">
                 <!-- Populated by JS -->
             </div>
+        </div>
+    </div>
+
+    <!-- My Students Modal -->
+    <div id="studentsModal" class="hidden fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-8 relative max-h-[85vh] overflow-y-auto">
+            <button onclick="closeModal('studentsModal')" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 class="text-xl font-semibold mb-1">My Students</h3>
+            <p class="text-sm text-gray-500 mb-6">Save your children's info here so you don't have to retype it on every booking.</p>
+
+            <div id="studentsList" class="space-y-3 mb-5">
+                <!-- Populated by JS -->
+            </div>
+
+            <div id="studentFormCard" class="hidden border border-gray-200 rounded-2xl p-4 mb-4">
+                <input type="hidden" id="studentFormId">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="col-span-2">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Student's name</label>
+                        <input id="studentFormName" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Grade (optional)</label>
+                        <select id="studentFormGrade" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                            <option value="">&mdash;</option>
+                            <option value="5-6">5-6</option>
+                            <option value="7-8">7-8</option>
+                            <option value="9-10">9-10</option>
+                            <option value="11-12">11-12</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Age (optional)</label>
+                        <input id="studentFormAge" type="number" min="0" max="25" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Notes (optional)</label>
+                        <input id="studentFormNotes" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500" placeholder="Allergies, accommodations, etc.">
+                    </div>
+                </div>
+                <p id="studentFormError" class="hidden text-red-600 text-xs mt-2"></p>
+                <div class="flex gap-2 mt-4">
+                    <button onclick="saveStudentForm()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-sm font-semibold">Save</button>
+                    <button onclick="closeStudentForm()" class="px-4 py-2 rounded-xl text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+                </div>
+            </div>
+
+            <button id="addStudentBtn" onclick="openStudentForm()" class="w-full border border-dashed border-gray-300 rounded-2xl py-3 text-sm text-blue-600 hover:bg-blue-50 font-medium">
+                <i class="fa-solid fa-plus mr-1"></i> Add a student
+            </button>
         </div>
     </div>
 

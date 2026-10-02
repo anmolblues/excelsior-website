@@ -655,6 +655,132 @@ async function cancelEventRegistration(id) {
   }
 }
 
+// ---------- My Students ----------
+// A parent's saved children (routes/students.js) — just the reusable
+// identity info (name/grade/age), so it doesn't have to be retyped on
+// every class enrollment or event registration. Not wired into those
+// forms yet (see routes/students.js) — this is just the manager.
+
+let myStudents = [];
+
+async function openStudentsModal() {
+  document.getElementById('accountDropdown').classList.add('hidden');
+  closeStudentForm();
+  openModal('studentsModal');
+  await loadStudentsList();
+}
+
+async function loadStudentsList() {
+  const list = document.getElementById('studentsList');
+  list.innerHTML = '<p class="text-gray-400 text-sm">Loading...</p>';
+  try {
+    const data = await api('/students/me');
+    myStudents = data.students || [];
+    if (myStudents.length === 0) {
+      list.innerHTML = '<p class="text-gray-400 text-sm">No students saved yet.</p>';
+      return;
+    }
+    list.innerHTML = '';
+    myStudents.forEach(s => {
+      const row = document.createElement('div');
+      row.className = 'border border-gray-100 rounded-2xl p-4 flex justify-between items-center gap-4';
+      const details = [s.grade ? 'Grade ' + s.grade : null, s.age ? 'age ' + s.age : null].filter(Boolean).join(' · ');
+      row.innerHTML = `
+        <div>
+          <div class="font-semibold">${escapeHtml(s.name)}</div>
+          ${details ? `<div class="text-sm text-gray-500">${escapeHtml(details)}</div>` : ''}
+          ${s.notes ? `<div class="text-xs text-gray-400 mt-0.5">${escapeHtml(s.notes)}</div>` : ''}
+        </div>
+        <div class="flex gap-3 whitespace-nowrap">
+          <button class="text-sm text-blue-600 hover:underline">Edit</button>
+          <button class="text-sm text-red-600 hover:underline">Remove</button>
+        </div>
+      `;
+      const [editBtn, removeBtn] = row.querySelectorAll('button');
+      editBtn.onclick = () => openStudentForm(s.id);
+      removeBtn.onclick = () => deleteStudent(s.id);
+      list.appendChild(row);
+    });
+  } catch (err) {
+    list.innerHTML = `<p class="text-red-500 text-sm">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function openStudentForm(id) {
+  const card = document.getElementById('studentFormCard');
+  const errEl = document.getElementById('studentFormError');
+  errEl.classList.add('hidden');
+  document.getElementById('addStudentBtn').classList.add('hidden');
+
+  if (id) {
+    const s = myStudents.find(x => x.id === id);
+    document.getElementById('studentFormId').value = s.id;
+    document.getElementById('studentFormName').value = s.name || '';
+    document.getElementById('studentFormGrade').value = s.grade || '';
+    document.getElementById('studentFormAge').value = s.age || '';
+    document.getElementById('studentFormNotes').value = s.notes || '';
+  } else {
+    document.getElementById('studentFormId').value = '';
+    document.getElementById('studentFormName').value = '';
+    document.getElementById('studentFormGrade').value = '';
+    document.getElementById('studentFormAge').value = '';
+    document.getElementById('studentFormNotes').value = '';
+  }
+
+  card.classList.remove('hidden');
+  document.getElementById('studentFormName').focus();
+}
+
+function closeStudentForm() {
+  document.getElementById('studentFormCard').classList.add('hidden');
+  document.getElementById('addStudentBtn').classList.remove('hidden');
+}
+
+async function saveStudentForm() {
+  const id = document.getElementById('studentFormId').value;
+  const errEl = document.getElementById('studentFormError');
+  errEl.classList.add('hidden');
+
+  const payload = {
+    name: document.getElementById('studentFormName').value.trim(),
+    grade: document.getElementById('studentFormGrade').value,
+    age: document.getElementById('studentFormAge').value,
+    notes: document.getElementById('studentFormNotes').value.trim(),
+  };
+
+  if (!payload.name) {
+    errEl.textContent = "Student's name is required.";
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  try {
+    if (id) {
+      await api(`/students/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+      showToast('Student updated.');
+    } else {
+      await api('/students', { method: 'POST', body: JSON.stringify(payload) });
+      showToast('Student added.');
+    }
+    closeStudentForm();
+    await loadStudentsList();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.remove('hidden');
+  }
+}
+
+async function deleteStudent(id) {
+  if (!confirm('Remove this student? This only removes their saved info — any past bookings are unaffected.')) return;
+  try {
+    await api(`/students/${id}`, { method: 'DELETE' });
+    showToast('Student removed.');
+    await loadStudentsList();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
 // ---------- Filters / search / nav links ----------
 
 document.getElementById('filterSearch').addEventListener('input', debouncedLoadClasses);

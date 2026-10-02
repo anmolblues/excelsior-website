@@ -119,6 +119,24 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_eventRegistrations_eventId ON eventRegistrations(eventId);
   CREATE INDEX IF NOT EXISTS idx_eventRegistrations_userId ON eventRegistrations(userId);
 
+  -- A parent's children. Light by design (Option B from an earlier design
+  -- discussion): bookings/eventRegistrations keep their own freeform
+  -- studentName/studentAge/studentGrade columns rather than being
+  -- replaced, and get a nullable studentId (added below) that NEW rows
+  -- can set to link back here. Old rows are left alone — nothing backfills
+  -- them, and nothing requires a booking to reference a student record.
+  CREATE TABLE IF NOT EXISTS students (
+    id        INTEGER PRIMARY KEY,
+    userId    INTEGER NOT NULL,
+    name      TEXT NOT NULL,
+    grade     TEXT,
+    age       INTEGER,
+    notes     TEXT NOT NULL DEFAULT '',
+    createdAt TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_students_userId ON students(userId);
+
   CREATE TABLE IF NOT EXISTS counters (
     name  TEXT PRIMARY KEY,
     value INTEGER NOT NULL DEFAULT 0
@@ -138,14 +156,29 @@ if (!existingUserColumns.includes('address')) {
   db.exec('ALTER TABLE users ADD COLUMN address TEXT');
 }
 
+// Additive migration for the new students table (see above): bookings and
+// eventRegistrations both already have real rows by the time this ships,
+// so — unlike eventRegistrations' earlier drop-and-recreate, which was
+// only safe because that table was still test-only — this adds a nullable
+// studentId column by hand rather than touching existing data.
+const existingBookingColumns = db.prepare("PRAGMA table_info(bookings)").all().map((c) => c.name);
+if (!existingBookingColumns.includes('studentId')) {
+  db.exec('ALTER TABLE bookings ADD COLUMN studentId INTEGER');
+}
+const existingEventRegColumns = db.prepare("PRAGMA table_info(eventRegistrations)").all().map((c) => c.name);
+if (!existingEventRegColumns.includes('studentId')) {
+  db.exec('ALTER TABLE eventRegistrations ADD COLUMN studentId INTEGER');
+}
+
 // Column order per table — matches the field names routes/*.js already
 // uses on plain JS objects, so writeTable() can stay fully generic.
 const TABLE_COLUMNS = {
   users: ['id', 'name', 'email', 'passwordHash', 'role', 'phone', 'address', 'createdAt'],
   classes: ['id', 'title', 'description', 'subject', 'ageMin', 'ageMax', 'format', 'price', 'priceUnit', 'schedule', 'image', 'capacity', 'rating', 'createdAt'],
-  bookings: ['id', 'classId', 'userId', 'studentName', 'studentAge', 'notes', 'status', 'createdAt'],
+  bookings: ['id', 'classId', 'userId', 'studentName', 'studentAge', 'notes', 'status', 'createdAt', 'studentId'],
   passwordResets: ['id', 'userId', 'tokenHash', 'expiresAt', 'used', 'createdAt'],
-  eventRegistrations: ['id', 'userId', 'eventId', 'eventName', 'eventDate', 'studentName', 'studentGrade', 'studentAge', 'optIn', 'status', 'createdAt'],
+  eventRegistrations: ['id', 'userId', 'eventId', 'eventName', 'eventDate', 'studentName', 'studentGrade', 'studentAge', 'optIn', 'status', 'createdAt', 'studentId'],
+  students: ['id', 'userId', 'name', 'grade', 'age', 'notes', 'createdAt'],
 };
 
 const seedCounter = db.prepare('INSERT OR IGNORE INTO counters (name, value) VALUES (?, 0)');
