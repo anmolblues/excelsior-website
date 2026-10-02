@@ -53,6 +53,7 @@ async function showCorrectScreen() {
     await loadBookings();
     await loadEventRegistrations();
     await loadUsers();
+    await loadStudents();
   } else {
     document.getElementById('loginScreen').classList.remove('hidden');
     document.getElementById('dashboard').classList.add('hidden');
@@ -260,8 +261,11 @@ async function loadEventRegistrations() {
 
 // ---------- Users ----------
 
+let allUsers = []; // kept around for the Students "parent account" picker below
+
 async function loadUsers() {
   const data = await api('/auth/users');
+  allUsers = data.users;
   const tbody = document.getElementById('usersTableBody');
   tbody.innerHTML = '';
 
@@ -281,6 +285,126 @@ async function loadUsers() {
     `;
     tbody.appendChild(tr);
   });
+}
+
+// ---------- Students ----------
+// A parent's children (routes/students.js). Unlike bookings/registrations
+// (which admin can only view and cancel), students are fully managed from
+// here too — an admin can add one for any parent account, not just view
+// what parents added themselves via "My Students" on the main site.
+
+let allStudents = [];
+
+async function loadStudents() {
+  const data = await api('/students');
+  allStudents = data.students;
+  const tbody = document.getElementById('studentsTableBody');
+  tbody.innerHTML = '';
+
+  if (allStudents.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-gray-400">No students yet.</td></tr>';
+    return;
+  }
+
+  allStudents.forEach(s => {
+    const tr = document.createElement('tr');
+    tr.className = 'border-t';
+    tr.innerHTML = `
+      <td class="px-4 py-3 font-medium">${escapeHtml(s.name)}</td>
+      <td class="px-4 py-3">${escapeHtml(s.grade || '—')}</td>
+      <td class="px-4 py-3">${s.age || '—'}</td>
+      <td class="px-4 py-3">${s.parent ? escapeHtml(s.parent.name) + '<br><span class="text-xs text-gray-400">' + escapeHtml(s.parent.email) + '</span>' : '—'}</td>
+      <td class="px-4 py-3 text-xs text-gray-500">${escapeHtml(s.notes || '')}</td>
+      <td class="px-4 py-3 text-right whitespace-nowrap">
+        <button onclick="openStudentForm(${s.id})" class="text-blue-600 hover:underline mr-3">Edit</button>
+        <button onclick="deleteStudent(${s.id})" class="text-red-600 hover:underline">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function populateStudentParentOptions(selectedUserId) {
+  const sel = document.getElementById('studentParent');
+  sel.innerHTML = '<option value="" disabled>Select a parent account&hellip;</option>';
+  allUsers.forEach(u => {
+    const opt = document.createElement('option');
+    opt.value = u.id;
+    opt.textContent = `${u.name} (${u.email})`;
+    sel.appendChild(opt);
+  });
+  sel.value = selectedUserId ? String(selectedUserId) : '';
+}
+
+function openStudentForm(id) {
+  const card = document.getElementById('studentFormCard');
+  const form = document.getElementById('studentForm');
+  const errEl = document.getElementById('studentFormError');
+  form.reset();
+  errEl.classList.add('hidden');
+  card.classList.remove('hidden');
+
+  if (id) {
+    const s = allStudents.find(x => x.id === id);
+    document.getElementById('studentFormTitle').textContent = 'Edit Student';
+    document.getElementById('studentId').value = s.id;
+    document.getElementById('studentName').value = s.name;
+    document.getElementById('studentGrade').value = s.grade || '';
+    document.getElementById('studentAge').value = s.age || '';
+    document.getElementById('studentNotes').value = s.notes || '';
+    populateStudentParentOptions(s.userId);
+  } else {
+    document.getElementById('studentFormTitle').textContent = 'Add Student';
+    document.getElementById('studentId').value = '';
+    populateStudentParentOptions(null);
+  }
+
+  card.scrollIntoView({ behavior: 'smooth' });
+}
+
+function closeStudentForm() {
+  document.getElementById('studentFormCard').classList.add('hidden');
+}
+
+document.getElementById('studentForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('studentFormError');
+  errEl.classList.add('hidden');
+
+  const id = document.getElementById('studentId').value;
+  const payload = {
+    userId: document.getElementById('studentParent').value,
+    name: document.getElementById('studentName').value,
+    grade: document.getElementById('studentGrade').value,
+    age: document.getElementById('studentAge').value,
+    notes: document.getElementById('studentNotes').value,
+  };
+
+  try {
+    if (id) {
+      await api(`/students/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+      showToast('Student updated.');
+    } else {
+      await api('/students/admin', { method: 'POST', body: JSON.stringify(payload) });
+      showToast('Student added.');
+    }
+    closeStudentForm();
+    await loadStudents();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.remove('hidden');
+  }
+});
+
+async function deleteStudent(id) {
+  if (!confirm('Remove this student? This only removes their saved info — any past bookings are unaffected.')) return;
+  try {
+    await api(`/students/${id}`, { method: 'DELETE' });
+    showToast('Student removed.');
+    await loadStudents();
+  } catch (err) {
+    showToast(err.message, true);
+  }
 }
 
 // ---------- Init ----------
