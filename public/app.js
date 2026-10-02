@@ -496,7 +496,7 @@ function updateMaxPriceLabel() {
 
 // Anyone can open this and fill it in — we only ask for login/signup right
 // before submitting, so the class details and student info come first.
-function openBookingModal(classId, classTitle) {
+async function openBookingModal(classId, classTitle) {
   document.getElementById('bookingForm').reset();
   document.getElementById('bookingClassId').value    = classId;
   document.getElementById('bookingClassTitle').textContent = classTitle;
@@ -504,7 +504,67 @@ function openBookingModal(classId, classTitle) {
   document.getElementById('bookingSuccess').classList.add('hidden');
   document.getElementById('bookingForm').classList.remove('hidden');
   document.getElementById('bookingAuthHint').classList.toggle('hidden', !!currentUser);
+  await populateBookingStudentPicker();
   openModal('bookingModal');
+}
+
+// A module-level cache of the signed-in parent's saved students, used only
+// to pre-fill the age field when they pick an existing one below.
+let bookingStudents = [];
+
+// Signed-in parents pick from their saved students (see "My Students")
+// instead of retyping a name every time; logged-out visitors (who have no
+// saved students yet) still get the plain freeform fields, same as before
+// — whatever they type gets auto-saved as a new student once login/signup
+// completes the pending booking.
+async function populateBookingStudentPicker() {
+  const wrap     = document.getElementById('bookingStudentPickerWrap');
+  const select   = document.getElementById('bookingStudentSelect');
+  const newFields = document.getElementById('bookingNewStudentFields');
+
+  if (!currentUser) {
+    bookingStudents = [];
+    wrap.classList.add('hidden');
+    newFields.classList.remove('hidden');
+    return;
+  }
+
+  try {
+    const data = await api('/students/me');
+    bookingStudents = data.students || [];
+    select.innerHTML = '';
+    bookingStudents.forEach((s) => {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = s.age != null ? `${s.name} (age ${s.age})` : s.name;
+      select.appendChild(opt);
+    });
+    const addNewOpt = document.createElement('option');
+    addNewOpt.value = 'new';
+    addNewOpt.textContent = '+ Add a new student';
+    select.appendChild(addNewOpt);
+
+    if (bookingStudents.length > 0) {
+      wrap.classList.remove('hidden');
+      select.value = bookingStudents[0].id;
+      onBookingStudentSelectChange();
+    } else {
+      wrap.classList.add('hidden');
+      newFields.classList.remove('hidden');
+    }
+  } catch (err) {
+    // Couldn't load saved students — fall back to the plain fields rather
+    // than blocking enrollment on it.
+    bookingStudents = [];
+    wrap.classList.add('hidden');
+    newFields.classList.remove('hidden');
+  }
+}
+
+function onBookingStudentSelectChange() {
+  const select    = document.getElementById('bookingStudentSelect');
+  const newFields = document.getElementById('bookingNewStudentFields');
+  newFields.classList.toggle('hidden', select.value !== 'new');
 }
 
 document.getElementById('bookingForm').addEventListener('submit', async (e) => {
@@ -514,12 +574,27 @@ document.getElementById('bookingForm').addEventListener('submit', async (e) => {
   errorEl.classList.add('hidden');
   successEl.classList.add('hidden');
 
+  const pickerShown  = !document.getElementById('bookingStudentPickerWrap').classList.contains('hidden');
+  const select       = document.getElementById('bookingStudentSelect');
+  const usingExisting = pickerShown && select.value !== 'new';
+
   const bookingData = {
-    classId:     document.getElementById('bookingClassId').value,
-    studentName: document.getElementById('bookingStudentName').value,
-    studentAge:  document.getElementById('bookingStudentAge').value || null,
-    notes:       document.getElementById('bookingNotes').value,
+    classId: document.getElementById('bookingClassId').value,
+    notes:   document.getElementById('bookingNotes').value,
   };
+
+  if (usingExisting) {
+    bookingData.studentId = select.value;
+  } else {
+    bookingData.studentName = document.getElementById('bookingStudentName').value.trim();
+    bookingData.studentAge  = document.getElementById('bookingStudentAge').value || null;
+    if (!bookingData.studentName) {
+      errorEl.textContent = "Please enter the student's name.";
+      errorEl.classList.remove('hidden');
+      return;
+    }
+  }
+
   const classTitle = document.getElementById('bookingClassTitle').textContent;
 
   if (!currentUser) {

@@ -289,9 +289,15 @@
                     Tell us about your student first — you'll log in or create a free account on the next step to confirm.
                 </p>
                 <form id="bookingForm" onsubmit="return submitBooking(event)">
-                    <div class="cal-field">
-                        <label for="fStudentName">Student's name</label>
-                        <input id="fStudentName" required autocomplete="off">
+                    <div class="cal-field" id="regStudentPickerWrap" style="display:none">
+                        <label for="fStudentSelect">Who's registering?</label>
+                        <select id="fStudentSelect" onchange="onRegStudentSelectChange()"></select>
+                    </div>
+                    <div id="regNewStudentFields">
+                        <div class="cal-field">
+                            <label for="fStudentName">Student's name</label>
+                            <input id="fStudentName" autocomplete="off">
+                        </div>
                     </div>
                     <div class="cal-field">
                         <label for="fStudentGrade">Student's grade</label>
@@ -385,6 +391,10 @@
   // ask who's registering first, only ask for an account right before it's
   // actually submitted.
   var pendingRegistration = null;
+  // The signed-in parent's saved students (see "My Students" on the main
+  // site) — fetched fresh each time the registration modal opens, so the
+  // picker below can offer them instead of a freeform name field.
+  var regStudents = [];
 
   var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
   var DOWS=['S','M','T','W','T','F','S'];
@@ -473,11 +483,14 @@
   // Error. Shared by the "already logged in" path in submitBooking and the
   // "just logged in/signed up" path in completePendingRegistration.
   function submitRegistration(payload){
+    var body = payload.studentId
+      ? { studentId: payload.studentId, studentGrade: payload.studentGrade, studentAge: payload.studentAge }
+      : { studentName: payload.studentName, studentGrade: payload.studentGrade, studentAge: payload.studentAge };
     return fetch('/api/events/' + encodeURIComponent(payload.eventId) + '/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ studentName: payload.studentName, studentGrade: payload.studentGrade, studentAge: payload.studentAge })
+      body: JSON.stringify(body)
     })
       .then(function(res){ return res.json().then(function(data){ return {status:res.status, data:data}; }); })
       .then(function(r){
@@ -752,17 +765,88 @@
     document.getElementById('submitBtn').textContent = waitlist ? 'Join waitlist' : 'Confirm registration';
     document.getElementById('submitBtn').disabled = false;   // clears a stuck disabled state left by a prior successful submission
     document.getElementById('bookingForm').reset();
-    // The form always starts blank, logged in or not — the account is the
-    // parent, not the student being registered, so there's nothing on the
-    // account to pre-fill here (same as class enrollment's booking modal
-    // on index.html). Logged-out visitors just get a heads-up that login
-    // comes right after this (see submitBooking).
+    // Logged-in parents pick from their saved students instead of retyping
+    // a name every time; logged-out visitors (who have no saved students
+    // yet) just get a heads-up that login comes right after this (see
+    // submitBooking) — same pattern as class enrollment's booking modal on
+    // index.html.
     document.getElementById('regAuthHint').classList.toggle('hidden', !!currentUser);
+    populateRegStudentPicker();
     var errEl=document.getElementById('modalError');
     errEl.style.display='none'; errEl.textContent='';
     document.getElementById('modalFormWrap').style.display='block';
     document.getElementById('modalSuccessWrap').style.display='none';
     document.getElementById('overlay').classList.add('open');
+  }
+
+  // Populates the "who's registering" picker from the signed-in parent's
+  // saved students (GET /api/students/me), with a "+ Add a new student"
+  // option. Logged-out visitors, or a fetch failure, fall back to the
+  // plain freeform name field that was here before.
+  function populateRegStudentPicker(){
+    var wrap = document.getElementById('regStudentPickerWrap');
+    var select = document.getElementById('fStudentSelect');
+    var newFields = document.getElementById('regNewStudentFields');
+
+    if(!currentUser){
+      regStudents = [];
+      wrap.style.display = 'none';
+      newFields.style.display = 'block';
+      return;
+    }
+
+    return fetch('/api/students/me', { credentials:'include' })
+      .then(function(res){ if(!res.ok) throw new Error(); return res.json(); })
+      .then(function(data){
+        regStudents = data.students || [];
+        select.innerHTML = '';
+        regStudents.forEach(function(s){
+          var opt = document.createElement('option');
+          opt.value = s.id;
+          opt.textContent = s.name + (s.age!=null ? ' (age '+s.age+')' : '');
+          select.appendChild(opt);
+        });
+        var addOpt = document.createElement('option');
+        addOpt.value = 'new';
+        addOpt.textContent = '+ Add a new student';
+        select.appendChild(addOpt);
+
+        if(regStudents.length > 0){
+          wrap.style.display = 'block';
+          select.value = regStudents[0].id;
+          onRegStudentSelectChange();
+        } else {
+          wrap.style.display = 'none';
+          newFields.style.display = 'block';
+        }
+      })
+      .catch(function(){
+        regStudents = [];
+        wrap.style.display = 'none';
+        newFields.style.display = 'block';
+      });
+  }
+
+  // Picking an existing student hides the freeform name field and
+  // pre-fills grade/age from their saved profile (still editable — a
+  // grade especially is worth re-confirming each time, and submitting it
+  // here keeps the saved profile current, see routes/events.js).
+  function onRegStudentSelectChange(){
+    var select = document.getElementById('fStudentSelect');
+    var newFields = document.getElementById('regNewStudentFields');
+    var isNew = select.value === 'new';
+    newFields.style.display = isNew ? 'block' : 'none';
+
+    if(!isNew){
+      var s = regStudents.find(function(x){ return String(x.id)===String(select.value); });
+      if(s){
+        document.getElementById('fStudentGrade').value = s.grade || '';
+        document.getElementById('fStudentAge').value = s.age != null ? s.age : '';
+      }
+    } else {
+      document.getElementById('fStudentGrade').value = '';
+      document.getElementById('fStudentAge').value = '';
+    }
   }
   function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
   document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ closeModal(); closeAuthModal(); } });
@@ -796,15 +880,31 @@
     var errEl=document.getElementById('modalError');
     errEl.style.display='none'; errEl.textContent='';
 
+    var pickerShown = document.getElementById('regStudentPickerWrap').style.display !== 'none';
+    var select = document.getElementById('fStudentSelect');
+    var usingExisting = pickerShown && select.value !== 'new';
+
     var ageVal = document.getElementById('fStudentAge').value;
     var payload = {
       eventId: e.id,
       eventName: e.name,
-      studentName: document.getElementById('fStudentName').value.trim(),
       studentGrade: document.getElementById('fStudentGrade').value,
       studentAge: ageVal ? Number(ageVal) : null
       // No "optIn" field yet — add it here once the opt-in checkbox is on the form.
     };
+
+    if(usingExisting){
+      payload.studentId = select.value;
+      var picked = regStudents.find(function(x){ return String(x.id)===String(select.value); });
+      payload.studentName = picked ? picked.name : '';
+    } else {
+      payload.studentName = document.getElementById('fStudentName').value.trim();
+      if(!payload.studentName){
+        errEl.textContent = "Please enter the student's name.";
+        errEl.style.display = 'block';
+        return false;
+      }
+    }
 
     if(!currentUser){
       // Hold onto what they've entered and ask them to confirm via login/signup.

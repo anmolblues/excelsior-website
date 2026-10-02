@@ -56,9 +56,15 @@ This project stores everything in a single SQLite database file at
 `data/eep.db` (tables: `users`, `classes`, `bookings`, `eventRegistrations`,
 `students`, plus an internal `counters` table for auto-incrementing ids).
 `students` holds a parent's saved children (name/grade/age), managed from
-"My Students" in the account menu — it's not required or auto-filled into
-bookings/registrations yet, those still take a name typed on the form each
-time. SQLite is a
+"My Students" in the account menu. Class enrollment and Workshop Event
+registration are both wired into it: a signed-in parent picks from their
+saved students (or "+ Add a new student") instead of retyping a name, and
+`bookings`/`eventRegistrations` rows carry a `studentId` pointing at the
+matching `students` row. Typing a new student's info instead auto-creates
+that `students` row, so it's available to pick next time. (A grade typed
+in while registering for a Workshop Event also gets written back onto the
+saved student profile, since class enrollment itself never asks for one —
+that's how a student first created there picks up a grade later.) SQLite is a
 real, embedded SQL database — no separate database server to run or
 configure — and `data/eep.db` is git-ignored, so it's never committed.
 

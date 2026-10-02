@@ -4,10 +4,10 @@
 // This is deliberately light (see db.js for the fuller note): a student
 // record just holds the reusable identity info — name, grade, age — so a
 // parent doesn't have to retype it on every class enrollment or event
-// registration. It is NOT wired into bookings/eventRegistrations yet;
-// those still take a freeform studentName/studentAge/studentGrade typed
-// on the form each time. That linkage (via the nullable studentId column
-// already added to both tables) is a deliberate next step, not done here.
+// registration. It IS wired into bookings/eventRegistrations (see
+// routes/bookings.js and routes/events.js): those accept either an
+// existing studentId from here, or new-student fields that get auto-saved
+// into this table on the fly (and linked via the same studentId column).
 const express = require('express');
 const { readTable, writeTable, nextId } = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');

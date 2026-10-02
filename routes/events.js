@@ -92,18 +92,18 @@ router.delete('/registrations/:id', requireAuth, (req, res) => {
 
 // POST /api/events/:id/register — must be logged in (see middleware/auth.js
 // requireAuth). Saves the registration to our database tied to the
-// account. Asks for the student (name/grade/age), same as class enrollment
-// (routes/bookings.js) — the account is the parent, not the registrant.
+// account. Accepts either an existing studentId (a previously-saved
+// student, picked from the "My Students" list) or studentName/studentGrade
+// to register a new one — which is auto-saved to the students table (see
+// db.js) so it's pickable next time. Either way a grade is required: even
+// a saved student whose profile doesn't have one yet (e.g. one first
+// created through class enrollment, which never asks for grade) needs one
+// supplied here, and that grade (and age, if given) is written back onto
+// the student's saved profile so it stays current.
 router.post('/:id/register', requireAuth, async (req, res) => {
   const eventId = req.params.id;
-  const studentName = (req.body.studentName || '').trim();
-  const studentGrade = (req.body.studentGrade || '').trim();
-  const studentAge = req.body.studentAge != null && req.body.studentAge !== '' ? Number(req.body.studentAge) : null;
+  const { studentId, studentName, studentGrade, studentAge } = req.body;
   const optIn = !!req.body.optIn;
-
-  if (!studentName || !studentGrade) {
-    return res.status(400).json({ ok: false, error: 'Student name and grade are required.' });
-  }
 
   let sheetEvents;
   try {
@@ -119,20 +119,64 @@ router.post('/:id/register', requireAuth, async (req, res) => {
     return res.status(404).json({ ok: false, error: 'Event not found.' });
   }
 
+  const students = readTable('students');
+  let student;
+  let studentsChanged = false;
+  const trimmedGrade = (studentGrade || '').trim();
+  const ageNum = studentAge != null && studentAge !== '' ? Number(studentAge) : null;
+
+  if (studentId) {
+    const idx = students.findIndex((s) => s.id === parseInt(studentId, 10) && s.userId === req.user.id);
+    if (idx === -1) {
+      return res.status(404).json({ ok: false, error: 'That student was not found on your account.' });
+    }
+    student = students[idx];
+    const updates = {};
+    if (trimmedGrade && trimmedGrade !== student.grade) updates.grade = trimmedGrade;
+    if (ageNum != null && ageNum !== student.age) updates.age = ageNum;
+    if (Object.keys(updates).length) {
+      student = { ...student, ...updates };
+      students[idx] = student;
+      studentsChanged = true;
+    }
+    if (!student.grade) {
+      return res.status(400).json({ ok: false, error: "This student needs a grade — please select one." });
+    }
+  } else {
+    const trimmedName = (studentName || '').trim();
+    if (!trimmedName || !trimmedGrade) {
+      return res.status(400).json({ ok: false, error: 'Student name and grade are required.' });
+    }
+    student = {
+      id: nextId('students'),
+      userId: req.user.id,
+      name: trimmedName,
+      grade: trimmedGrade,
+      age: ageNum,
+      notes: '',
+      createdAt: new Date().toISOString(),
+    };
+    students.push(student);
+    studentsChanged = true;
+  }
+
+  if (studentsChanged) writeTable('students', students);
+
   const registrations = readTable('eventRegistrations');
 
   // Avoid the same parent double-registering the same child for the same
   // event — but let one parent register multiple different children for
-  // it (mirrors routes/bookings.js's duplicate check for class enrollment).
+  // it. Prefers matching by studentId, falling back to a name match for
+  // legacy registrations made before studentId existed.
   const duplicate = registrations.find(
     (r) =>
       r.eventId === eventId &&
       r.userId === req.user.id &&
-      r.studentName.toLowerCase() === studentName.toLowerCase() &&
-      r.status !== 'cancelled'
+      r.status !== 'cancelled' &&
+      (r.studentId != null ? r.studentId === student.id : r.studentName.toLowerCase() === student.name.toLowerCase())
   );
   if (duplicate) {
-    return res.status(409).json({ ok: false, error: `${studentName} is already registered for this session.` });
+    return res.status(409).json({ ok: false, error: `${student.name} is already registered for this session.` });
   }
 
   const bookedCount = registrations.filter((r) => r.eventId === eventId && r.status !== 'cancelled').length;
@@ -144,9 +188,10 @@ router.post('/:id/register', requireAuth, async (req, res) => {
     eventId,
     eventName: event.name,
     eventDate: event.date,
-    studentName,
-    studentGrade,
-    studentAge,
+    studentId: student.id,
+    studentName: student.name,
+    studentGrade: student.grade,
+    studentAge: student.age,
     optIn: optIn ? 1 : 0,
     status: status.toLowerCase(),
     createdAt: new Date().toISOString(),

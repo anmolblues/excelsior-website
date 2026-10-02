@@ -6,17 +6,59 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 const router = express.Router();
 
 // POST /api/bookings — enroll in a class (must be logged in)
-// body: { classId, studentName, studentAge, notes }
+// body: either { classId, studentId, notes } to enroll a previously-saved
+// student, or { classId, studentName, studentAge, notes } to enroll a new
+// one — which is auto-saved to the students table (see db.js) so it shows
+// up as a pickable option next time, on this class or any other.
 router.post('/', requireAuth, (req, res) => {
-  const { classId, studentName, studentAge, notes } = req.body;
+  const { classId, studentId, studentName, studentAge, notes } = req.body;
 
-  if (!classId || !studentName) {
-    return res.status(400).json({ error: 'classId and studentName are required.' });
+  if (!classId) {
+    return res.status(400).json({ error: 'classId is required.' });
   }
 
   const classes = readTable('classes');
   const cls = classes.find(c => c.id === parseInt(classId, 10));
   if (!cls) return res.status(404).json({ error: 'Class not found.' });
+
+  const students = readTable('students');
+  let student;
+  let studentsChanged = false;
+
+  if (studentId) {
+    const idx = students.findIndex(s => s.id === parseInt(studentId, 10) && s.userId === req.user.id);
+    if (idx === -1) {
+      return res.status(404).json({ error: 'That student was not found on your account.' });
+    }
+    student = students[idx];
+    // If an updated age came along with the pick, keep the saved profile current.
+    if (studentAge != null && studentAge !== '') {
+      const ageNum = Number(studentAge);
+      if (ageNum !== student.age) {
+        student = { ...student, age: ageNum };
+        students[idx] = student;
+        studentsChanged = true;
+      }
+    }
+  } else {
+    const trimmedName = (studentName || '').trim();
+    if (!trimmedName) {
+      return res.status(400).json({ error: "Pick a saved student or enter a new student's name." });
+    }
+    student = {
+      id: nextId('students'),
+      userId: req.user.id,
+      name: trimmedName,
+      grade: '',
+      age: studentAge != null && studentAge !== '' ? Number(studentAge) : null,
+      notes: '',
+      createdAt: new Date().toISOString(),
+    };
+    students.push(student);
+    studentsChanged = true;
+  }
+
+  if (studentsChanged) writeTable('students', students);
 
   const bookings = readTable('bookings');
 
@@ -26,23 +68,27 @@ router.post('/', requireAuth, (req, res) => {
     return res.status(409).json({ error: 'Sorry, this class is full.' });
   }
 
-  // Avoid the same parent double-booking the same child for the same class
+  // Avoid the same parent double-booking the same child for the same
+  // class — prefer matching by studentId (the reliable link now that one
+  // exists), falling back to a name match for legacy bookings made before
+  // studentId existed.
   const duplicate = bookings.find(b =>
     b.classId === cls.id &&
     b.userId === req.user.id &&
-    b.studentName.toLowerCase() === studentName.trim().toLowerCase() &&
-    b.status !== 'cancelled'
+    b.status !== 'cancelled' &&
+    (b.studentId != null ? b.studentId === student.id : b.studentName.toLowerCase() === student.name.toLowerCase())
   );
   if (duplicate) {
-    return res.status(409).json({ error: `${studentName} is already enrolled in this class.` });
+    return res.status(409).json({ error: `${student.name} is already enrolled in this class.` });
   }
 
   const newBooking = {
     id: nextId('bookings'),
     classId: cls.id,
     userId: req.user.id,
-    studentName: studentName.trim(),
-    studentAge: studentAge != null ? Number(studentAge) : null,
+    studentId: student.id,
+    studentName: student.name,
+    studentAge: student.age,
     notes: notes || '',
     status: 'confirmed',
     createdAt: new Date().toISOString(),
