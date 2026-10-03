@@ -74,6 +74,7 @@ db.exec(`
     classId     INTEGER NOT NULL,
     userId      INTEGER NOT NULL,
     studentName TEXT NOT NULL,
+    studentGrade TEXT,
     studentAge  INTEGER,
     notes       TEXT NOT NULL DEFAULT '',
     status      TEXT NOT NULL DEFAULT 'confirmed',
@@ -165,6 +166,12 @@ const existingBookingColumns = db.prepare("PRAGMA table_info(bookings)").all().m
 if (!existingBookingColumns.includes('studentId')) {
   db.exec('ALTER TABLE bookings ADD COLUMN studentId INTEGER');
 }
+if (!existingBookingColumns.includes('studentGrade')) {
+  // Added so class enrollment can ask for grade, same as Workshop Event
+  // registration always has. Nullable — existing bookings just read back
+  // with no grade, same as how studentId was added above.
+  db.exec('ALTER TABLE bookings ADD COLUMN studentGrade TEXT');
+}
 const existingEventRegColumns = db.prepare("PRAGMA table_info(eventRegistrations)").all().map((c) => c.name);
 if (!existingEventRegColumns.includes('studentId')) {
   db.exec('ALTER TABLE eventRegistrations ADD COLUMN studentId INTEGER');
@@ -175,7 +182,7 @@ if (!existingEventRegColumns.includes('studentId')) {
 const TABLE_COLUMNS = {
   users: ['id', 'name', 'email', 'passwordHash', 'role', 'phone', 'address', 'createdAt'],
   classes: ['id', 'title', 'description', 'subject', 'ageMin', 'ageMax', 'format', 'price', 'priceUnit', 'schedule', 'image', 'capacity', 'rating', 'createdAt'],
-  bookings: ['id', 'classId', 'userId', 'studentName', 'studentAge', 'notes', 'status', 'createdAt', 'studentId'],
+  bookings: ['id', 'classId', 'userId', 'studentName', 'studentAge', 'notes', 'status', 'createdAt', 'studentId', 'studentGrade'],
   passwordResets: ['id', 'userId', 'tokenHash', 'expiresAt', 'used', 'createdAt'],
   eventRegistrations: ['id', 'userId', 'eventId', 'eventName', 'eventDate', 'studentName', 'studentGrade', 'studentAge', 'optIn', 'status', 'createdAt', 'studentId'],
   students: ['id', 'userId', 'name', 'grade', 'age', 'notes', 'createdAt'],

@@ -509,7 +509,7 @@ async function openBookingModal(classId, classTitle) {
 }
 
 // A module-level cache of the signed-in parent's saved students, used only
-// to pre-fill the age field when they pick an existing one below.
+// to pre-fill the grade/age fields when they pick an existing one below.
 let bookingStudents = [];
 
 // Signed-in parents pick from their saved students (see "My Students")
@@ -561,10 +561,26 @@ async function populateBookingStudentPicker() {
   }
 }
 
+// Picking an existing student hides the freeform name field and pre-fills
+// grade/age from their saved profile (still editable — worth re-confirming
+// each time, and submitting it here keeps the saved profile current, see
+// routes/bookings.js). Mirrors calendar.html's onRegStudentSelectChange().
 function onBookingStudentSelectChange() {
   const select    = document.getElementById('bookingStudentSelect');
   const newFields = document.getElementById('bookingNewStudentFields');
-  newFields.classList.toggle('hidden', select.value !== 'new');
+  const isNew     = select.value === 'new';
+  newFields.classList.toggle('hidden', !isNew);
+
+  const gradeEl = document.getElementById('bookingStudentGrade');
+  const ageEl   = document.getElementById('bookingStudentAge');
+  if (!isNew) {
+    const s = bookingStudents.find((x) => String(x.id) === String(select.value));
+    gradeEl.value = s && s.grade ? s.grade : '';
+    ageEl.value   = s && s.age != null ? s.age : '';
+  } else {
+    gradeEl.value = '';
+    ageEl.value = '';
+  }
 }
 
 document.getElementById('bookingForm').addEventListener('submit', async (e) => {
@@ -578,9 +594,18 @@ document.getElementById('bookingForm').addEventListener('submit', async (e) => {
   const select       = document.getElementById('bookingStudentSelect');
   const usingExisting = pickerShown && select.value !== 'new';
 
+  const gradeVal = document.getElementById('bookingStudentGrade').value;
+  if (!gradeVal) {
+    errorEl.textContent = "Please select the student's grade.";
+    errorEl.classList.remove('hidden');
+    return;
+  }
+
   const bookingData = {
-    classId: document.getElementById('bookingClassId').value,
-    notes:   document.getElementById('bookingNotes').value,
+    classId:      document.getElementById('bookingClassId').value,
+    studentGrade: gradeVal,
+    studentAge:   document.getElementById('bookingStudentAge').value || null,
+    notes:        document.getElementById('bookingNotes').value,
   };
 
   if (usingExisting) {
@@ -592,7 +617,6 @@ document.getElementById('bookingForm').addEventListener('submit', async (e) => {
       errorEl.classList.remove('hidden');
       return;
     }
-    bookingData.studentAge = document.getElementById('bookingStudentAge').value || null;
   }
 
   const classTitle = document.getElementById('bookingClassTitle').textContent;
@@ -678,7 +702,7 @@ async function openBookingsModal() {
       bookings.forEach(b => {
         list.appendChild(bookingRow(
           b.class ? b.class.title : 'Class',
-          `Student: ${b.studentName}${b.studentAge ? ', age ' + b.studentAge : ''}`,
+          `Student: ${b.studentName}${b.studentGrade ? ', ' + b.studentGrade : ''}${b.studentAge ? ', age ' + b.studentAge : ''}`,
           b.class ? b.class.schedule : '',
           b.status === 'cancelled',
           () => cancelBooking(b.id)

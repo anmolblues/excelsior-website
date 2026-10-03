@@ -6,12 +6,17 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 const router = express.Router();
 
 // POST /api/bookings — enroll in a class (must be logged in)
-// body: either { classId, studentId, notes } to enroll a previously-saved
-// student, or { classId, studentName, studentAge, notes } to enroll a new
-// one — which is auto-saved to the students table (see db.js) so it shows
-// up as a pickable option next time, on this class or any other.
+// body: either { classId, studentId, studentGrade, studentAge, notes } to
+// enroll a previously-saved student, or { classId, studentName,
+// studentGrade, studentAge, notes } to enroll a new one — which is
+// auto-saved to the students table (see db.js) so it shows up as a
+// pickable option next time, on this class or any other. Mirrors
+// routes/events.js's registration handler: a grade is required either
+// way (even a saved student whose profile doesn't have one yet needs one
+// supplied here), and that grade (and age, if given) is written back onto
+// the student's saved profile so it stays current.
 router.post('/', requireAuth, (req, res) => {
-  const { classId, studentId, studentName, studentAge, notes } = req.body;
+  const { classId, studentId, studentName, studentGrade, studentAge, notes } = req.body;
 
   if (!classId) {
     return res.status(400).json({ error: 'classId is required.' });
@@ -24,6 +29,14 @@ router.post('/', requireAuth, (req, res) => {
   const students = readTable('students');
   let student;
   let studentsChanged = false;
+  const trimmedGrade = (studentGrade || '').trim();
+  let ageNum = null;
+  if (studentAge != null && studentAge !== '') {
+    ageNum = Number(studentAge);
+    if (Number.isNaN(ageNum)) {
+      return res.status(400).json({ error: "Student's age must be a number." });
+    }
+  }
 
   if (studentId) {
     const idx = students.findIndex(s => s.id === parseInt(studentId, 10) && s.userId === req.user.id);
@@ -31,35 +44,27 @@ router.post('/', requireAuth, (req, res) => {
       return res.status(404).json({ error: 'That student was not found on your account.' });
     }
     student = students[idx];
-    // If an updated age came along with the pick, keep the saved profile current.
-    if (studentAge != null && studentAge !== '') {
-      const ageNum = Number(studentAge);
-      if (Number.isNaN(ageNum)) {
-        return res.status(400).json({ error: "Student's age must be a number." });
-      }
-      if (ageNum !== student.age) {
-        student = { ...student, age: ageNum };
-        students[idx] = student;
-        studentsChanged = true;
-      }
+    const updates = {};
+    if (trimmedGrade && trimmedGrade !== student.grade) updates.grade = trimmedGrade;
+    if (ageNum != null && ageNum !== student.age) updates.age = ageNum;
+    if (Object.keys(updates).length) {
+      student = { ...student, ...updates };
+      students[idx] = student;
+      studentsChanged = true;
+    }
+    if (!student.grade) {
+      return res.status(400).json({ error: "This student needs a grade — please select one." });
     }
   } else {
     const trimmedName = (studentName || '').trim();
-    if (!trimmedName) {
-      return res.status(400).json({ error: "Pick a saved student or enter a new student's name." });
-    }
-    let ageNum = null;
-    if (studentAge != null && studentAge !== '') {
-      ageNum = Number(studentAge);
-      if (Number.isNaN(ageNum)) {
-        return res.status(400).json({ error: "Student's age must be a number." });
-      }
+    if (!trimmedName || !trimmedGrade) {
+      return res.status(400).json({ error: 'Student name and grade are required.' });
     }
     student = {
       id: nextId('students'),
       userId: req.user.id,
       name: trimmedName,
-      grade: '',
+      grade: trimmedGrade,
       age: ageNum,
       notes: '',
       createdAt: new Date().toISOString(),
@@ -98,6 +103,7 @@ router.post('/', requireAuth, (req, res) => {
     userId: req.user.id,
     studentId: student.id,
     studentName: student.name,
+    studentGrade: student.grade,
     studentAge: student.age,
     notes: notes || '',
     status: 'confirmed',

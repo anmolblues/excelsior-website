@@ -208,7 +208,7 @@ async function loadBookings() {
   tbody.innerHTML = '';
 
   if (data.bookings.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">No bookings yet.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-gray-400">No bookings yet.</td></tr>';
     return;
   }
 
@@ -219,6 +219,7 @@ async function loadBookings() {
     tr.innerHTML = `
       <td class="px-4 py-3 font-medium">${escapeHtml(b.class ? b.class.title : '—')}</td>
       <td class="px-4 py-3">${escapeHtml(b.studentName)}${b.studentAge ? ' (' + b.studentAge + ')' : ''}</td>
+      <td class="px-4 py-3">${escapeHtml(b.studentGrade || '—')}</td>
       <td class="px-4 py-3">${b.parent ? escapeHtml(b.parent.name) + '<br><span class="text-xs text-gray-400">' + escapeHtml(b.parent.email) + '</span>' : '—'}</td>
       <td class="px-4 py-3 ${statusColor} capitalize">${escapeHtml(b.status)}</td>
       <td class="px-4 py-3 text-xs text-gray-400">${new Date(b.createdAt).toLocaleDateString()}</td>

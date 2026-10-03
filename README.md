@@ -61,10 +61,11 @@ registration are both wired into it: a signed-in parent picks from their
 saved students (or "+ Add a new student") instead of retyping a name, and
 `bookings`/`eventRegistrations` rows carry a `studentId` pointing at the
 matching `students` row. Typing a new student's info instead auto-creates
-that `students` row, so it's available to pick next time. (A grade typed
-in while registering for a Workshop Event also gets written back onto the
-saved student profile, since class enrollment itself never asks for one —
-that's how a student first created there picks up a grade later.) SQLite is a
+that `students` row, so it's available to pick next time. Both class
+enrollment and Workshop Event registration now ask for grade and age (a
+grade typed in either one gets written back onto the saved student
+profile, so it stays current — useful since a student's grade changes
+year to year). SQLite is a
 real, embedded SQL database — no separate database server to run or
 configure — and `data/eep.db` is git-ignored, so it's never committed.
 
