@@ -587,18 +587,12 @@ document.getElementById('bookingForm').addEventListener('submit', async (e) => {
     bookingData.studentId = select.value;
   } else {
     bookingData.studentName = document.getElementById('bookingStudentName').value.trim();
-    const ageVal = document.getElementById('bookingStudentAge').value.trim();
     if (!bookingData.studentName) {
       errorEl.textContent = "Please enter the student's name.";
       errorEl.classList.remove('hidden');
       return;
     }
-    if (ageVal && !/^\d+$/.test(ageVal)) {
-      errorEl.textContent = "Please enter the student's age as a number, or leave it blank.";
-      errorEl.classList.remove('hidden');
-      return;
-    }
-    bookingData.studentAge = ageVal || null;
+    bookingData.studentAge = document.getElementById('bookingStudentAge').value || null;
   }
 
   const classTitle = document.getElementById('bookingClassTitle').textContent;
