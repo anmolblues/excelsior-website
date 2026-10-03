@@ -34,6 +34,9 @@ router.post('/', requireAuth, (req, res) => {
     // If an updated age came along with the pick, keep the saved profile current.
     if (studentAge != null && studentAge !== '') {
       const ageNum = Number(studentAge);
+      if (Number.isNaN(ageNum)) {
+        return res.status(400).json({ error: "Student's age must be a number." });
+      }
       if (ageNum !== student.age) {
         student = { ...student, age: ageNum };
         students[idx] = student;
@@ -45,12 +48,19 @@ router.post('/', requireAuth, (req, res) => {
     if (!trimmedName) {
       return res.status(400).json({ error: "Pick a saved student or enter a new student's name." });
     }
+    let ageNum = null;
+    if (studentAge != null && studentAge !== '') {
+      ageNum = Number(studentAge);
+      if (Number.isNaN(ageNum)) {
+        return res.status(400).json({ error: "Student's age must be a number." });
+      }
+    }
     student = {
       id: nextId('students'),
       userId: req.user.id,
       name: trimmedName,
       grade: '',
-      age: studentAge != null && studentAge !== '' ? Number(studentAge) : null,
+      age: ageNum,
       notes: '',
       createdAt: new Date().toISOString(),
     };

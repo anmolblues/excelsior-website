@@ -301,13 +301,11 @@
                     </div>
                     <div class="cal-field">
                         <label for="fStudentGrade">Student's grade</label>
-                        <select id="fStudentGrade" required>
-                            <option value="" disabled selected>Select grade&hellip;</option>
-                        </select>
+                        <input id="fStudentGrade" type="text" required autocomplete="off" placeholder="e.g. 7th grade">
                     </div>
                     <div class="cal-field">
                         <label for="fStudentAge">Student's age (optional)</label>
-                        <input id="fStudentAge" type="number" min="0" max="25">
+                        <input id="fStudentAge" type="text" inputmode="numeric" autocomplete="off">
                     </div>
                     <p id="modalError" class="text-sm mt-3" style="display:none;color:var(--cal-full)"></p>
                     <button type="submit" class="cal-btn w-full mt-5" id="submitBtn">Confirm registration</button>
@@ -596,17 +594,6 @@
     return false;
   }
 
-  // Fills the registration form's grade <select> from the same grade
-  // bands used for filtering above, so the two stay in sync.
-  function buildGradeOptions(){
-    var sel = document.getElementById('fStudentGrade');
-    GRADES.forEach(function(g){
-      var opt = document.createElement('option');
-      opt.value = g; opt.textContent = 'Grade '+g;
-      sel.appendChild(opt);
-    });
-  }
-
   function buildPills(){
     var catWrap=document.getElementById('categoryPills');
     CATEGORIES.forEach(function(c){
@@ -884,11 +871,24 @@
     var select = document.getElementById('fStudentSelect');
     var usingExisting = pickerShown && select.value !== 'new';
 
-    var ageVal = document.getElementById('fStudentAge').value;
+    var gradeVal = document.getElementById('fStudentGrade').value.trim();
+    if(!gradeVal){
+      errEl.textContent = "Please enter the student's grade.";
+      errEl.style.display = 'block';
+      return false;
+    }
+
+    var ageVal = document.getElementById('fStudentAge').value.trim();
+    if(ageVal && !/^\d+$/.test(ageVal)){
+      errEl.textContent = "Please enter the student's age as a number, or leave it blank.";
+      errEl.style.display = 'block';
+      return false;
+    }
+
     var payload = {
       eventId: e.id,
       eventName: e.name,
-      studentGrade: document.getElementById('fStudentGrade').value,
+      studentGrade: gradeVal,
       studentAge: ageVal ? Number(ageVal) : null
       // No "optIn" field yet — add it here once the opt-in checkbox is on the form.
     };
@@ -936,7 +936,6 @@
   document.getElementById('searchInput').addEventListener('input', function(ev){ state.q=ev.target.value; render(); });
 
   buildPills();
-  buildGradeOptions();
   checkAuth();
   loadEvents();
 </script>

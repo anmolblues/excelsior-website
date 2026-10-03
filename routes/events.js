@@ -123,7 +123,13 @@ router.post('/:id/register', requireAuth, async (req, res) => {
   let student;
   let studentsChanged = false;
   const trimmedGrade = (studentGrade || '').trim();
-  const ageNum = studentAge != null && studentAge !== '' ? Number(studentAge) : null;
+  let ageNum = null;
+  if (studentAge != null && studentAge !== '') {
+    ageNum = Number(studentAge);
+    if (Number.isNaN(ageNum)) {
+      return res.status(400).json({ ok: false, error: "Student's age must be a number." });
+    }
+  }
 
   if (studentId) {
     const idx = students.findIndex((s) => s.id === parseInt(studentId, 10) && s.userId === req.user.id);
