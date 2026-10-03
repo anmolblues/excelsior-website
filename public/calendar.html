@@ -388,6 +388,10 @@
                     <label for="signupPassword">Password</label>
                     <input id="signupPassword" type="password" required autocomplete="new-password">
                 </div>
+                <div class="cal-field">
+                    <label for="signupConfirmPassword">Confirm password</label>
+                    <input id="signupConfirmPassword" type="password" required autocomplete="new-password">
+                </div>
                 <p class="text-xs text-gray-400 mt-2">At least 8 characters, with an uppercase letter, lowercase letter, number, and symbol.</p>
                 <p id="signupError" class="text-sm mt-3" style="display:none;color:var(--cal-full)"></p>
                 <button type="submit" class="cal-btn w-full mt-5">Create account</button>
@@ -606,12 +610,21 @@
     ev.preventDefault();
     var errEl=document.getElementById('signupError');
     errEl.style.display='none';
+
+    var password = document.getElementById('signupPassword').value;
+    var confirmPassword = document.getElementById('signupConfirmPassword').value;
+    if(password !== confirmPassword){
+      errEl.textContent = 'Passwords do not match. Please retype them.';
+      errEl.style.display = 'block';
+      return false;
+    }
+
     fetch('/api/auth/signup', {
       method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
       body: JSON.stringify({
         name: document.getElementById('signupName').value.trim(),
         email: document.getElementById('signupEmail').value.trim(),
-        password: document.getElementById('signupPassword').value
+        password: password
       })
     })
       .then(function(res){ return res.json().then(function(data){ return {ok:res.ok, data:data}; }); })
