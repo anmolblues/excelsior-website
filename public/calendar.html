@@ -190,8 +190,8 @@
                     <input id="searchInput" type="text" placeholder="Search sessions&hellip;" aria-label="Search sessions">
                 </div>
                 <div class="cal-viewtoggle" role="group" aria-label="Calendar view">
-                    <button id="btnListView" class="active" onclick="setView('list')">List</button>
-                    <button id="btnMonthView" onclick="setView('month')">Month</button>
+                    <button id="btnListView" onclick="setView('list')">List</button>
+                    <button id="btnMonthView" class="active" onclick="setView('month')">Month</button>
                 </div>
             </div>
             <div class="flex flex-wrap gap-2 items-center">
@@ -206,9 +206,9 @@
 
         <div class="flex items-center gap-2 mt-6 mb-3 text-sm text-gray-600" id="resultsLine"></div>
 
-        <div id="listView" class="grid gap-4"></div>
+        <div id="listView" class="grid gap-4" style="display:none"></div>
 
-        <div id="monthView" style="display:none">
+        <div id="monthView">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="cal-h text-xl font-bold" id="monthLabel"></h2>
                 <div class="flex gap-2">
@@ -411,7 +411,7 @@
   // for why). Registering is handled the same way: our server, not Google.
 
   var EVENTS = [];
-  var state = { cats:new Set(), grades:new Set(), q:'', view:'list', dateFilter:null, monthCursor:new Date(2026,9,1) };
+  var state = { cats:new Set(), grades:new Set(), q:'', view:'month', dateFilter:null, monthCursor:new Date(2026,9,1) };
   var activeEventId = null;
   var currentUser = null;
   // Registration details captured before the user logs in / signs up — same
