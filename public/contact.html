@@ -1,75 +1,123 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Google Analytics (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZD3NB67R0R"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-ZD3NB67R0R');
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact Us - Excelsior Enrichment Program</title>
-    <meta name="description" content="Get in touch with Excelsior Enrichment Program — call us, get directions, or reach out online.">
+    <meta name="description" content="Get in touch with Excelsior Enrichment Program — call, email, or stop by. We're here 9 AM to 8 PM, every day.">
+    <link rel="canonical" href="https://excelsiorenrichmentprogram.com/contact.html">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
+        .hero-bg { background: linear-gradient(135deg, #2047bb 0%, #241d95 100%); }
+        .contact-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .contact-card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); }
     </style>
 </head>
 <body class="font-sans bg-white text-gray-900">
+
     <nav class="border-b bg-white sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <a href="/" class="font-bold text-blue-700">Excelsior Enrichment Program</a>
-            <a href="/" class="text-sm text-gray-500 hover:text-gray-800">← Back to site</a>
+            <a href="/" class="flex items-center gap-2 shrink-0">
+                <div class="w-10 h-10 bg-yellow-400 rounded-3xl flex items-center justify-center font-bold text-2xl text-blue-800 shadow-md overflow-hidden">
+                    <img src="images/eep_short_logo.png" alt="Excelsior Enrichment Program logo" class="rounded-3xl shadow-2xl w-full h-full object-cover" onerror="this.parentElement.innerHTML='EEP'">
+                </div>
+                <span class="text-sm font-bold tracking-tighter text-blue-700 leading-tight">
+                    <b>Excelsior<br><span class="inline-block pl-3">Enrichment</span><br><span class="inline-block pl-6">Program</span></b>
+                </span>
+            </a>
+            <div class="flex items-center gap-6 text-sm font-medium">
+                <a href="/index.html#classes" class="hover:text-blue-600"><b>Classes for 8 - 18</b></a>
+                <a href="/calendar.html" class="hover:text-blue-600"><b>Workshop Calendar</b></a>
+                <a href="/blog.html" class="hover:text-blue-600"><b>Blog</b></a>
+                <a href="/about.html" class="hover:text-blue-600"><b>About</b></a>
+                <a href="/" class="text-gray-500 hover:text-gray-800">← Back to site</a>
+            </div>
         </div>
     </nav>
 
-    <section class="max-w-2xl mx-auto px-6 py-16">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">Contact Us</h1>
-        <p class="text-gray-600 mb-10">We'd love to hear from you. Call, email, or stop by — details below.</p>
+    <section class="hero-bg text-white py-20">
+        <div class="max-w-4xl mx-auto px-6 text-center">
+            <h1 class="text-5xl font-bold mb-4">Contact Us</h1>
+            <p class="text-xl text-blue-100">We'd love to hear from you. Call, email, or stop by — we're here 9 AM to 8 PM, every day.</p>
+        </div>
+    </section>
 
-        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-            <div class="border border-gray-200 rounded-2xl p-6">
-                <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4">
-                    <i class="fa-solid fa-phone"></i>
+    <section class="py-16">
+        <div class="max-w-5xl mx-auto px-6">
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                <div class="contact-card bg-white border border-gray-100 shadow-md rounded-3xl p-8 text-center">
+                    <div class="w-14 h-14 mx-auto bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-5 text-xl">
+                        <i class="fa-solid fa-phone"></i>
+                    </div>
+                    <h2 class="font-semibold text-gray-900 mb-2 text-lg">Phone</h2>
+                    <a href="tel:+12019087279" class="text-blue-600 hover:underline font-medium">+1 (201) 908-7279</a>
                 </div>
-                <h2 class="font-semibold text-gray-900 mb-1">Phone</h2>
-                <a href="tel:+12019087279" class="text-blue-600 hover:underline">+1 (201) 908-7279</a>
+
+                <div class="contact-card bg-white border border-gray-100 shadow-md rounded-3xl p-8 text-center">
+                    <div class="w-14 h-14 mx-auto bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-5 text-xl">
+                        <i class="fa-solid fa-envelope"></i>
+                    </div>
+                    <h2 class="font-semibold text-gray-900 mb-2 text-lg">Email</h2>
+                    <a href="mailto:contact@eepcenter.com" class="text-blue-600 hover:underline font-medium break-all">contact@eepcenter.com</a>
+                </div>
+
+                <div class="contact-card bg-white border border-gray-100 shadow-md rounded-3xl p-8 text-center">
+                    <div class="w-14 h-14 mx-auto bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-5 text-xl">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+                    <h2 class="font-semibold text-gray-900 mb-2 text-lg">Hours</h2>
+                    <p class="text-gray-700 font-medium">9:00 AM – 8:00 PM</p>
+                    <p class="text-gray-500 text-sm">Every day</p>
+                </div>
             </div>
 
-            <div class="border border-gray-200 rounded-2xl p-6">
-                <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4">
-                    <i class="fa-solid fa-envelope"></i>
+            <div class="bg-white border border-gray-100 shadow-md rounded-3xl overflow-hidden">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 border-b border-gray-100">
+                    <div>
+                        <h2 class="font-semibold text-gray-900 text-lg mb-1">
+                            <i class="fa-solid fa-location-dot text-blue-600 mr-2"></i>Visit Us
+                        </h2>
+                        <p class="text-gray-600 text-sm">Find us on Google Maps and get turn-by-turn directions.</p>
+                    </div>
+                    <a href="https://maps.app.goo.gl/tqFRSx3PgnXRtwZW6" target="_blank" rel="noopener noreferrer"
+                       class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-medium text-sm whitespace-nowrap shrink-0">
+                        <i class="fa-solid fa-diamond-turn-right"></i>
+                        Get Directions
+                    </a>
                 </div>
-                <h2 class="font-semibold text-gray-900 mb-1">Email</h2>
-                <a href="mailto:contact@eepcenter.com" class="text-blue-600 hover:underline break-all">contact@eepcenter.com</a>
-            </div>
-
-            <div class="border border-gray-200 rounded-2xl p-6">
-                <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4">
-                    <i class="fa-solid fa-clock"></i>
-                </div>
-                <h2 class="font-semibold text-gray-900 mb-1">Hours</h2>
-                <p class="text-gray-700">9:00 AM – 8:00 PM</p>
-                <p class="text-gray-500 text-sm">Every day</p>
+                <iframe
+                    title="Excelsior Enrichment Program location on Google Maps"
+                    src="https://www.google.com/maps?q=41.0633949,-74.0121097&z=16&output=embed"
+                    width="100%" height="340" style="border:0; display:block;"
+                    loading="lazy" referrerpolicy="no-referrer-when-downgrade">
+                </iframe>
             </div>
         </div>
+    </section>
 
-        <div class="border border-gray-200 rounded-2xl overflow-hidden mb-10">
-            <iframe
-                title="Excelsior Enrichment Program location on Google Maps"
-                src="https://www.google.com/maps?q=41.0633949,-74.0121097&z=16&output=embed"
-                width="100%" height="320" style="border:0; display:block;"
-                loading="lazy" referrerpolicy="no-referrer-when-downgrade">
-            </iframe>
-        </div>
-
-        <div class="border border-gray-200 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-                <h2 class="font-semibold text-gray-900 mb-1">Visit Us</h2>
-                <p class="text-gray-600 text-sm">Find us on Google Maps and get turn-by-turn directions.</p>
+    <section class="py-16 bg-blue-50 text-center">
+        <div class="max-w-2xl mx-auto px-6">
+            <h2 class="text-3xl font-semibold mb-4">Have more questions?</h2>
+            <p class="text-gray-600 mb-6">Check our frequently asked questions, or browse upcoming classes and workshops.</p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="/about.html#faq" class="inline-block bg-white border border-gray-200 hover:bg-gray-50 text-gray-900 px-8 py-4 rounded-2xl font-semibold text-lg">
+                    View FAQ
+                </a>
+                <a href="/#classes" class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-semibold text-lg">
+                    Browse Classes <i class="fa-solid fa-arrow-right ml-2"></i>
+                </a>
             </div>
-            <a href="https://maps.app.goo.gl/tqFRSx3PgnXRtwZW6" target="_blank" rel="noopener noreferrer"
-               class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-medium text-sm whitespace-nowrap">
-                <i class="fa-solid fa-location-dot"></i>
-                Get Directions
-            </a>
         </div>
     </section>
 
