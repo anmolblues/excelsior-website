@@ -782,7 +782,10 @@
       // Event IDs are free-text slugs from the Sheet, so they go through a
       // data attribute + the delegated listener below, not an inline onclick
       // (see the same note on the Register buttons in renderList).
-      var chipsHtml = evs.slice(0, MAX_CHIPS_PER_DAY).map(function(e){
+      // Desktop shows at most 3 named chips plus "+N more"; phones show one
+      // dot per session (there's no room for a "+N more" label there).
+      var maxChips = isPhone() ? evs.length : MAX_CHIPS_PER_DAY;
+      var chipsHtml = evs.slice(0, maxChips).map(function(e){
         var cat = catMeta(e.cat) || {label: e.cat || 'Other'};
         var ss = seatState(e);
         var tooltip = (e.start ? e.start+' – ' : '') + e.name + (ss.left<=0 ? ' (Waitlist)' : '');
@@ -791,8 +794,8 @@
           e.name + (ss.left<=0 ? ' • waitlist' : '') +
           '</div>';
       }).join('');
-      var moreHtml = evs.length > MAX_CHIPS_PER_DAY
-        ? '<div class="cal-more" data-filter-date="'+iso+'">+'+(evs.length-MAX_CHIPS_PER_DAY)+' more</div>'
+      var moreHtml = evs.length > maxChips
+        ? '<div class="cal-more" data-filter-date="'+iso+'">+'+(evs.length-maxChips)+' more</div>'
         : '';
 
       cell.innerHTML = '<div class="num">'+day+'</div>' + chipsHtml + moreHtml;
