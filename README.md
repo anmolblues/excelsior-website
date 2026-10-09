@@ -134,10 +134,10 @@ Go to `/admin.html`, log in with your admin account, and you can:
 - **Add Class** — fill out the form (title, description, subject, ages, format,
   price, schedule, image URL, capacity, rating)
 - **Edit / Delete** any class from the table
-- View **All Bookings** — see who enrolled in what, and cancel bookings if needed
+- View **Classes Booking** — see who enrolled in what, and cancel bookings if needed
 - **Workshop Events** — add, edit, and delete the sessions shown on the
   Workshop Calendar (see "Workshop Events" below)
-- View **Workshop Event Registrations** — see who registered for which Workshop Event
+- View **Workshop Bookings** — see who registered for which Workshop Event
 
 ### Images
 The `image` field for each class accepts any image URL. You can use:
