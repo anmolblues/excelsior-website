@@ -111,10 +111,10 @@
             .cal-btn{ width:100%; }
         }
 
-        .cal-grid7{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; background:#fff; border:1px solid var(--cal-line); border-radius:16px; padding:14px;
+        .cal-grid7{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; background:#fff; border:1px solid var(--cal-line); border-radius:16px; padding:14px;
             box-shadow:0 1px 2px rgba(17,24,39,.04), 0 8px 20px -12px rgba(17,24,39,.15); }
         .cal-grid7 .dow{ text-align:center; font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--cal-ink-faint); padding-bottom:6px; }
-        .cal-daycell{ min-height:96px; border-radius:10px; padding:6px 6px; border:1px solid transparent; display:flex; flex-direction:column; gap:3px; }
+        .cal-daycell{ min-height:96px; min-width:0; border-radius:10px; padding:6px 6px; border:1px solid transparent; display:flex; flex-direction:column; gap:3px; }
         .cal-daycell.inmonth{ background:var(--cal-panel-soft); }
         .cal-daycell .num{ font-size:12.5px; color:var(--cal-ink-soft); font-variant-numeric:tabular-nums; padding:0 1px 2px; }
         .cal-daycell.hasEvents{ cursor:pointer; border-color:var(--cal-line); }
@@ -127,6 +127,33 @@
         .cal-evchip .t{ font-family:"IBM Plex Mono",monospace; font-weight:500; opacity:.8; margin-right:3px; }
         .cal-more{ font-size:10.5px; font-weight:600; color:var(--cal-ink-faint); padding:1px 6px; cursor:pointer; }
         .cal-more:hover{ color:var(--cal-accent); }
+        .cal-daycell.selected{ background:#fff; border-color:var(--cal-accent); box-shadow:0 0 0 1px var(--cal-accent) inset; }
+
+        /* Day details under the month grid — only used on phones (see renderDayPanel). */
+        .cal-daypanel{ display:none; margin-top:14px; }
+        .cal-daypanel h3{ font-size:14px; font-weight:700; color:var(--cal-ink); margin:0 0 8px; }
+        .cal-dayrow{ display:flex; gap:12px; align-items:center; justify-content:space-between; background:#fff;
+            border:1px solid var(--cal-line); border-radius:14px; padding:12px 14px; margin-bottom:8px; }
+        .cal-dayrow .nm{ font-weight:600; font-size:15px; color:var(--cal-ink); overflow-wrap:anywhere; }
+        .cal-dayrow .meta{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:4px; font-size:12.5px; color:var(--cal-ink-soft); }
+        .cal-dayrow .seats{ margin-top:4px; font-size:12px; color:var(--cal-ink-faint); }
+        .cal-dayrow .cal-btn{ width:auto; flex:none; padding-left:14px; padding-right:14px; }
+        .cal-dayhint{ text-align:center; font-size:13px; color:var(--cal-ink-faint); padding:6px 0; }
+
+        /* Phones: 7 columns are too narrow for event names, so each day shows
+           its sessions as small colored dots. Tap a day to see the full names,
+           times, seats and Register buttons in the panel below the grid. */
+        @media (max-width:640px){
+            .cal-grid7{ gap:3px; padding:8px; border-radius:12px; }
+            .cal-grid7 .dow{ font-size:9.5px; letter-spacing:0; }
+            .cal-daycell{ min-height:54px; padding:4px 2px; border-radius:8px; flex-direction:row; flex-wrap:wrap;
+                align-content:flex-start; justify-content:center; gap:3px; }
+            .cal-daycell .num{ flex:0 0 100%; text-align:center; font-size:12px; padding:0; }
+            .cal-evchip{ width:8px; height:8px; padding:0; border-radius:50%; font-size:0; line-height:0;
+                background:currentColor !important; pointer-events:none; flex:none; }
+            .cal-more{ display:none; }
+            .cal-daypanel{ display:block; }
+        }
 
         .cal-overlay{ position:fixed; inset:0; background:rgba(17,24,39,.5); display:none; align-items:center; justify-content:center; padding:20px; z-index:100; }
         .cal-overlay.open{ display:flex; }
@@ -214,6 +241,7 @@
                 </div>
             </div>
             <div class="cal-grid7" id="monthGrid"></div>
+            <div class="cal-daypanel" id="dayPanel"></div>
         </div>
     </div>
 
@@ -410,7 +438,7 @@
   // registrations table. Registering is handled by our server as well.
 
   var EVENTS = [];
-  var state = { cats:new Set(), grades:new Set(), q:'', view:'list', dateFilter:null, monthCursor:new Date(2026,9,1) };
+  var state = { cats:new Set(), grades:new Set(), q:'', view:'list', dateFilter:null, monthCursor:new Date(new Date().getFullYear(), new Date().getMonth(), 1), selectedDay:null };
   var activeEventId = null;
   var currentUser = null;
   // Registration details captured before the user logs in / signs up — same
@@ -747,8 +775,8 @@
     for(var i=0;i<firstDow;i++){ grid.appendChild(elt('div','cal-daycell')); }
     for(var day=1; day<=daysInMonth; day++){
       var iso = cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
-      var evs = (evByDate[iso]||[]).slice().sort(function(a,b){ return (a.start||'').localeCompare(b.start||''); });
-      var cell = elt('div','cal-daycell inmonth'+(evs.length?' hasEvents':''));
+      var evs = (evByDate[iso]||[]).slice().sort(function(a,b){ return timeMinutes(a.start)-timeMinutes(b.start); });
+      var cell = elt('div','cal-daycell inmonth'+(evs.length?' hasEvents':'')+(state.selectedDay===iso?' selected':''));
       cell.setAttribute('data-date', iso);
 
       // Event IDs are free-text slugs from the Sheet, so they go through a
@@ -770,7 +798,51 @@
       cell.innerHTML = '<div class="num">'+day+'</div>' + chipsHtml + moreHtml;
       grid.appendChild(cell);
     }
+    renderDayPanel();
   }
+
+  // "1:00 PM" -> 780, so same-day sessions sort by real time, not as text.
+  function timeMinutes(t){
+    var m=/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(t||'');
+    return m ? ((+m[1]%12)+(m[3].toUpperCase()==='PM'?12:0))*60+(+m[2]) : 0;
+  }
+  function isPhone(){ return window.matchMedia && window.matchMedia('(max-width:640px)').matches; }
+  function escapeText(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // Phones only (the panel is display:none on wider screens): the sessions
+  // for the tapped day, with the same details and Register buttons as the
+  // list view.
+  function renderDayPanel(){
+    var host=document.getElementById('dayPanel');
+    var sel=state.selectedDay;
+    if(!isPhone()){ host.innerHTML=''; return; }
+    var evs = sel ? EVENTS.filter(function(e){ return e.date===sel; }).sort(function(a,b){ return timeMinutes(a.start)-timeMinutes(b.start); }) : [];
+    if(!sel || !evs.length){
+      host.innerHTML='<div class="cal-dayhint">Tap a day with colored dots to see its sessions.</div>';
+      return;
+    }
+    var d=parseDate(sel);
+    host.innerHTML = '<h3>'+fmtDow(d)+', '+MONTHS[d.getMonth()]+' '+d.getDate()+' &middot; '+evs.length+(evs.length===1?' session':' sessions')+'</h3>' +
+      evs.map(function(e){
+        var cat=catMeta(e.cat) || {label: e.cat || 'Other'};
+        var ss=seatState(e);
+        var gradesChips=e.grades.map(function(g){return '<span class="cal-chip grade">Gr '+escapeText(g)+'</span>';}).join('');
+        var seatLabel = ss.left<=0 ? 'Full' : ss.left+' of '+e.capacity+' seats available';
+        var btn = ss.left<=0
+          ? '<button class="cal-btn waitlist" data-register-id="'+escapeAttr(e.id)+'">Join waitlist</button>'
+          : '<button class="cal-btn" data-register-id="'+escapeAttr(e.id)+'">Register</button>';
+        return '<div class="cal-dayrow"><div class="min-w-0">' +
+          '<div class="nm">'+escapeText(e.name)+'</div>' +
+          '<div class="meta"><span class="cal-mono">'+escapeText(e.start)+'&ndash;'+escapeText(e.end)+'</span>' +
+            '<span class="cal-chip" style="background:var(--cal-'+e.cat+'-bg);color:var(--cal-'+e.cat+')">'+escapeText(cat.label)+'</span>'+gradesChips+'</div>' +
+          '<div class="seats">'+seatLabel+'</div></div>' + btn + '</div>';
+      }).join('');
+  }
+  if(window.matchMedia){ window.matchMedia('(max-width:640px)').addEventListener('change', function(){ if(state.view==='month') renderMonth(); }); }
+  document.getElementById('dayPanel').addEventListener('click', function(ev){
+    var btn = ev.target.closest('[data-register-id]');
+    if(btn) openModal(btn.getAttribute('data-register-id'));
+  });
   function elt(tag,cls){ var d=document.createElement(tag); d.className=cls; return d; }
 
   function setView(v){
@@ -782,7 +854,7 @@
     render();
   }
   function clearDateFilter(){ state.dateFilter=null; render(); }
-  function shiftMonth(n){ state.monthCursor=new Date(state.monthCursor.getFullYear(), state.monthCursor.getMonth()+n, 1); renderMonth(); }
+  function shiftMonth(n){ state.monthCursor=new Date(state.monthCursor.getFullYear(), state.monthCursor.getMonth()+n, 1); state.selectedDay=null; renderMonth(); }
 
   function render(){
     renderResultsLine();
@@ -893,6 +965,14 @@
     if(more){ state.dateFilter = more.getAttribute('data-filter-date'); setView('list'); return; }
     var cell = ev.target.closest('.cal-daycell.hasEvents');
     if(cell){
+      if(isPhone()){
+        // Phones: stay on the month grid and show that day's sessions below it.
+        state.selectedDay = cell.getAttribute('data-date');
+        renderMonth();
+        var panel=document.getElementById('dayPanel');
+        if(panel && panel.scrollIntoView) panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+        return;
+      }
       // Clicked the day background (not a specific chip) — jump to the list
       // view filtered to that date.
       state.dateFilter = cell.getAttribute('data-date');
