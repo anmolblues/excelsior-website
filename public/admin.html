@@ -157,6 +157,129 @@
                 </table>
             </div>
         </div>
+        <!-- Workshop Events (calendar.html) -->
+        <div class="mt-12">
+            <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                <div>
+                    <h2 class="text-2xl font-semibold">Workshop Events</h2>
+                    <p class="text-sm text-gray-500 mt-1">What shows on the Workshop Calendar. Only <b>Published</b> events appear to the public.</p>
+                </div>
+                <button onclick="openEventForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-2xl font-semibold text-sm">
+                    <i class="fa-solid fa-plus mr-1"></i> Add Event
+                </button>
+            </div>
+
+            <!-- Event form (add/edit) -->
+            <div id="eventFormCard" class="hidden bg-white rounded-3xl shadow p-6 mb-6">
+                <h3 id="eventFormTitle" class="font-semibold text-lg mb-4">Add Event</h3>
+                <form id="eventForm" class="grid sm:grid-cols-2 gap-4">
+                    <input type="hidden" id="eventRowId">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Status</label>
+                        <select id="eventStatus" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm">
+                            <option value="Draft">Draft (hidden)</option>
+                            <option value="Published">Published (live)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Event ID <span class="font-normal">(optional &mdash; made for you if blank)</span></label>
+                        <input id="eventSlug" placeholder="e.g. sat-oct3" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm disabled:bg-gray-100 disabled:text-gray-500">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Event name</label>
+                        <input required id="eventName" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Category</label>
+                        <select id="eventCategory" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm">
+                            <option>Test Prep</option>
+                            <option>Enrichment</option>
+                            <option>Workshop</option>
+                            <option>Info Session</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Event type</label>
+                        <select id="eventType" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm">
+                            <option>Online</option>
+                            <option>In-person</option>
+                            <option>Hybrid</option>
+                        </select>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Grades</label>
+                        <div class="flex flex-wrap gap-4 text-sm" id="eventGrades">
+                            <label class="flex items-center gap-1.5"><input type="checkbox" value="3-4"> 3-4</label>
+                            <label class="flex items-center gap-1.5"><input type="checkbox" value="5-6"> 5-6</label>
+                            <label class="flex items-center gap-1.5"><input type="checkbox" value="7-8"> 7-8</label>
+                            <label class="flex items-center gap-1.5"><input type="checkbox" value="9-10"> 9-10</label>
+                            <label class="flex items-center gap-1.5"><input type="checkbox" value="11-12"> 11-12</label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Date <span class="font-normal">(first date, if recurring)</span></label>
+                        <input required type="date" id="eventDate" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Recurrence</label>
+                        <select id="eventRecurrence" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm">
+                            <option>None</option>
+                            <option>Weekly</option>
+                            <option>Every 2 Weeks</option>
+                            <option>Monthly</option>
+                        </select>
+                    </div>
+                    <div id="eventRecurrenceFields" class="hidden sm:col-span-2">
+                        <div class="grid sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 mb-1">Recurrence ends</label>
+                                <input type="date" id="eventRecurrenceEnds" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 mb-1">Skip dates <span class="font-normal">(comma-separated yyyy-mm-dd)</span></label>
+                                <input id="eventSkipDates" placeholder="e.g. 2026-11-26, 2026-12-24" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm">
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Start time</label>
+                        <input required type="time" id="eventStartTime" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">End time</label>
+                        <input required type="time" id="eventEndTime" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Capacity (seats)</label>
+                        <input required type="number" min="1" id="eventCapacity" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm">
+                    </div>
+                    <p id="eventFormError" class="hidden sm:col-span-2 bg-red-50 text-red-600 text-sm rounded-xl px-4 py-2"></p>
+                    <div class="sm:col-span-2 flex gap-3 mt-2">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-2xl font-semibold text-sm">Save</button>
+                        <button type="button" onclick="closeEventForm()" class="bg-gray-100 hover:bg-gray-200 px-5 py-2 rounded-2xl font-semibold text-sm">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-left text-gray-500">
+                        <tr>
+                            <th class="px-4 py-3">Status</th>
+                            <th class="px-4 py-3">Event</th>
+                            <th class="px-4 py-3">Date</th>
+                            <th class="px-4 py-3">Time</th>
+                            <th class="px-4 py-3">Type</th>
+                            <th class="px-4 py-3">Grades</th>
+                            <th class="px-4 py-3">Seats</th>
+                            <th class="px-4 py-3"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="eventsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Workshop Event Registrations -->
         <div class="mt-12">
             <h2 class="text-2xl font-semibold mb-6">Workshop Event Registrations</h2>

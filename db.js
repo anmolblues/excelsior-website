@@ -96,11 +96,8 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_passwordResets_tokenHash ON passwordResets(tokenHash);
   CREATE INDEX IF NOT EXISTS idx_passwordResets_userId ON passwordResets(userId);
 
-  -- Workshop Event registrations. Events themselves still live in the
-  -- Google Sheet the Apps Script backend reads (events-backend.gs) — that
-  -- part didn't change, and is still where you add/edit events. Only
-  -- *registrations* moved here, so they can be tied to a real account
-  -- (userId) instead of being anonymous rows in the Sheet's Bookings tab.
+  -- Workshop Event registrations (events themselves are in the 'events'
+  -- table below), tied to a real account (userId).
   -- Fields mirror class enrollment's bookings table (student name/age)
   -- plus a grade, since this is about the student, not the parent account.
   CREATE TABLE IF NOT EXISTS eventRegistrations (
@@ -137,6 +134,31 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_students_userId ON students(userId);
+
+  -- Workshop Events (calendar.html). Mirrors the columns of the old Google
+  -- Sheet "Events" tab. One row = one event *or* one recurring series;
+  -- routes/events.js expands a series into dated occurrences on the fly.
+  -- 'slug' is the Sheet's "Event ID" (e.g. sat-oct3): it's what
+  -- eventRegistrations.eventId points at (as-is for one-time events, or
+  -- slug@yyyy-mm-dd for one occurrence of a recurring series), so don't
+  -- change it once people have registered.
+  CREATE TABLE IF NOT EXISTS events (
+    id             INTEGER PRIMARY KEY,
+    slug           TEXT NOT NULL UNIQUE,
+    status         TEXT NOT NULL DEFAULT 'Draft',
+    name           TEXT NOT NULL,
+    category       TEXT NOT NULL,
+    eventType      TEXT NOT NULL,
+    grades         TEXT NOT NULL DEFAULT '',
+    date           TEXT NOT NULL,
+    recurrence     TEXT NOT NULL DEFAULT 'None',
+    recurrenceEnds TEXT NOT NULL DEFAULT '',
+    skipDates      TEXT NOT NULL DEFAULT '',
+    startTime      TEXT NOT NULL DEFAULT '',
+    endTime        TEXT NOT NULL DEFAULT '',
+    capacity       INTEGER NOT NULL DEFAULT 10,
+    createdAt      TEXT NOT NULL
+  );
 
   CREATE TABLE IF NOT EXISTS counters (
     name  TEXT PRIMARY KEY,
@@ -186,6 +208,7 @@ const TABLE_COLUMNS = {
   passwordResets: ['id', 'userId', 'tokenHash', 'expiresAt', 'used', 'createdAt'],
   eventRegistrations: ['id', 'userId', 'eventId', 'eventName', 'eventDate', 'studentName', 'studentGrade', 'studentAge', 'optIn', 'status', 'createdAt', 'studentId'],
   students: ['id', 'userId', 'name', 'grade', 'age', 'notes', 'createdAt'],
+  events: ['id', 'slug', 'status', 'name', 'category', 'eventType', 'grades', 'date', 'recurrence', 'recurrenceEnds', 'skipDates', 'startTime', 'endTime', 'capacity', 'createdAt'],
 };
 
 const seedCounter = db.prepare('INSERT OR IGNORE INTO counters (name, value) VALUES (?, 0)');

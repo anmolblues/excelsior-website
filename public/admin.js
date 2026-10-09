@@ -51,6 +51,7 @@ async function showCorrectScreen() {
     document.getElementById('logoutBtn').classList.remove('hidden');
     await loadClasses();
     await loadBookings();
+    await loadEvents();
     await loadEventRegistrations();
     await loadUsers();
     await loadStudents();
@@ -228,11 +229,167 @@ async function loadBookings() {
   });
 }
 
+// ---------- Workshop Events ----------
+// The events that appear on the Workshop Calendar (routes/events.js, `events`
+// table). Same columns the old Google Sheet had. Draft events are hidden from
+// the public; Published ones show up immediately. A recurring event (Weekly /
+// Every 2 Weeks / Monthly) is one row that expands into dated sessions, each
+// with its own seats.
+
+let allEvents = [];
+
+function fmtEventDate(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// "9:00 AM" -> "09:00" for <input type="time">
+function timeTo24h(t) {
+  const m = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(t || '');
+  if (!m) return '';
+  let h = Number(m[1]) % 12;
+  if (m[3].toUpperCase() === 'PM') h += 12;
+  return String(h).padStart(2, '0') + ':' + m[2];
+}
+
+async function loadEvents() {
+  const data = await api('/events/admin');
+  allEvents = data.events;
+  const tbody = document.getElementById('eventsTableBody');
+  tbody.innerHTML = '';
+
+  if (allEvents.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-6 text-center text-gray-400">No events yet. Click “Add Event” to create one.</td></tr>';
+    return;
+  }
+
+  allEvents.forEach(ev => {
+    const tr = document.createElement('tr');
+    tr.className = 'border-t';
+    const live = ev.status === 'Published';
+    const recur = ev.recurrence !== 'None'
+      ? `<br><span class="text-xs text-gray-400">${escapeHtml(ev.recurrence)} until ${escapeHtml(ev.recurrenceEnds)}${ev.skipDates ? ' (skip ' + escapeHtml(ev.skipDates.split(',').length) + ')' : ''}</span>`
+      : '';
+    tr.innerHTML = `
+      <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-semibold ${live ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">${escapeHtml(ev.status)}</span></td>
+      <td class="px-4 py-3 font-medium">${escapeHtml(ev.name)}<br><span class="text-xs text-gray-400">${escapeHtml(ev.category)} &middot; ${escapeHtml(ev.slug)}</span></td>
+      <td class="px-4 py-3 whitespace-nowrap">${escapeHtml(fmtEventDate(ev.date))}${recur}</td>
+      <td class="px-4 py-3 whitespace-nowrap">${escapeHtml(ev.startTime)}&ndash;${escapeHtml(ev.endTime)}</td>
+      <td class="px-4 py-3">${escapeHtml(ev.eventType)}</td>
+      <td class="px-4 py-3">${escapeHtml(ev.grades.join(', '))}</td>
+      <td class="px-4 py-3">${ev.capacity}${ev.registrations ? '<br><span class="text-xs text-gray-400">' + ev.registrations + ' registered</span>' : ''}</td>
+      <td class="px-4 py-3 text-right whitespace-nowrap">
+        <button onclick="openEventForm(${ev.id})" class="text-blue-600 hover:underline mr-3">Edit</button>
+        <button onclick="deleteEvent(${ev.id})" class="text-red-600 hover:underline">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function toggleEventRecurrenceFields() {
+  const recurring = document.getElementById('eventRecurrence').value !== 'None';
+  document.getElementById('eventRecurrenceFields').classList.toggle('hidden', !recurring);
+}
+document.getElementById('eventRecurrence').addEventListener('change', toggleEventRecurrenceFields);
+
+function openEventForm(id) {
+  const card = document.getElementById('eventFormCard');
+  const form = document.getElementById('eventForm');
+  const errEl = document.getElementById('eventFormError');
+  form.reset();
+  errEl.classList.add('hidden');
+  card.classList.remove('hidden');
+  const slugEl = document.getElementById('eventSlug');
+
+  if (id) {
+    const ev = allEvents.find(x => x.id === id);
+    document.getElementById('eventFormTitle').textContent = 'Edit Event';
+    document.getElementById('eventRowId').value = ev.id;
+    document.getElementById('eventStatus').value = ev.status;
+    slugEl.value = ev.slug;
+    slugEl.disabled = true; // registrations point at it, so it can't change
+    document.getElementById('eventName').value = ev.name;
+    document.getElementById('eventCategory').value = ev.category;
+    document.getElementById('eventType').value = ev.eventType;
+    document.querySelectorAll('#eventGrades input').forEach(cb => { cb.checked = ev.grades.includes(cb.value); });
+    document.getElementById('eventDate').value = ev.date;
+    document.getElementById('eventRecurrence').value = ev.recurrence;
+    document.getElementById('eventRecurrenceEnds').value = ev.recurrenceEnds || '';
+    document.getElementById('eventSkipDates').value = ev.skipDates || '';
+    document.getElementById('eventStartTime').value = timeTo24h(ev.startTime);
+    document.getElementById('eventEndTime').value = timeTo24h(ev.endTime);
+    document.getElementById('eventCapacity').value = ev.capacity;
+  } else {
+    document.getElementById('eventFormTitle').textContent = 'Add Event';
+    document.getElementById('eventRowId').value = '';
+    slugEl.disabled = false;
+    document.getElementById('eventCapacity').value = 20;
+  }
+  toggleEventRecurrenceFields();
+  card.scrollIntoView({ behavior: 'smooth' });
+}
+
+function closeEventForm() {
+  document.getElementById('eventFormCard').classList.add('hidden');
+}
+
+document.getElementById('eventForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('eventFormError');
+  errEl.classList.add('hidden');
+
+  const id = document.getElementById('eventRowId').value;
+  const payload = {
+    status: document.getElementById('eventStatus').value,
+    slug: document.getElementById('eventSlug').value,
+    name: document.getElementById('eventName').value,
+    category: document.getElementById('eventCategory').value,
+    eventType: document.getElementById('eventType').value,
+    grades: Array.from(document.querySelectorAll('#eventGrades input:checked')).map(cb => cb.value),
+    date: document.getElementById('eventDate').value,
+    recurrence: document.getElementById('eventRecurrence').value,
+    recurrenceEnds: document.getElementById('eventRecurrenceEnds').value,
+    skipDates: document.getElementById('eventSkipDates').value,
+    startTime: document.getElementById('eventStartTime').value,
+    endTime: document.getElementById('eventEndTime').value,
+    capacity: document.getElementById('eventCapacity').value,
+  };
+
+  try {
+    if (id) {
+      await api(`/events/admin/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+      showToast('Event updated.');
+    } else {
+      await api('/events/admin', { method: 'POST', body: JSON.stringify(payload) });
+      showToast('Event added.');
+    }
+    closeEventForm();
+    await loadEvents();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.remove('hidden');
+  }
+});
+
+async function deleteEvent(id) {
+  const ev = allEvents.find(x => x.id === id);
+  const warn = ev && ev.registrations
+    ? `\n\n${ev.registrations} ${ev.registrations === 1 ? 'family is' : 'families are'} registered for it. Their registrations stay on record, but the event disappears from the calendar. (To just hide it, set Status to Draft instead.)`
+    : '';
+  if (!confirm(`Delete “${ev ? ev.name : 'this event'}”? This cannot be undone.${warn}`)) return;
+  try {
+    await api(`/events/admin/${id}`, { method: 'DELETE' });
+    showToast('Event deleted.');
+    await loadEvents();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
 // ---------- Workshop Event Registrations ----------
-// Events themselves are still managed in the Google Sheet (see
-// events-backend.gs) — this is just the registrations, which now live in
-// this app's own database instead of the Sheet's Bookings tab, tied to a
-// real account. See routes/events.js.
+// Who registered for which event (stored in this app's own database, tied
+// to a real account). The events themselves are managed just above.
 
 async function loadEventRegistrations() {
   const data = await api('/events/registrations');

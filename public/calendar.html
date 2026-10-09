@@ -178,10 +178,7 @@
             <i class="fa-solid fa-calendar-days"></i> Excelsior Enrichment Program
         </div>
         <h1 class="cal-h text-4xl font-bold text-gray-900">Workshop Calendar</h1>
-        <p class="mt-3 max-w-2xl text-gray-600 leading-relaxed">Browse upcoming test-prep bootcamps, enrichment labs, and workshops for grades 5&ndash;12. Seats update as sessions fill &mdash; register directly from a session card.</p>
-        <div class="inline-flex items-center gap-2 mt-4 px-3 py-1.5 rounded-full border border-gray-200 text-xs text-gray-500">
-            <i class="fa-regular fa-circle-question"></i> Sample schedule for preview &mdash; not yet connected to the live events sheet
-        </div>
+        <p class="mt-3 max-w-2xl text-gray-600 leading-relaxed">Browse upcoming test-prep bootcamps, enrichment labs, and workshops for grades 3&ndash;12. Seats update as sessions fill &mdash; register directly from a session card.</p>
 
         <div class="cal-controls mt-8">
             <div class="flex flex-wrap gap-3 items-center justify-between">
@@ -406,13 +403,11 @@
     {id:'workshop', label:'Workshop'},
     {id:'info', label:'Info Session'}
   ];
-  var GRADES = ['5-6','7-8','9-10','11-12'];
+  var GRADES = ['3-4','5-6','7-8','9-10','11-12'];
 
-  // Events still come from the Google Sheet (via events-backend.gs), but
-  // through our own server now — routes/events.js fetches that Sheet and
-  // merges in live seat counts from OUR database, since registrations no
-  // longer get written to the Sheet's Bookings tab at all (see that file
-  // for why). Registering is handled the same way: our server, not Google.
+  // Events come from our own database via /api/events (managed on the admin
+  // page, "Workshop Events"), merged with live seat counts from the
+  // registrations table. Registering is handled by our server as well.
 
   var EVENTS = [];
   var state = { cats:new Set(), grades:new Set(), q:'', view:'list', dateFilter:null, monthCursor:new Date(2026,9,1) };

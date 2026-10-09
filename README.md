@@ -6,8 +6,9 @@ A full website for Excelsior Enrichment Program with:
 - **Sign up / Log in** for parents (secure password hashing + sessions)
 - **Booking ("Enroll")** flow — logged-in parents enroll a student in a class, with capacity limits
 - **My Bookings** page for parents to view/cancel their bookings
-- **Workshop Events** (`/calendar.html`) — events are edited in a Google Sheet, but registering
-  requires the same account as classes do, so a signed-in parent's info pre-fills every time
+- **Workshop Events** (`/calendar.html`) — events are managed on the admin page (stored in the
+  database), and registering requires the same account as classes do, so a signed-in parent's
+  info pre-fills every time
 - **Admin panel** (`/admin.html`) to add, edit, and delete classes, and view all bookings and event registrations
 
 ## 1. Requirements
@@ -69,9 +70,8 @@ year to year). SQLite is a
 real, embedded SQL database — no separate database server to run or
 configure — and `data/eep.db` is git-ignored, so it's never committed.
 
-(Workshop Events themselves — the actual list of sessions people register
-for — are the one thing that's *not* in this database. They're still
-managed in a Google Sheet; see "Workshop Events registrations" below.)
+(Workshop Events — the list of sessions people register for — are in this
+database too, in the `events` table; see "Workshop Events" below.)
 
 The database and its schema are created automatically the first time the
 app runs (`node server.js` or `npm run seed`) — there's no separate
@@ -135,8 +135,9 @@ Go to `/admin.html`, log in with your admin account, and you can:
   price, schedule, image URL, capacity, rating)
 - **Edit / Delete** any class from the table
 - View **All Bookings** — see who enrolled in what, and cancel bookings if needed
+- **Workshop Events** — add, edit, and delete the sessions shown on the
+  Workshop Calendar (see "Workshop Events" below)
 - View **Workshop Event Registrations** — see who registered for which Workshop Event
-  (see "Workshop Events registrations" below)
 
 ### Images
 The `image` field for each class accepts any image URL. You can use:
@@ -226,53 +227,49 @@ The email logic lives in `mailer.js` (`sendMail`, `sendWelcomeEmail`) — it
 never throws, so a misconfigured or down mail server can't break signup,
 login, or bookings; failures are only logged to the console.
 
-## 8. Workshop Events registrations
+## 8. Workshop Events
 
-`/calendar.html` (labeled "Workshop Events" in the nav) is a separate system
-from classes, with its own backend split across two places:
+`/calendar.html` ("Workshop Calendar" in the nav) is a separate system from
+classes. Both halves live in this app's own database:
 
-- **Events** — the actual list of sessions, their dates/times/capacity — are
-  still authored in a Google Sheet, read through the Apps Script Web App in
-  `events-backend.gs` (see that file for the full setup instructions). That
-  part is unchanged: add/edit events in the Sheet exactly as before.
-- **Registrations** — who signed up for what — live in this app's own
-  database (the `eventRegistrations` table), not the Sheet's `Bookings` tab
-  anymore. Registering now requires being logged in (the same account used
-  for class bookings), which is what lets one parent account register
-  multiple events — or multiple children for the same event — without
-  creating a new account each time.
+- **Events** — the sessions, their dates/times/capacity — are in the
+  `events` table and managed at `/admin.html` → **Workshop Events**
+  (Add Event / Edit / Delete). They used to be authored in a Google Sheet
+  read through an Apps Script Web App, which made the calendar slow to load;
+  the form has the same columns the Sheet had.
+- **Registrations** — who signed up for what — are in the
+  `eventRegistrations` table. Registering requires being logged in (the same
+  account used for class bookings), which lets one parent account register
+  multiple events — or multiple children for the same event.
+
+**Event fields** (same as the old Sheet's "Events" tab):
+- **Status** — `Draft` (hidden) or `Published` (live on the calendar). Use
+  Draft while setting an event up, or to hide one without deleting it.
+- **Event ID** — a short unique code like `sat-oct3` (made for you if left
+  blank). Registrations point at it, so it can't be changed after the event
+  is created.
+- **Event name, Category** (Test Prep / Enrichment / Workshop / Info Session),
+  **Event type** (Online / In-person / Hybrid), **Grades** (3-4, 5-6, 7-8,
+  9-10, 11-12), **Date, Start/End time, Capacity**.
+- **Recurrence** — None, Weekly, Every 2 Weeks, or Monthly. A recurring event
+  is one row that expands into dated sessions (each with its own seats). Set
+  **Recurrence ends**; optionally list **Skip dates** to cancel single
+  occurrences (e.g. a holiday week). Only the next 90 days are shown at a
+  time; later dates appear on their own as they come into range.
 
 The registration form asks for the student's name, grade, and age
-(optional), the same information class enrollment asks for, not the
-parent account's contact info — the account (email/password) is only
-needed to confirm the registration, which is why it's asked for on a
-second step, right after the student's details, mirroring class
-enrollment's own sign-up flow.
+(optional); the account (email/password) is only needed to confirm the
+registration, so it's asked for on a second step.
 
-This is a deliberate split: you keep the easy, no-code way of managing
-events (the Sheet), while registrations get the same account system, seat
-tracking, and admin visibility (`/admin.html` → "Workshop Event
-Registrations") that class bookings already have.
-
-**What this means day to day:**
-- Keep adding/editing events in the Google Sheet exactly as you do now.
-- Check who's registered in `/admin.html` instead of the Sheet's `Bookings`
-  tab — new registrations no longer get written there.
-- A parent needs an account to register (the calendar page asks for the
-  student's name/grade/age first, then prompts sign-in/sign-up to confirm
-  if they aren't logged in yet).
-
-**Optional environment variable:**
-- `EVENTS_API_URL` — the Apps Script Web App URL events are read from.
-  Defaults to the URL already in use, so no setup is needed unless you
-  redeploy that Apps Script to a new URL:
-  ```bash
-  export EVENTS_API_URL="https://script.google.com/macros/s/.../exec"
-  ```
-  On EC2, add this to `ecosystem.config.js` the same way as `SMTP_USER` —
-  and remember, adding a **new** key needs the full `pm2 delete` /
-  `pm2 start` / `pm2 save` sequence described under "Sending emails" above,
-  not a plain restart.
+**One-time move from the Google Sheet:** on the server, after deploying,
+run `node import-events-from-sheet.js --dry-run` to preview and
+`node import-events-from-sheet.js` to copy the currently published events
+into the database (safe to re-run; it skips Event IDs that already exist).
+Recurring events are rebuilt from the dates the Sheet currently shows, so
+open each one in the admin page afterward and set its real "Recurrence
+ends" date. Draft rows in the Sheet can't be imported — re-enter those by
+hand. After that the Sheet and `google-apps-script/events-backend.gs` are no
+longer used by the site.
 
 ## 9. Before going live (deploying for real families to use)
 
@@ -313,7 +310,7 @@ excelsior-website/
 │   ├── auth.js         # /api/auth/* (signup, login, logout, me)
 │   ├── classes.js      # /api/classes/* (listing, search/filter, admin CRUD)
 │   ├── bookings.js     # /api/bookings/* (enroll, my bookings, cancel, admin view)
-│   ├── events.js       # /api/events/* (Workshop Events: list, register, cancel, admin view)
+│   ├── events.js       # /api/events/* (Workshop Events: list, register, cancel, admin add/edit/delete)
 │   └── students.js     # /api/students/* (a parent's saved children: list, add, edit, remove)
 ├── data/               # eep.db lives here (back this up!)
 └── public/
