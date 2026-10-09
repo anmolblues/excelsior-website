@@ -249,9 +249,9 @@ classes. Both halves live in this app's own database:
   blank). Registrations point at it, so it can't be changed after the event
   is created.
 - **Event name, Category** (Test Prep / Enrichment / Workshop / Info Session),
-  **Event type** (Online / In-person / Hybrid), **Grades** (3-4, 5-6, 7-8,
-  9-10, 11-12), **Date, Start/End time, Capacity**.
-- **Recurrence** — None, Weekly, Every 2 Weeks, or Monthly. A recurring event
+  **Event type** (Online / In-person / Hybrid), **Grades** (typed like the
+  Sheet: `9`, `3-6`, or `5-6,7-8`), **Date, Start/End time, Capacity**.
+- **Recurrence** — None, Daily, Weekly, Every 2 Weeks, or Monthly. A recurring event
   is one row that expands into dated sessions (each with its own seats). Set
   **Recurrence ends**; optionally list **Skip dates** to cancel single
   occurrences (e.g. a holiday week). Only the next 90 days are shown at a
@@ -261,15 +261,13 @@ The registration form asks for the student's name, grade, and age
 (optional); the account (email/password) is only needed to confirm the
 registration, so it's asked for on a second step.
 
-**One-time move from the Google Sheet:** on the server, after deploying,
-run `node import-events-from-sheet.js --dry-run` to preview and
-`node import-events-from-sheet.js` to copy the currently published events
-into the database (safe to re-run; it skips Event IDs that already exist).
-Recurring events are rebuilt from the dates the Sheet currently shows, so
-open each one in the admin page afterward and set its real "Recurrence
-ends" date. Draft rows in the Sheet can't be imported — re-enter those by
-hand. After that the Sheet and `google-apps-script/events-backend.gs` are no
-longer used by the site.
+**One-time move from the Google Sheet:** the events from the Sheet are
+saved in `data/events-import.csv` (the Sheet's "Events" tab, exported as CSV,
+with repeated Event IDs made unique). After deploying and restarting, run
+`node import-events-from-csv.js --dry-run` to preview and
+`node import-events-from-csv.js` to load them into the database (safe to
+re-run; it skips Event IDs that already exist). After that the Sheet and
+`google-apps-script/events-backend.gs` are no longer used by the site.
 
 ## 9. Before going live (deploying for real families to use)
 

@@ -207,14 +207,8 @@
                         </select>
                     </div>
                     <div class="sm:col-span-2">
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">Grades</label>
-                        <div class="flex flex-wrap gap-4 text-sm" id="eventGrades">
-                            <label class="flex items-center gap-1.5"><input type="checkbox" value="3-4"> 3-4</label>
-                            <label class="flex items-center gap-1.5"><input type="checkbox" value="5-6"> 5-6</label>
-                            <label class="flex items-center gap-1.5"><input type="checkbox" value="7-8"> 7-8</label>
-                            <label class="flex items-center gap-1.5"><input type="checkbox" value="9-10"> 9-10</label>
-                            <label class="flex items-center gap-1.5"><input type="checkbox" value="11-12"> 11-12</label>
-                        </div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Grades <span class="font-normal">(e.g. 3-6, or 5-6,7-8, or just 9)</span></label>
+                        <input required id="eventGrades" placeholder="3-6" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 mb-1">Date <span class="font-normal">(first date, if recurring)</span></label>
@@ -224,6 +218,7 @@
                         <label class="block text-xs font-semibold text-gray-500 mb-1">Recurrence</label>
                         <select id="eventRecurrence" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm">
                             <option>None</option>
+                            <option>Daily</option>
                             <option>Weekly</option>
                             <option>Every 2 Weeks</option>
                             <option>Monthly</option>

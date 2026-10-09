@@ -1,0 +1,8 @@
+Status,Event ID,Event Name,Category,Event Type,Grades,Date,Recurrence,Recurrence Ends,Skip Dates,Start Time,End Time,Capacity
+Draft,sat-oct3,Fall SAT Prep Bootcamp,Test Prep,In-person,9,2026-09-24,Daily,,,9:00 AM,12:00 PM,24
+Draft,robotics-thu,Robotics,Test Prep,In-person,11-12,2026-09-24,Weekly,,,9:00 AM,12:00 PM,24
+Draft,stem-oct10,STEM Saturday: Robotics & Circuits,Workshop,Hybrid,5-6,2026-09-19,Weekly,,,10:00 AM,12:00 PM,16
+Draft,stem-nov10,STEM Sunday: Robotics & Circuits,Workshop,In-person,7-8,2026-09-20,Weekly,,,10:00 AM,12:00 PM,16
+Published,halloween-scratch,Halloween Game with Scratch,Workshop,Online,3-6,2026-10-12,Daily,2026-10-13,,9:00 AM,11:00 AM,8
+Published,halloween-scratch-2,Halloween Game with Scratch,Workshop,Online,3-6,2026-10-12,Daily,2026-10-13,,11:00 AM,1:00 PM,15
+Published,spooky-stem-lab,Spooky STEM Lab,Workshop,Online,3-6,2026-10-12,Daily,2026-10-13,,1:00 PM,3:00 PM,10

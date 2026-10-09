@@ -22,8 +22,7 @@ const STATUSES = ['Draft', 'Published'];
 const CATEGORIES = ['Test Prep', 'Enrichment', 'Workshop', 'Info Session'];
 const CATEGORY_IDS = { 'test prep': 'testprep', enrichment: 'enrichment', workshop: 'workshop', 'info session': 'info' };
 const EVENT_TYPES = ['Online', 'In-person', 'Hybrid'];
-const RECURRENCES = ['None', 'Weekly', 'Every 2 Weeks', 'Monthly'];
-const GRADE_RANGES = ['3-4', '5-6', '7-8', '9-10', '11-12'];
+const RECURRENCES = ['None', 'Daily', 'Weekly', 'Every 2 Weeks', 'Monthly'];
 
 // A recurring series only ever expands this many days ahead of today, no
 // matter how far off its "Recurrence Ends" date is (same as the Sheet's
@@ -95,8 +94,16 @@ function normalizeTime(value) {
   return `${h12}:${String(min).padStart(2, '0')} ${suffix}`;
 }
 
+// "1:00 PM" -> 780, so same-day events sort by real time, not as text.
+function timeToMinutes(t) {
+  const m = /^(\d{1,2}):(\d{2}) (AM|PM)$/.exec(t || '');
+  if (!m) return 0;
+  return (Number(m[1]) % 12 + (m[3] === 'PM' ? 12 : 0)) * 60 + Number(m[2]);
+}
+
 function normalizeRecurrence(value) {
   const key = String(value || '').trim().toLowerCase();
+  if (key === 'daily') return 'daily';
   if (key === 'weekly') return 'weekly';
   if (key === 'every 2 weeks' || key === 'biweekly' || key === 'every-2-weeks') return 'every2weeks';
   if (key === 'monthly') return 'monthly';
@@ -116,7 +123,8 @@ function generateOccurrenceDates(startDate, recur, recurrenceEnds, horizonCap) {
   }
   for (let n = 0; n < 500; n++) {
     let occ;
-    if (recur === 'weekly') occ = addDays(startDate, n * 7);
+    if (recur === 'daily') occ = addDays(startDate, n);
+    else if (recur === 'weekly') occ = addDays(startDate, n * 7);
     else if (recur === 'every2weeks') occ = addDays(startDate, n * 14);
     else occ = addMonths(startDate, n);
     if (occ > cap) break;
@@ -155,7 +163,7 @@ function getOccurrences() {
           });
         });
     });
-  out.sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+  out.sort((a, b) => a.date.localeCompare(b.date) || timeToMinutes(a.start) - timeToMinutes(b.start));
   return out;
 }
 
@@ -182,6 +190,15 @@ router.get('/', (req, res) => {
 
 // ---------- Admin: manage events (add / update / delete) ----------
 
+// "9" or "3-6" (grades 1-12, low to high).
+function isValidGradeRange(g) {
+  const m = /^(\d{1,2})(?:-(\d{1,2}))?$/.exec(g);
+  if (!m) return false;
+  const a = Number(m[1]);
+  const b = m[2] === undefined ? a : Number(m[2]);
+  return a >= 1 && b <= 12 && a <= b;
+}
+
 function slugify(text) {
   return String(text || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
 }
@@ -201,11 +218,12 @@ function parseEventInput(body) {
   const eventType = EVENT_TYPES.find((t) => t.toLowerCase() === String(b.eventType || '').trim().toLowerCase());
   if (!eventType) return { error: `Event type must be one of: ${EVENT_TYPES.join(', ')}.` };
 
+  // Free-form like the Sheet: "9", "3-6", or several, e.g. "5-6,7-8".
   const gradeList = Array.isArray(b.grades) ? b.grades : String(b.grades || '').split(',');
   const grades = gradeList.map((g) => String(g).trim()).filter(Boolean);
-  if (!grades.length) return { error: 'Pick at least one grade range.' };
-  const badGrade = grades.find((g) => !GRADE_RANGES.includes(g));
-  if (badGrade) return { error: `Unknown grade range "${badGrade}". Use: ${GRADE_RANGES.join(', ')}.` };
+  if (!grades.length) return { error: 'Grades are required — e.g. 3-6, or 5-6,7-8, or 9.' };
+  const badGrade = grades.find((g) => !isValidGradeRange(g));
+  if (badGrade) return { error: `"${badGrade}" isn’t a valid grade or range. Use grades 1-12, like 9 or 3-6 (separate several with commas).` };
 
   const date = String(b.date || '').trim();
   if (!isValidIsoDate(date)) return { error: 'Date must be a valid yyyy-mm-dd date.' };

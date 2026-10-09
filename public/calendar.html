@@ -426,6 +426,16 @@
   var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
   var DOWS=['S','M','T','W','T','F','S'];
 
+  // An event's grades can be a single grade ("9") or a range ("3-6"); a filter
+  // pill like "5-6" matches any event whose grades overlap it.
+  function gradeBounds(g){ var p=String(g).split('-'); var a=+p[0]; return [a, p.length>1 ? +p[1] : a]; }
+  function gradesOverlap(evGrades){
+    var pills=Array.from(state.grades);
+    return evGrades.some(function(eg){
+      var r=gradeBounds(eg);
+      return pills.some(function(pg){ var q=gradeBounds(pg); return r[0]<=q[1] && q[0]<=r[1]; });
+    });
+  }
   function catMeta(id){ return CATEGORIES.find(function(c){return c.id===id;}); }
   function parseDate(s){ var p=s.split('-'); return new Date(+p[0],+p[1]-1,+p[2]); }
   function fmtDow(d){ return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]; }
@@ -656,7 +666,7 @@
   function filteredEvents(){
     return EVENTS.filter(function(e){
       if(state.cats.size && !state.cats.has(e.cat)) return false;
-      if(state.grades.size && !e.grades.some(function(g){return state.grades.has(g);})) return false;
+      if(state.grades.size && !gradesOverlap(e.grades)) return false;
       if(state.q && e.name.toLowerCase().indexOf(state.q.toLowerCase())===-1) return false;
       if(state.dateFilter && e.date!==state.dateFilter) return false;
       return true;

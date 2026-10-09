@@ -312,7 +312,7 @@ function openEventForm(id) {
     document.getElementById('eventName').value = ev.name;
     document.getElementById('eventCategory').value = ev.category;
     document.getElementById('eventType').value = ev.eventType;
-    document.querySelectorAll('#eventGrades input').forEach(cb => { cb.checked = ev.grades.includes(cb.value); });
+    document.getElementById('eventGrades').value = ev.grades.join(', ');
     document.getElementById('eventDate').value = ev.date;
     document.getElementById('eventRecurrence').value = ev.recurrence;
     document.getElementById('eventRecurrenceEnds').value = ev.recurrenceEnds || '';
@@ -346,7 +346,7 @@ document.getElementById('eventForm').addEventListener('submit', async (e) => {
     name: document.getElementById('eventName').value,
     category: document.getElementById('eventCategory').value,
     eventType: document.getElementById('eventType').value,
-    grades: Array.from(document.querySelectorAll('#eventGrades input:checked')).map(cb => cb.value),
+    grades: document.getElementById('eventGrades').value,
     date: document.getElementById('eventDate').value,
     recurrence: document.getElementById('eventRecurrence').value,
     recurrenceEnds: document.getElementById('eventRecurrenceEnds').value,
