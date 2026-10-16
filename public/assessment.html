@@ -31,10 +31,74 @@
         #stickyCta { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
         html { scroll-behavior: smooth; }
     </style>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is the assessment really free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. There's no cost and no obligation to sign up for anything afterwards."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What happens during the assessment?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Your child does a skills check in the subject you choose, and we talk with you about your child's goals. Afterwards we share a recommendation for next steps."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What grades do you serve?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Students in grades 3 through 12, whether they're catching up, keeping pace, or ready for a challenge."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do you offer both online and in-person classes?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Each class is either live online or in person, so you can choose whichever fits your family."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Who teaches the classes?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Every class is taught live by a real instructor, not a pre-recorded video. Instructors adapt to how your child learns and track their progress."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I enroll after the assessment?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We'll recommend classes that fit. You can enroll by creating a free account on our website, browsing classes, and clicking \"Enroll\" on any class with open spots. We're also happy to help over the phone."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "When are you open?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "9:00 AM – 8:00 PM, every day. We'll find an assessment time that fits your schedule."
+      }
+    }
+  ]
+}
+    </script>
 </head>
 <body class="font-sans bg-white text-gray-900">
 
-    <!-- Slim header: logo + tap-to-call. No full nav — this page has one job. -->
+    <!-- Slim header: logo, in-page links (desktop), tap-to-call. -->
     <header class="border-b bg-white sticky top-0 z-40">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
             <a href="/" class="flex items-center gap-2 shrink-0">
@@ -45,6 +109,12 @@
                     Excelsior<br>Enrichment Program
                 </span>
             </a>
+            <nav class="hidden md:flex items-center gap-6 text-sm font-semibold text-gray-700">
+                <a href="#about" class="hover:text-blue-600">Who We Are</a>
+                <a href="#programs" class="hover:text-blue-600">Programs</a>
+                <a href="#faq" class="hover:text-blue-600">FAQ</a>
+                <a href="#blog" class="hover:text-blue-600">Blog</a>
+            </nav>
             <a href="tel:+12019087279" onclick="track('click_call',{location:'header'})"
                class="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 px-4 py-2.5 rounded-2xl">
                 <i class="fa-solid fa-phone"></i><span class="hidden sm:inline">(201) 908-7279</span><span class="sm:hidden">Call</span>
@@ -145,83 +215,221 @@
         </div>
     </section>
 
-    <!-- Subjects -->
-    <section class="py-14">
+    <!-- Quick facts strip -->
+    <section class="bg-white border-b">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 grid grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+            <div><div class="text-2xl sm:text-3xl font-extrabold text-blue-700">3–12</div><div class="text-xs sm:text-sm text-gray-500 font-medium">Grades we teach</div></div>
+            <div><div class="text-2xl sm:text-3xl font-extrabold text-blue-700"><i class="fa-solid fa-people-group"></i></div><div class="text-xs sm:text-sm text-gray-500 font-medium">Small, personalized classes</div></div>
+            <div><div class="text-2xl sm:text-3xl font-extrabold text-blue-700"><i class="fa-solid fa-laptop-house"></i></div><div class="text-xs sm:text-sm text-gray-500 font-medium">Live online &amp; in person</div></div>
+            <div><div class="text-2xl sm:text-3xl font-extrabold text-blue-700">9–8</div><div class="text-xs sm:text-sm text-gray-500 font-medium">Open every day</div></div>
+        </div>
+    </section>
+
+    <!-- Who we are -->
+    <section id="about" class="py-14 scroll-mt-16">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-10 items-center">
+            <div>
+                <img src="images/lc_img1.jpg" alt="Students working in small groups at the Excelsior Enrichment Program learning center" loading="lazy"
+                     class="w-full rounded-3xl shadow-xl object-cover aspect-[16/10]">
+            </div>
+            <div>
+                <span class="text-sm font-bold uppercase tracking-wide text-blue-600">Who we are</span>
+                <h2 class="text-2xl sm:text-3xl font-bold mt-2 mb-4">Where curiosity sparks creativity</h2>
+                <p class="text-gray-600 mb-4">Excelsior Enrichment Program helps students in grades 3 through 12 grow beyond the standard classroom, with small, personalized classes in math, science, coding, English, debate, and public speaking, plus focused test prep.</p>
+                <p class="text-gray-600 mb-6">We built EEP around one idea: kids learn best when they feel seen, are challenged at the right level, and are curious about what they're studying.</p>
+                <div class="grid sm:grid-cols-3 gap-3">
+                    <div class="bg-blue-50 rounded-2xl p-4">
+                        <i class="fa-solid fa-chalkboard-user text-blue-600 text-xl mb-2"></i>
+                        <div class="font-semibold text-sm">Real instructors</div>
+                        <div class="text-xs text-gray-600 mt-1">Live teaching, not pre-recorded videos. Lessons adapt to how your child learns.</div>
+                    </div>
+                    <div class="bg-blue-50 rounded-2xl p-4">
+                        <i class="fa-solid fa-user-group text-blue-600 text-xl mb-2"></i>
+                        <div class="font-semibold text-sm">Small classes</div>
+                        <div class="text-xs text-gray-600 mt-1">Small enough that no one gets lost, and progress is tracked.</div>
+                    </div>
+                    <div class="bg-blue-50 rounded-2xl p-4">
+                        <i class="fa-solid fa-calendar-check text-blue-600 text-xl mb-2"></i>
+                        <div class="font-semibold text-sm">Flexible schedule</div>
+                        <div class="text-xs text-gray-600 mt-1">Online or in person, around school, sports, and family life.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Programs -->
+    <section id="programs" class="py-14 bg-gray-50 scroll-mt-16">
         <div class="max-w-6xl mx-auto px-4 sm:px-6">
-            <h2 class="text-2xl sm:text-3xl font-bold text-center mb-2">What we help with</h2>
-            <p class="text-gray-500 text-center mb-8">Small-group classes and tutoring for <span class="whitespace-nowrap">ages 8–18</span>.</p>
-            <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-                <div class="bg-blue-50 rounded-2xl p-4 sm:p-5 text-center"><i class="fa-solid fa-square-root-variable text-2xl text-blue-600 mb-2"></i><div class="font-semibold text-sm sm:text-base">Math</div></div>
-                <div class="bg-blue-50 rounded-2xl p-4 sm:p-5 text-center"><i class="fa-solid fa-book-open text-2xl text-blue-600 mb-2"></i><div class="font-semibold text-sm sm:text-base">Reading &amp; Writing</div></div>
-                <div class="bg-blue-50 rounded-2xl p-4 sm:p-5 text-center"><i class="fa-solid fa-pen-to-square text-2xl text-blue-600 mb-2"></i><div class="font-semibold text-sm sm:text-base">Test Prep</div></div>
-                <div class="bg-blue-50 rounded-2xl p-4 sm:p-5 text-center"><i class="fa-solid fa-robot text-2xl text-blue-600 mb-2"></i><div class="font-semibold text-sm sm:text-base">Coding &amp; STEM</div></div>
-                <div class="bg-blue-50 rounded-2xl p-4 sm:p-5 text-center col-span-2 lg:col-span-1"><i class="fa-solid fa-microphone text-2xl text-blue-600 mb-2"></i><div class="font-semibold text-sm sm:text-base">Public Speaking &amp; Debate</div></div>
+            <div class="text-center mb-8">
+                <span class="text-sm font-bold uppercase tracking-wide text-blue-600">Programs</span>
+                <h2 class="text-2xl sm:text-3xl font-bold mt-2 mb-2">What your child can learn with us</h2>
+                <p class="text-gray-500">The free assessment helps us recommend the right starting point.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                <a href="#form" onclick="track('program_click',{program:'math'})" class="group bg-white rounded-3xl shadow-sm hover:shadow-lg transition overflow-hidden">
+                    <div class="h-40 bg-blue-50 overflow-hidden"><img src="images/algebra.png" alt="" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
+                    <div class="p-5"><h3 class="font-semibold text-lg mb-1">Math</h3><p class="text-sm text-gray-600">From building strong foundations to advanced problem solving.</p></div>
+                </a>
+                <a href="#form" onclick="track('program_click',{program:'coding'})" class="group bg-white rounded-3xl shadow-sm hover:shadow-lg transition overflow-hidden">
+                    <div class="h-40 bg-blue-50 overflow-hidden"><img src="images/python.png" alt="" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
+                    <div class="p-5"><h3 class="font-semibold text-lg mb-1">Coding</h3><p class="text-sm text-gray-600">Scratch, Python, and web projects, from first steps to real builds.</p></div>
+                </a>
+                <a href="#form" onclick="track('program_click',{program:'stem'})" class="group bg-white rounded-3xl shadow-sm hover:shadow-lg transition overflow-hidden">
+                    <div class="h-40 bg-blue-50 overflow-hidden"><img src="images/robotics.png" alt="" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
+                    <div class="p-5"><h3 class="font-semibold text-lg mb-1">Robotics &amp; STEM</h3><p class="text-sm text-gray-600">Hands-on science and engineering challenges.</p></div>
+                </a>
+                <a href="#form" onclick="track('program_click',{program:'writing'})" class="group bg-white rounded-3xl shadow-sm hover:shadow-lg transition overflow-hidden">
+                    <div class="h-40 bg-blue-50 overflow-hidden"><img src="images/writing.png" alt="" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
+                    <div class="p-5"><h3 class="font-semibold text-lg mb-1">Reading &amp; Writing</h3><p class="text-sm text-gray-600">Stories, arguments, and a confident written voice.</p></div>
+                </a>
+                <a href="#form" onclick="track('program_click',{program:'speaking'})" class="group bg-white rounded-3xl shadow-sm hover:shadow-lg transition overflow-hidden">
+                    <div class="h-40 bg-gray-900 overflow-hidden"><img src="images/publicspeaking.png" alt="" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
+                    <div class="p-5"><h3 class="font-semibold text-lg mb-1">Public Speaking &amp; Debate</h3><p class="text-sm text-gray-600">Think on your feet, argue clearly, and present with confidence.</p></div>
+                </a>
+                <a href="#form" onclick="track('program_click',{program:'test_prep'})" class="group bg-white rounded-3xl shadow-sm hover:shadow-lg transition overflow-hidden">
+                    <div class="h-40 hero-bg flex items-center justify-center text-white">
+                        <div class="text-center"><i class="fa-solid fa-pen-to-square text-4xl mb-2"></i><div class="font-bold tracking-wide">SAT · PSAT · ACT</div></div>
+                    </div>
+                    <div class="p-5"><h3 class="font-semibold text-lg mb-1">Test Prep</h3><p class="text-sm text-gray-600">SAT/ACT and grade-level exams, with a plan that fits the timeline.</p></div>
+                </a>
             </div>
         </div>
     </section>
 
     <!-- How it works -->
-    <section class="py-14 bg-gray-50">
+    <section class="py-14">
         <div class="max-w-4xl mx-auto px-4 sm:px-6">
-            <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8">How it works</h2>
+            <div class="text-center mb-8">
+                <span class="text-sm font-bold uppercase tracking-wide text-blue-600">How it works</span>
+                <h2 class="text-2xl sm:text-3xl font-bold mt-2">Three simple steps</h2>
+            </div>
             <ol class="grid sm:grid-cols-3 gap-4">
-                <li class="bg-white rounded-3xl shadow-sm p-6">
+                <li class="bg-gray-50 rounded-3xl p-6">
                     <div class="w-10 h-10 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center mb-3">1</div>
                     <h3 class="font-semibold mb-1">Request</h3>
-                    <p class="text-sm text-gray-600">Fill out the short form above.</p>
+                    <p class="text-sm text-gray-600">Fill out the short form. It takes about 30 seconds.</p>
                 </li>
-                <li class="bg-white rounded-3xl shadow-sm p-6">
+                <li class="bg-gray-50 rounded-3xl p-6">
                     <div class="w-10 h-10 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center mb-3">2</div>
                     <h3 class="font-semibold mb-1">Schedule</h3>
                     <p class="text-sm text-gray-600">We call or text to find a time that works for you.</p>
                 </li>
-                <li class="bg-white rounded-3xl shadow-sm p-6">
+                <li class="bg-gray-50 rounded-3xl p-6">
                     <div class="w-10 h-10 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center mb-3">3</div>
                     <h3 class="font-semibold mb-1">Assess &amp; plan</h3>
-                    <p class="text-sm text-gray-600">Your child does the assessment, and we share a recommended plan.</p>
+                    <p class="text-sm text-gray-600">Your child does the assessment, and we share a recommended plan. No pressure to sign up.</p>
                 </li>
             </ol>
         </div>
     </section>
 
+    <!-- Mid-page CTA -->
+    <section class="hero-bg text-white py-12">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+            <h2 class="text-2xl sm:text-3xl font-bold mb-3">See where your child stands, for free</h2>
+            <p class="text-blue-100 mb-6">No cost, no obligation. Just a clear picture and a plan.</p>
+            <a href="#form" onclick="track('cta_click',{location:'mid'})" class="inline-block bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-8 py-4 rounded-2xl font-bold text-lg shadow-md">Get my free assessment</a>
+        </div>
+    </section>
+
     <!-- FAQ -->
-    <section class="py-14">
+    <section id="faq" class="py-14 scroll-mt-16">
         <div class="max-w-3xl mx-auto px-4 sm:px-6">
-            <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8">Questions</h2>
-            <div class="space-y-3">
-                <details class="bg-gray-50 rounded-2xl p-5">
-                    <summary class="font-semibold cursor-pointer">Is it really free?</summary>
+            <div class="text-center mb-8">
+                <span class="text-sm font-bold uppercase tracking-wide text-blue-600">FAQ</span>
+                <h2 class="text-2xl sm:text-3xl font-bold mt-2">Questions parents ask</h2>
+            </div>
+            <div class="space-y-3" id="faqList">
+                <details class="bg-gray-50 rounded-2xl p-5" open>
+                    <summary class="font-semibold cursor-pointer">Is the assessment really free?</summary>
                     <p class="text-gray-600 mt-2 text-sm">Yes. There's no cost and no obligation to sign up for anything afterwards.</p>
                 </details>
                 <details class="bg-gray-50 rounded-2xl p-5">
-                    <summary class="font-semibold cursor-pointer">Who is it for?</summary>
-                    <p class="text-gray-600 mt-2 text-sm">Students in grades 3 through 12 — whether they're catching up, keeping pace, or ready for a challenge.</p>
+                    <summary class="font-semibold cursor-pointer">What happens during the assessment?</summary>
+                    <p class="text-gray-600 mt-2 text-sm">Your child does a skills check in the subject you choose, and we talk with you about your child's goals. Afterwards we share a recommendation for next steps.</p>
+                </details>
+                <details class="bg-gray-50 rounded-2xl p-5">
+                    <summary class="font-semibold cursor-pointer">What grades do you serve?</summary>
+                    <p class="text-gray-600 mt-2 text-sm">Students in grades 3 through 12, whether they're catching up, keeping pace, or ready for a challenge.</p>
+                </details>
+                <details class="bg-gray-50 rounded-2xl p-5">
+                    <summary class="font-semibold cursor-pointer">Do you offer both online and in-person classes?</summary>
+                    <p class="text-gray-600 mt-2 text-sm">Yes. Each class is either live online or in person, so you can choose whichever fits your family.</p>
+                </details>
+                <details class="bg-gray-50 rounded-2xl p-5">
+                    <summary class="font-semibold cursor-pointer">Who teaches the classes?</summary>
+                    <p class="text-gray-600 mt-2 text-sm">Every class is taught live by a real instructor, not a pre-recorded video. Instructors adapt to how your child learns and track their progress.</p>
+                </details>
+                <details class="bg-gray-50 rounded-2xl p-5">
+                    <summary class="font-semibold cursor-pointer">How do I enroll after the assessment?</summary>
+                    <p class="text-gray-600 mt-2 text-sm">We'll recommend classes that fit. You can enroll by creating a free account on our website, browsing classes, and clicking "Enroll" on any class with open spots. We're also happy to help over the phone.</p>
                 </details>
                 <details class="bg-gray-50 rounded-2xl p-5">
                     <summary class="font-semibold cursor-pointer">When are you open?</summary>
-                    <p class="text-gray-600 mt-2 text-sm">9:00 AM – 8:00 PM, every day. We'll find a time that fits your schedule.</p>
+                    <p class="text-gray-600 mt-2 text-sm">9:00 AM – 8:00 PM, every day. We'll find an assessment time that fits your schedule.</p>
                 </details>
             </div>
         </div>
     </section>
 
-    <!-- Contact strip -->
-    <section class="py-12 bg-blue-50">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 grid sm:grid-cols-3 gap-4 text-center">
-            <a href="tel:+12019087279" onclick="track('click_call',{location:'footer'})" class="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md">
-                <i class="fa-solid fa-phone text-blue-600 text-xl mb-2"></i><div class="font-semibold">(201) 908-7279</div>
-            </a>
-            <a href="mailto:contact@eepcenter.com" class="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md">
-                <i class="fa-solid fa-envelope text-blue-600 text-xl mb-2"></i><div class="font-semibold break-all">contact@eepcenter.com</div>
-            </a>
-            <a href="https://maps.app.goo.gl/tqFRSx3PgnXRtwZW6" target="_blank" rel="noopener noreferrer" class="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md">
-                <i class="fa-solid fa-location-dot text-blue-600 text-xl mb-2"></i><div class="font-semibold">Get directions</div>
-            </a>
+    <!-- Blog -->
+    <section id="blog" class="py-14 bg-gray-50 scroll-mt-16">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+            <div class="flex flex-wrap items-end justify-between gap-4 mb-8">
+                <div>
+                    <span class="text-sm font-bold uppercase tracking-wide text-blue-600">From our blog</span>
+                    <h2 class="text-2xl sm:text-3xl font-bold mt-2">Guides for parents</h2>
+                </div>
+                <a href="/blog.html" class="text-blue-600 font-semibold hover:underline">All articles <i class="fa-solid fa-arrow-right ml-1"></i></a>
+            </div>
+            <div class="grid md:grid-cols-3 gap-4 sm:gap-6">
+                <a href="/blog/choosing-the-right-enrichment-class.html" class="bg-white rounded-3xl shadow-sm hover:shadow-lg transition p-6 flex flex-col">
+                    <div class="text-3xl mb-3">🧭</div>
+                    <h3 class="font-semibold text-lg mb-2">How to Choose the Right Enrichment Class for Your Child's Grade Level</h3>
+                    <p class="text-sm text-gray-600 flex-1">Matching subject, format, and pace to where your child is right now.</p>
+                    <span class="text-blue-600 text-sm font-semibold mt-4">Read article <i class="fa-solid fa-arrow-right ml-1"></i></span>
+                </a>
+                <a href="/blog/when-to-start-sat-act-prep.html" class="bg-white rounded-3xl shadow-sm hover:shadow-lg transition p-6 flex flex-col">
+                    <div class="text-3xl mb-3">📝</div>
+                    <h3 class="font-semibold text-lg mb-2">When Should Your Child Start SAT/ACT Prep?</h3>
+                    <p class="text-sm text-gray-600 flex-1">Timing guidance by grade, and what to prioritize before full practice tests.</p>
+                    <span class="text-blue-600 text-sm font-semibold mt-4">Read article <i class="fa-solid fa-arrow-right ml-1"></i></span>
+                </a>
+                <a href="/blog/benefits-of-coding-classes-for-kids.html" class="bg-white rounded-3xl shadow-sm hover:shadow-lg transition p-6 flex flex-col">
+                    <div class="text-3xl mb-3">💻</div>
+                    <h3 class="font-semibold text-lg mb-2">5 Benefits of After-School Coding Classes for Kids</h3>
+                    <p class="text-sm text-gray-600 flex-1">What kids get out of coding beyond "learning to code."</p>
+                    <span class="text-blue-600 text-sm font-semibold mt-4">Read article <i class="fa-solid fa-arrow-right ml-1"></i></span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA + contact -->
+    <section class="py-14">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6">
+            <div class="text-center mb-8">
+                <h2 class="text-2xl sm:text-3xl font-bold mb-3">Ready to get started?</h2>
+                <p class="text-gray-500 mb-6">Request your free assessment, or reach us directly.</p>
+                <a href="#form" onclick="track('cta_click',{location:'bottom'})" class="inline-block bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-8 py-4 rounded-2xl font-bold text-lg shadow-md">Get my free assessment</a>
+            </div>
+            <div class="grid sm:grid-cols-3 gap-4 text-center">
+                <a href="tel:+12019087279" onclick="track('click_call',{location:'footer'})" class="bg-blue-50 rounded-2xl p-5 hover:shadow-md">
+                    <i class="fa-solid fa-phone text-blue-600 text-xl mb-2"></i><div class="font-semibold">(201) 908-7279</div>
+                </a>
+                <a href="mailto:contact@eepcenter.com" class="bg-blue-50 rounded-2xl p-5 hover:shadow-md">
+                    <i class="fa-solid fa-envelope text-blue-600 text-xl mb-2"></i><div class="font-semibold break-all">contact@eepcenter.com</div>
+                </a>
+                <a href="https://maps.app.goo.gl/tqFRSx3PgnXRtwZW6" target="_blank" rel="noopener noreferrer" class="bg-blue-50 rounded-2xl p-5 hover:shadow-md">
+                    <i class="fa-solid fa-location-dot text-blue-600 text-xl mb-2"></i><div class="font-semibold">Get directions</div>
+                </a>
+            </div>
         </div>
     </section>
 
     <footer class="bg-gray-900 text-gray-300 pt-10 pb-28 lg:pb-10 text-center text-xs">
-        <div class="mb-2"><a href="/" class="hover:text-white">Visit our full website</a> · <a href="/privacy.html" class="hover:text-white">Privacy</a></div>
+        <div class="mb-2"><a href="/" class="hover:text-white">Full website</a> · <a href="/about.html" class="hover:text-white">About</a> · <a href="/blog.html" class="hover:text-white">Blog</a> · <a href="/calendar.html" class="hover:text-white">Workshops</a> · <a href="/privacy.html" class="hover:text-white">Privacy</a></div>
         <div>© 2026 Excelsior Enrichment Program</div>
     </footer>
 
