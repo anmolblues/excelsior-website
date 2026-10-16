@@ -73,6 +73,7 @@ router.post('/', (req, res) => {
   }
 
   const parentName = clean(body.parentName, 100);
+  const childName = clean(body.childName, 100);
   const email = clean(body.email, 200).toLowerCase();
   const phone = clean(body.phone, 30);
   const studentGrade = clean(body.studentGrade, 10);
@@ -80,7 +81,8 @@ router.post('/', (req, res) => {
   const interestsIn = Array.isArray(body.interests) ? body.interests : [];
   const interests = interestsIn.map((i) => clean(i, 60)).filter((i) => INTERESTS.includes(i));
 
-  if (!parentName) return res.status(400).json({ error: 'Please enter your name.' });
+  if (!parentName) return res.status(400).json({ error: "Please enter the parent's name." });
+  if (!childName) return res.status(400).json({ error: "Please enter your child's name." });
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Please enter a valid email address.' });
   const phoneDigits = phone.replace(/\D/g, '');
   if (phoneDigits.length < 10 || phoneDigits.length > 15) return res.status(400).json({ error: 'Please enter a valid phone number.' });
@@ -89,6 +91,7 @@ router.post('/', (req, res) => {
   const now = new Date().toISOString();
   const lead = {
     parentName,
+    childName,
     email,
     phone,
     studentGrade,
@@ -104,8 +107,8 @@ router.post('/', (req, res) => {
 
   const info = db
     .prepare(
-      `INSERT INTO leads (parentName, email, phone, studentGrade, interests, message, utmSource, utmMedium, utmCampaign, qrCode, status, adminNotes, createdAt, updatedAt)
-       VALUES (@parentName, @email, @phone, @studentGrade, @interests, @message, @utmSource, @utmMedium, @utmCampaign, @qrCode, 'New', '', @createdAt, @updatedAt)`
+      `INSERT INTO leads (parentName, childName, email, phone, studentGrade, interests, message, utmSource, utmMedium, utmCampaign, qrCode, status, adminNotes, createdAt, updatedAt)
+       VALUES (@parentName, @childName, @email, @phone, @studentGrade, @interests, @message, @utmSource, @utmMedium, @utmCampaign, @qrCode, 'New', '', @createdAt, @updatedAt)`
     )
     .run(lead);
 
@@ -114,10 +117,10 @@ router.post('/', (req, res) => {
   const source = [lead.utmSource, lead.utmMedium, lead.utmCampaign].filter(Boolean).join(' / ') || 'direct';
   sendMail({
     to: LEAD_NOTIFY_EMAIL,
-    subject: `New assessment request: ${parentName} (Grade ${studentGrade})`,
+    subject: `New assessment request: ${childName}, Grade ${studentGrade} (parent: ${parentName})`,
     text:
       `New free-assessment request #${info.lastInsertRowid}\n\n` +
-      `Parent: ${parentName}\nEmail: ${email}\nPhone: ${phone}\nGrade: ${studentGrade}\n` +
+      `Parent: ${parentName}\nEmail: ${email}\nPhone: ${phone}\nChild: ${childName}\nGrade: ${studentGrade}\n` +
       `Interests: ${lead.interests || '—'}\nMessage: ${message || '—'}\n` +
       `Source: ${source}${lead.qrCode ? ` (QR: ${lead.qrCode})` : ''}\n\n` +
       `Manage leads: https://excelsiorenrichmentprogram.com/admin.html#leads`,
@@ -128,6 +131,7 @@ router.post('/', (req, res) => {
           <tr><td style="padding:4px 12px 4px 0;color:#6b7280;">Parent</td><td>${escapeHtml(parentName)}</td></tr>
           <tr><td style="padding:4px 12px 4px 0;color:#6b7280;">Email</td><td><a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></td></tr>
           <tr><td style="padding:4px 12px 4px 0;color:#6b7280;">Phone</td><td><a href="tel:${escapeHtml(phoneDigits)}">${escapeHtml(phone)}</a></td></tr>
+          <tr><td style="padding:4px 12px 4px 0;color:#6b7280;">Child</td><td>${escapeHtml(childName)}</td></tr>
           <tr><td style="padding:4px 12px 4px 0;color:#6b7280;">Grade</td><td>${escapeHtml(studentGrade)}</td></tr>
           <tr><td style="padding:4px 12px 4px 0;color:#6b7280;">Interests</td><td>${escapeHtml(lead.interests || '—')}</td></tr>
           <tr><td style="padding:4px 12px 4px 0;color:#6b7280;vertical-align:top;">Message</td><td>${escapeHtml(message || '—')}</td></tr>
@@ -142,14 +146,14 @@ router.post('/', (req, res) => {
     subject: 'We got your free assessment request — Excelsior Enrichment Program',
     text:
       `Hi ${parentName},\n\n` +
-      `Thanks for requesting a free academic assessment for your Grade ${studentGrade} student. ` +
+      `Thanks for requesting a free academic assessment for ${childName} (Grade ${studentGrade}). ` +
       `Someone from our team will reach out within one business day to find a time that works.\n\n` +
       `Questions in the meantime? Call or text +1 (201) 908-7279 or reply to contact@eepcenter.com.\n\n` +
       `— Excelsior Enrichment Program`,
     html: `
       <div style="font-family:-apple-system,Helvetica,Arial,sans-serif;max-width:480px;margin:0 auto;color:#1f2937;">
         <h2 style="color:#2047bb;margin-bottom:4px;">Thanks, ${escapeHtml(parentName)}!</h2>
-        <p>We received your request for a <strong>free academic assessment</strong> for your Grade ${escapeHtml(studentGrade)} student.</p>
+        <p>We received your request for a <strong>free academic assessment</strong> for ${escapeHtml(childName)} (Grade ${escapeHtml(studentGrade)}).</p>
         <p>Someone from our team will reach out within one business day to find a time that works for you.</p>
         <p>Questions in the meantime? Call or text <a href="tel:+12019087279" style="color:#2047bb;">+1 (201) 908-7279</a>
            or email <a href="mailto:contact@eepcenter.com" style="color:#2047bb;">contact@eepcenter.com</a>.</p>
@@ -168,7 +172,7 @@ router.get('/', requireAdmin, (req, res) => {
 
 // GET /api/leads/export.csv — admin: download all leads for a spreadsheet
 router.get('/export.csv', requireAdmin, (req, res) => {
-  const cols = ['id', 'createdAt', 'status', 'parentName', 'email', 'phone', 'studentGrade', 'interests', 'message', 'utmSource', 'utmMedium', 'utmCampaign', 'qrCode', 'adminNotes'];
+  const cols = ['id', 'createdAt', 'status', 'parentName', 'childName', 'email', 'phone', 'studentGrade', 'interests', 'message', 'utmSource', 'utmMedium', 'utmCampaign', 'qrCode', 'adminNotes'];
   const csvCell = (v) => {
     let s = String(v ?? '');
     if (/^[=+\-@]/.test(s)) s = "'" + s; // stop spreadsheet formula injection

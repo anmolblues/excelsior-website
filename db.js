@@ -168,6 +168,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS leads (
     id           INTEGER PRIMARY KEY,
     parentName   TEXT NOT NULL,
+    childName    TEXT NOT NULL DEFAULT '',
     email        TEXT NOT NULL,
     phone        TEXT NOT NULL DEFAULT '',
     studentGrade TEXT NOT NULL DEFAULT '',
@@ -244,6 +245,13 @@ if (!existingBookingColumns.includes('studentGrade')) {
   // with no grade, same as how studentId was added above.
   db.exec('ALTER TABLE bookings ADD COLUMN studentGrade TEXT');
 }
+// Additive migration: childName was added to leads after the table first
+// shipped, so an existing production table needs the column added by hand.
+const existingLeadColumns = db.prepare('PRAGMA table_info(leads)').all().map((c) => c.name);
+if (!existingLeadColumns.includes('childName')) {
+  db.exec("ALTER TABLE leads ADD COLUMN childName TEXT NOT NULL DEFAULT ''");
+}
+
 const existingEventRegColumns = db.prepare("PRAGMA table_info(eventRegistrations)").all().map((c) => c.name);
 if (!existingEventRegColumns.includes('studentId')) {
   db.exec('ALTER TABLE eventRegistrations ADD COLUMN studentId INTEGER');

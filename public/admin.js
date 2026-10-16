@@ -639,6 +639,7 @@ function renderLeads() {
         <a href="mailto:${escapeHtml(l.email)}" class="text-blue-600 text-xs hover:underline break-all">${escapeHtml(l.email)}</a>
       </td>
       <td class="px-4 py-3">
+        <div class="font-medium">${escapeHtml(l.childName || '—')}</div>
         <div>Grade ${escapeHtml(l.studentGrade)}</div>
         <div class="text-xs text-gray-500">${escapeHtml(l.interests || '—')}</div>
         ${l.message ? `<div class="text-xs text-gray-600 mt-1 italic max-w-xs">“${escapeHtml(l.message)}”</div>` : ''}
