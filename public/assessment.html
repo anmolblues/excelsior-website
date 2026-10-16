@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google Analytics (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZD3NB67R0R"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-ZD3NB67R0R');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Free Academic Assessment (Grades 3–12) - Excelsior Enrichment Program</title>
+    <meta name="description" content="Book a free, no-obligation academic assessment for your Grade 3–12 student. Math, reading & writing, test prep, coding & STEM, public speaking & debate.">
+    <link rel="canonical" href="https://excelsiorenrichmentprogram.com/assessment.html">
+    <meta property="og:title" content="Free Academic Assessment — Excelsior Enrichment Program">
+    <meta property="og:description" content="Find out where your child stands and what will help them grow. Grades 3–12. No cost, no obligation.">
+    <meta property="og:image" content="https://excelsiorenrichmentprogram.com/images/eep_short_logo.png">
+    <meta name="theme-color" content="#2047bb">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .hero-bg { background: linear-gradient(135deg, #2047bb 0%, #241d95 100%); }
+        /* 16px inputs stop iOS Safari from zooming in when a field is tapped */
+        .field { font-size: 16px; }
+        .chip input:checked + span { background: #2047bb; color: #fff; border-color: #2047bb; }
+        .chip input:focus-visible + span { outline: 2px solid #facc15; outline-offset: 2px; }
+        #stickyCta { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+        html { scroll-behavior: smooth; }
+    </style>
+</head>
+<body class="font-sans bg-white text-gray-900">
+
+    <!-- Slim header: logo + tap-to-call. No full nav — this page has one job. -->
+    <header class="border-b bg-white sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2 shrink-0">
+                <div class="w-10 h-10 bg-yellow-400 rounded-3xl flex items-center justify-center font-bold text-xl text-blue-800 shadow-md overflow-hidden">
+                    <img src="images/eep_short_logo.png" alt="Excelsior Enrichment Program logo" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='EEP'">
+                </div>
+                <span class="text-sm font-bold tracking-tighter text-blue-700 leading-tight">
+                    Excelsior<br>Enrichment Program
+                </span>
+            </a>
+            <a href="tel:+12019087279" onclick="track('click_call',{location:'header'})"
+               class="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 px-4 py-2.5 rounded-2xl">
+                <i class="fa-solid fa-phone"></i><span class="hidden sm:inline">(201) 908-7279</span><span class="sm:hidden">Call</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Hero + form -->
+    <section class="hero-bg text-white">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-12 lg:py-16 grid lg:grid-cols-2 lg:grid-rows-[auto_1fr] gap-x-10 gap-y-8 items-start">
+            <div class="lg:pt-6 lg:col-start-1 lg:row-start-1">
+                <span class="inline-block bg-yellow-400 text-blue-900 text-xs font-bold uppercase tracking-wide px-3 py-1 rounded-full mb-4">Grades 3–12 · Free</span>
+                <h1 class="text-3xl sm:text-5xl font-extrabold leading-tight mb-4">Get a free academic assessment for your child</h1>
+                <p class="text-lg text-blue-100">Find out where your child stands and what will help them grow. No cost, no obligation.</p>
+            </div>
+
+            <div class="lg:col-start-1 lg:row-start-2 order-last lg:order-none">
+                <h2 class="lg:hidden text-lg font-semibold mb-3">What's included</h2>
+                <ul class="space-y-3 text-blue-50">
+                    <li class="flex gap-3"><i class="fa-solid fa-circle-check text-yellow-400 mt-1"></i><span>A skills check in the subject you choose</span></li>
+                    <li class="flex gap-3"><i class="fa-solid fa-circle-check text-yellow-400 mt-1"></i><span>A one-on-one conversation about your child's goals</span></li>
+                    <li class="flex gap-3"><i class="fa-solid fa-circle-check text-yellow-400 mt-1"></i><span>A personalized recommendation for next steps</span></li>
+                </ul>
+            </div>
+
+            <!-- Lead form -->
+            <div id="form" class="lg:col-start-2 lg:row-start-1 lg:row-span-2 bg-white text-gray-900 rounded-3xl shadow-2xl p-6 sm:p-8 scroll-mt-20">
+                <div id="formWrap">
+                    <h2 class="text-xl font-bold mb-1">Request your free assessment</h2>
+                    <p class="text-sm text-gray-500 mb-5">Takes 30 seconds. We'll call or text to schedule.</p>
+                    <form id="leadForm" class="space-y-4" novalidate>
+                        <div>
+                            <label for="parentName" class="block text-sm font-medium mb-1">Your name</label>
+                            <input id="parentName" name="parentName" required autocomplete="name" maxlength="100"
+                                   class="field w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100">
+                        </div>
+                        <div>
+                            <label for="phone" class="block text-sm font-medium mb-1">Mobile phone</label>
+                            <input id="phone" name="phone" type="tel" required autocomplete="tel" inputmode="tel" maxlength="30" placeholder="(555) 555-5555"
+                                   class="field w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100">
+                        </div>
+                        <div>
+                            <label for="email" class="block text-sm font-medium mb-1">Email</label>
+                            <input id="email" name="email" type="email" required autocomplete="email" inputmode="email" maxlength="200"
+                                   class="field w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100">
+                        </div>
+                        <div>
+                            <label for="studentGrade" class="block text-sm font-medium mb-1">Child's grade</label>
+                            <select id="studentGrade" name="studentGrade" required
+                                    class="field w-full border border-gray-300 rounded-xl px-4 py-3 bg-white focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100">
+                                <option value="">Select grade</option>
+                                <option value="3">3rd grade</option><option value="4">4th grade</option><option value="5">5th grade</option>
+                                <option value="6">6th grade</option><option value="7">7th grade</option><option value="8">8th grade</option>
+                                <option value="9">9th grade</option><option value="10">10th grade</option><option value="11">11th grade</option>
+                                <option value="12">12th grade</option>
+                            </select>
+                        </div>
+                        <fieldset>
+                            <legend class="block text-sm font-medium mb-2">Interested in <span class="text-gray-400 font-normal">(optional)</span></legend>
+                            <div id="interestChips" class="flex flex-wrap gap-2"></div>
+                        </fieldset>
+                        <div>
+                            <label for="message" class="block text-sm font-medium mb-1">Anything we should know? <span class="text-gray-400 font-normal">(optional)</span></label>
+                            <textarea id="message" name="message" rows="2" maxlength="1000"
+                                      class="field w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"></textarea>
+                        </div>
+                        <!-- Honeypot: hidden from people, bots fill it in -->
+                        <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;">
+                            <label for="website">Website</label><input id="website" name="website" tabindex="-1" autocomplete="off">
+                        </div>
+                        <p id="formError" role="alert" class="hidden bg-red-50 text-red-600 text-sm rounded-xl px-4 py-3"></p>
+                        <button id="submitBtn" type="submit"
+                                class="w-full bg-yellow-400 hover:bg-yellow-300 active:bg-yellow-500 text-blue-900 py-4 rounded-2xl font-bold text-lg shadow-md disabled:opacity-60">
+                            Get my free assessment
+                        </button>
+                        <p class="text-xs text-gray-400 text-center">By submitting, you agree we may contact you by phone, text, or email about your request. See our <a href="/privacy.html" class="underline">privacy policy</a>.</p>
+                    </form>
+                </div>
+
+                <!-- Thank-you state -->
+                <div id="thanks" class="hidden text-center py-6" tabindex="-1">
+                    <div class="w-16 h-16 mx-auto bg-green-50 text-green-600 rounded-full flex items-center justify-center text-3xl mb-4">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold mb-2">You're all set!</h2>
+                    <p class="text-gray-600 mb-6">Thanks — we'll reach out within one business day to schedule your free assessment. A confirmation is on its way to your inbox.</p>
+                    <div class="flex flex-col gap-3">
+                        <a href="tel:+12019087279" onclick="track('click_call',{location:'thanks'})" class="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-2xl font-semibold"><i class="fa-solid fa-phone mr-2"></i>Can't wait? Call us now</a>
+                        <a href="/calendar.html" class="bg-gray-100 hover:bg-gray-200 text-gray-900 py-3 rounded-2xl font-semibold">See upcoming workshops</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Subjects -->
+    <section class="py-14">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+            <h2 class="text-2xl sm:text-3xl font-bold text-center mb-2">What we help with</h2>
+            <p class="text-gray-500 text-center mb-8">Small-group classes and tutoring for <span class="whitespace-nowrap">ages 8–18</span>.</p>
+            <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+                <div class="bg-blue-50 rounded-2xl p-4 sm:p-5 text-center"><i class="fa-solid fa-square-root-variable text-2xl text-blue-600 mb-2"></i><div class="font-semibold text-sm sm:text-base">Math</div></div>
+                <div class="bg-blue-50 rounded-2xl p-4 sm:p-5 text-center"><i class="fa-solid fa-book-open text-2xl text-blue-600 mb-2"></i><div class="font-semibold text-sm sm:text-base">Reading &amp; Writing</div></div>
+                <div class="bg-blue-50 rounded-2xl p-4 sm:p-5 text-center"><i class="fa-solid fa-pen-to-square text-2xl text-blue-600 mb-2"></i><div class="font-semibold text-sm sm:text-base">Test Prep</div></div>
+                <div class="bg-blue-50 rounded-2xl p-4 sm:p-5 text-center"><i class="fa-solid fa-robot text-2xl text-blue-600 mb-2"></i><div class="font-semibold text-sm sm:text-base">Coding &amp; STEM</div></div>
+                <div class="bg-blue-50 rounded-2xl p-4 sm:p-5 text-center col-span-2 lg:col-span-1"><i class="fa-solid fa-microphone text-2xl text-blue-600 mb-2"></i><div class="font-semibold text-sm sm:text-base">Public Speaking &amp; Debate</div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="py-14 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6">
+            <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8">How it works</h2>
+            <ol class="grid sm:grid-cols-3 gap-4">
+                <li class="bg-white rounded-3xl shadow-sm p-6">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center mb-3">1</div>
+                    <h3 class="font-semibold mb-1">Request</h3>
+                    <p class="text-sm text-gray-600">Fill out the short form above.</p>
+                </li>
+                <li class="bg-white rounded-3xl shadow-sm p-6">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center mb-3">2</div>
+                    <h3 class="font-semibold mb-1">Schedule</h3>
+                    <p class="text-sm text-gray-600">We call or text to find a time that works for you.</p>
+                </li>
+                <li class="bg-white rounded-3xl shadow-sm p-6">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center mb-3">3</div>
+                    <h3 class="font-semibold mb-1">Assess &amp; plan</h3>
+                    <p class="text-sm text-gray-600">Your child does the assessment, and we share a recommended plan.</p>
+                </li>
+            </ol>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="py-14">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6">
+            <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8">Questions</h2>
+            <div class="space-y-3">
+                <details class="bg-gray-50 rounded-2xl p-5">
+                    <summary class="font-semibold cursor-pointer">Is it really free?</summary>
+                    <p class="text-gray-600 mt-2 text-sm">Yes. There's no cost and no obligation to sign up for anything afterwards.</p>
+                </details>
+                <details class="bg-gray-50 rounded-2xl p-5">
+                    <summary class="font-semibold cursor-pointer">Who is it for?</summary>
+                    <p class="text-gray-600 mt-2 text-sm">Students in grades 3 through 12 — whether they're catching up, keeping pace, or ready for a challenge.</p>
+                </details>
+                <details class="bg-gray-50 rounded-2xl p-5">
+                    <summary class="font-semibold cursor-pointer">When are you open?</summary>
+                    <p class="text-gray-600 mt-2 text-sm">9:00 AM – 8:00 PM, every day. We'll find a time that fits your schedule.</p>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact strip -->
+    <section class="py-12 bg-blue-50">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 grid sm:grid-cols-3 gap-4 text-center">
+            <a href="tel:+12019087279" onclick="track('click_call',{location:'footer'})" class="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md">
+                <i class="fa-solid fa-phone text-blue-600 text-xl mb-2"></i><div class="font-semibold">(201) 908-7279</div>
+            </a>
+            <a href="mailto:contact@eepcenter.com" class="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md">
+                <i class="fa-solid fa-envelope text-blue-600 text-xl mb-2"></i><div class="font-semibold break-all">contact@eepcenter.com</div>
+            </a>
+            <a href="https://maps.app.goo.gl/tqFRSx3PgnXRtwZW6" target="_blank" rel="noopener noreferrer" class="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md">
+                <i class="fa-solid fa-location-dot text-blue-600 text-xl mb-2"></i><div class="font-semibold">Get directions</div>
+            </a>
+        </div>
+    </section>
+
+    <footer class="bg-gray-900 text-gray-300 pt-10 pb-28 lg:pb-10 text-center text-xs">
+        <div class="mb-2"><a href="/" class="hover:text-white">Visit our full website</a> · <a href="/privacy.html" class="hover:text-white">Privacy</a></div>
+        <div>© 2026 Excelsior Enrichment Program</div>
+    </footer>
+
+    <!-- Phones: sticky button that jumps back to the form once it's scrolled away -->
+    <div id="stickyCta" class="lg:hidden fixed inset-x-0 bottom-0 z-50 bg-white/95 backdrop-blur border-t px-4 pt-3 translate-y-full transition-transform duration-200">
+        <a href="#form" class="block w-full text-center bg-yellow-400 text-blue-900 py-3.5 rounded-2xl font-bold text-base shadow">Get my free assessment</a>
+    </div>
+
+    <script>
+    (function(){
+      var INTERESTS = ['Math', 'Reading & Writing', 'Test Prep (SAT/PSAT/ACT)', 'Coding & STEM', 'Public Speaking & Debate', 'Not sure yet'];
+
+      window.track = function(name, params){ try { if (window.gtag) gtag('event', name, params || {}); } catch(e){} };
+
+      // Interest chips (checkboxes styled as pills — big tap targets on phones)
+      var chips = document.getElementById('interestChips');
+      INTERESTS.forEach(function(label, i){
+        var id = 'int' + i;
+        var wrap = document.createElement('label');
+        wrap.className = 'chip cursor-pointer';
+        wrap.setAttribute('for', id);
+        wrap.innerHTML = '<input type="checkbox" id="'+id+'" class="sr-only" name="interests">' +
+          '<span class="inline-block border border-gray-300 rounded-full px-3.5 py-2 text-sm font-medium select-none"></span>';
+        wrap.querySelector('input').value = label;
+        wrap.querySelector('span').textContent = label;
+        chips.appendChild(wrap);
+      });
+
+      // Campaign attribution: the /go/<code> QR redirect adds utm_* and qr=<code>
+      // to the URL. Keep them for this browser session in case the parent
+      // browses around before submitting.
+      var KEYS = { utmSource:'utm_source', utmMedium:'utm_medium', utmCampaign:'utm_campaign', qrCode:'qr' };
+      var params = new URLSearchParams(location.search);
+      var attribution = {};
+      var stored = {};
+      try { stored = JSON.parse(sessionStorage.getItem('eepAttribution') || '{}'); } catch(e){}
+      Object.keys(KEYS).forEach(function(k){ attribution[k] = params.get(KEYS[k]) || stored[k] || ''; });
+      try { sessionStorage.setItem('eepAttribution', JSON.stringify(attribution)); } catch(e){}
+
+      // Sticky CTA: show only while the form is off-screen
+      var sticky = document.getElementById('stickyCta');
+      var formEl = document.getElementById('form');
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function(entries){
+          var visible = entries[0].isIntersecting;
+          var done = !document.getElementById('thanks').classList.contains('hidden');
+          sticky.classList.toggle('translate-y-full', visible || done);
+        }, { threshold: 0.15 }).observe(formEl);
+      }
+
+      var form = document.getElementById('leadForm');
+      var errorEl = document.getElementById('formError');
+      var btn = document.getElementById('submitBtn');
+      var started = false;
+      function clearFieldError(ev){
+        if (ev.target.classList.contains('border-red-400')) { ev.target.classList.remove('border-red-400'); errorEl.classList.add('hidden'); }
+      }
+      form.addEventListener('input', function(ev){
+        clearFieldError(ev);
+        if(!started){ started = true; track('form_start', { form: 'free_assessment' }); }
+      });
+      form.addEventListener('change', clearFieldError);
+
+      function showError(msg, field){
+        errorEl.textContent = msg;
+        errorEl.classList.remove('hidden');
+        if (field) { field.focus(); field.classList.add('border-red-400'); }
+      }
+
+      form.addEventListener('submit', function(ev){
+        ev.preventDefault();
+        errorEl.classList.add('hidden');
+        form.querySelectorAll('.border-red-400').forEach(function(el){ el.classList.remove('border-red-400'); });
+
+        var f = {
+          parentName: form.parentName.value.trim(),
+          phone: form.phone.value.trim(),
+          email: form.email.value.trim(),
+          studentGrade: form.studentGrade.value,
+          message: form.message.value.trim(),
+          website: form.website.value,
+          interests: Array.prototype.map.call(form.querySelectorAll('input[name=interests]:checked'), function(i){ return i.value; })
+        };
+        if (!f.parentName) return showError('Please enter your name.', form.parentName);
+        var digits = f.phone.replace(/\D/g, '');
+        if (digits.length < 10 || digits.length > 15) return showError('Please enter a valid phone number.', form.phone);
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) return showError('Please enter a valid email address.', form.email);
+        if (!f.studentGrade) return showError("Please choose your child's grade.", form.studentGrade);
+
+        Object.keys(attribution).forEach(function(k){ f[k] = attribution[k]; });
+
+        btn.disabled = true;
+        btn.textContent = 'Sending…';
+        fetch('/api/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(f) })
+          .then(function(res){ return res.json().catch(function(){ return {}; }).then(function(data){ if(!res.ok) throw new Error(data.error || 'Something went wrong.'); return data; }); })
+          .then(function(){
+            track('generate_lead', { form: 'free_assessment', student_grade: f.studentGrade, qr_code: attribution.qrCode || '(none)' });
+            document.getElementById('formWrap').classList.add('hidden');
+            var thanks = document.getElementById('thanks');
+            thanks.classList.remove('hidden');
+            sticky.classList.add('translate-y-full');
+            formEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            thanks.focus({ preventScroll: true });
+          })
+          .catch(function(err){
+            showError((err && err.message ? err.message : 'Something went wrong.') + ' You can also call us at (201) 908-7279.');
+          })
+          .finally(function(){ btn.disabled = false; btn.textContent = 'Get my free assessment'; });
+      });
+    })();
+    </script>
+</body>
+</html>

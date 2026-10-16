@@ -9,6 +9,8 @@ const classRoutes = require('./routes/classes');
 const bookingRoutes = require('./routes/bookings');
 const eventRoutes = require('./routes/events');
 const studentRoutes = require('./routes/students');
+const leadRoutes = require('./routes/leads');
+const qrRoutes = require('./routes/qr');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -23,6 +25,11 @@ app.use('/api/classes', classRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/students', studentRoutes);
+app.use('/api/leads', leadRoutes);
+app.use('/api/qr', qrRoutes);
+
+// Trackable QR-code short links (see routes/qr.js): /go/flyer etc.
+app.get('/go/:code', qrRoutes.goHandler);
 
 // Serve the website (HTML/CSS/JS/images) from /public
 app.use(express.static(path.join(__dirname, 'public')));

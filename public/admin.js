@@ -55,6 +55,13 @@ async function showCorrectScreen() {
     await loadEventRegistrations();
     await loadUsers();
     await loadStudents();
+    await loadLeads();
+    await loadQrLinks();
+    // Deep links like admin.html#leads (used in the new-lead alert email)
+    if (location.hash) {
+      const target = document.querySelector(location.hash);
+      if (target) target.scrollIntoView();
+    }
   } else {
     document.getElementById('loginScreen').classList.remove('hidden');
     document.getElementById('dashboard').classList.add('hidden');
@@ -567,3 +574,198 @@ async function deleteStudent(id) {
 
 // ---------- Init ----------
 showCorrectScreen();
+
+
+// ---------- Leads ----------
+// Free-assessment requests from public/assessment.html (routes/leads.js).
+// Status and notes save as soon as you change them.
+
+let allLeads = [];
+let leadStatuses = ['New', 'Contacted', 'Assessed', 'Enrolled', 'Lost'];
+
+const LEAD_STATUS_COLORS = {
+  New: 'bg-blue-50 text-blue-700',
+  Contacted: 'bg-amber-50 text-amber-700',
+  Assessed: 'bg-purple-50 text-purple-700',
+  Enrolled: 'bg-green-50 text-green-700',
+  Lost: 'bg-gray-100 text-gray-500',
+};
+
+async function loadLeads() {
+  const data = await api('/leads');
+  allLeads = data.leads;
+  leadStatuses = data.statuses || leadStatuses;
+  const filter = document.getElementById('leadStatusFilter');
+  if (filter.options.length === 1) {
+    leadStatuses.forEach((s) => filter.add(new Option(s, s)));
+  }
+  renderLeads();
+}
+
+function renderLeads() {
+  const summary = document.getElementById('leadSummary');
+  summary.innerHTML = leadStatuses
+    .map((s) => {
+      const n = allLeads.filter((l) => l.status === s).length;
+      return `<span class="px-3 py-1 rounded-full font-medium ${LEAD_STATUS_COLORS[s] || 'bg-gray-100'}">${escapeHtml(s)}: ${n}</span>`;
+    })
+    .join('');
+
+  const filter = document.getElementById('leadStatusFilter').value;
+  const leads = filter ? allLeads.filter((l) => l.status === filter) : allLeads;
+  const tbody = document.getElementById('leadsTableBody');
+  tbody.innerHTML = '';
+
+  if (leads.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-gray-400">No leads yet.</td></tr>';
+    return;
+  }
+
+  leads.forEach((l) => {
+    const tr = document.createElement('tr');
+    tr.className = 'border-t align-top';
+    const source = l.qrCode
+      ? `<span class="inline-block bg-yellow-50 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-medium"><i class="fa-solid fa-qrcode mr-1"></i>${escapeHtml(l.qrCode)}</span>`
+      : escapeHtml([l.utmSource, l.utmMedium].filter(Boolean).join(' / ') || 'Direct');
+    const options = leadStatuses
+      .map((s) => `<option value="${escapeHtml(s)}" ${s === l.status ? 'selected' : ''}>${escapeHtml(s)}</option>`)
+      .join('');
+    const phoneDigits = (l.phone || '').replace(/[^\d+]/g, '');
+    tr.innerHTML = `
+      <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">${new Date(l.createdAt).toLocaleDateString()}<br>${new Date(l.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</td>
+      <td class="px-4 py-3">
+        <div class="font-medium">${escapeHtml(l.parentName)}</div>
+        <a href="tel:${escapeHtml(phoneDigits)}" class="text-blue-600 text-xs hover:underline">${escapeHtml(l.phone)}</a><br>
+        <a href="mailto:${escapeHtml(l.email)}" class="text-blue-600 text-xs hover:underline break-all">${escapeHtml(l.email)}</a>
+      </td>
+      <td class="px-4 py-3">
+        <div>Grade ${escapeHtml(l.studentGrade)}</div>
+        <div class="text-xs text-gray-500">${escapeHtml(l.interests || '—')}</div>
+        ${l.message ? `<div class="text-xs text-gray-600 mt-1 italic max-w-xs">“${escapeHtml(l.message)}”</div>` : ''}
+      </td>
+      <td class="px-4 py-3">${source}${l.utmCampaign ? `<div class="text-xs text-gray-400 mt-1">${escapeHtml(l.utmCampaign)}</div>` : ''}</td>
+      <td class="px-4 py-3">
+        <select data-lead-status="${l.id}" class="border border-gray-300 rounded-lg px-2 py-1 text-sm ${LEAD_STATUS_COLORS[l.status] || ''}">${options}</select>
+      </td>
+      <td class="px-4 py-3">
+        <textarea data-lead-notes="${l.id}" rows="2" placeholder="Add a note…" class="w-48 border border-gray-200 rounded-lg px-2 py-1 text-xs">${escapeHtml(l.adminNotes)}</textarea>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function saveLead(id, changes) {
+  try {
+    const data = await api('/leads/' + id, { method: 'PATCH', body: JSON.stringify(changes) });
+    const i = allLeads.findIndex((l) => l.id === id);
+    if (i >= 0) allLeads[i] = data.lead;
+    showToast('Lead updated.');
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+document.getElementById('leadsTableBody').addEventListener('change', async (e) => {
+  const statusId = e.target.getAttribute('data-lead-status');
+  const notesId = e.target.getAttribute('data-lead-notes');
+  if (statusId) {
+    await saveLead(Number(statusId), { status: e.target.value });
+    renderLeads();
+    loadQrLinks(); // lead counts per QR don't change, but keep things fresh
+  } else if (notesId) {
+    await saveLead(Number(notesId), { adminNotes: e.target.value });
+  }
+});
+
+// ---------- QR Campaigns ----------
+// Trackable QR links (routes/qr.js). The printed QR contains /go/<code>;
+// the server counts the scan and redirects with UTM tags. Destination and
+// tags can be edited after printing — the code can't.
+
+let allQrLinks = [];
+
+async function loadQrLinks() {
+  const data = await api('/qr');
+  allQrLinks = data.links;
+  const tbody = document.getElementById('qrTableBody');
+  tbody.innerHTML = '';
+
+  if (allQrLinks.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-gray-400">No QR codes yet.</td></tr>';
+    return;
+  }
+
+  allQrLinks.forEach((q) => {
+    const tr = document.createElement('tr');
+    tr.className = 'border-t align-top' + (q.active ? '' : ' opacity-50');
+    const last = q.lastScan ? 'Last scan ' + new Date(q.lastScan).toLocaleDateString() : 'No scans yet';
+    tr.innerHTML = `
+      <td class="px-4 py-3">
+        <a href="/api/qr/${q.id}/image.png" target="_blank" title="Open full size">
+          <img src="/api/qr/${q.id}/image.svg" alt="QR code for ${escapeHtml(q.code)}" class="w-16 h-16 border rounded-lg bg-white">
+        </a>
+      </td>
+      <td class="px-4 py-3">
+        <div class="font-medium">${escapeHtml(q.label || q.code)}${q.active ? '' : ' <span class="text-xs text-gray-500">(off)</span>'}</div>
+        <a href="${escapeHtml(q.shortUrl)}" target="_blank" class="text-blue-600 text-xs hover:underline break-all">${escapeHtml(q.shortUrl)}</a>
+        <div class="text-xs text-gray-400 mt-1">${escapeHtml(last)}</div>
+      </td>
+      <td class="px-4 py-3 text-xs text-gray-600 break-all max-w-xs">${escapeHtml(q.targetUrl)}</td>
+      <td class="px-4 py-3 text-right font-semibold">${q.scans}</td>
+      <td class="px-4 py-3 text-right">${q.scans7d}</td>
+      <td class="px-4 py-3 text-right font-semibold">${q.leads}</td>
+      <td class="px-4 py-3 text-right whitespace-nowrap">
+        <a href="/api/qr/${q.id}/image.png?download=1" class="text-blue-600 hover:underline text-xs mr-2">PNG</a>
+        <a href="/api/qr/${q.id}/image.svg?download=1" class="text-blue-600 hover:underline text-xs mr-3">SVG</a>
+        <button onclick="openQrForm(${q.id})" class="text-blue-600 hover:underline text-xs">Edit</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function openQrForm(id) {
+  const q = id ? allQrLinks.find((x) => x.id === id) : null;
+  document.getElementById('qrFormTitle').textContent = q ? 'Edit QR Code' : 'New QR Code';
+  document.getElementById('qrId').value = q ? q.id : '';
+  const codeEl = document.getElementById('qrCode');
+  codeEl.value = q ? q.code : '';
+  codeEl.disabled = !!q;
+  document.getElementById('qrLabel').value = q ? q.label : '';
+  document.getElementById('qrDestination').value = q ? q.destination : '/assessment.html';
+  document.getElementById('qrUtmSource').value = q ? q.utmSource : '';
+  document.getElementById('qrUtmCampaign').value = q ? q.utmCampaign : 'free_assessment';
+  document.getElementById('qrActive').checked = q ? q.active : true;
+  document.getElementById('qrFormError').classList.add('hidden');
+  document.getElementById('qrFormCard').classList.remove('hidden');
+  document.getElementById('qrFormCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function closeQrForm() {
+  document.getElementById('qrFormCard').classList.add('hidden');
+}
+
+document.getElementById('qrForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errorEl = document.getElementById('qrFormError');
+  errorEl.classList.add('hidden');
+  const id = document.getElementById('qrId').value;
+  const payload = {
+    label: document.getElementById('qrLabel').value,
+    destination: document.getElementById('qrDestination').value,
+    utmSource: document.getElementById('qrUtmSource').value,
+    utmCampaign: document.getElementById('qrUtmCampaign').value,
+    active: document.getElementById('qrActive').checked,
+  };
+  if (!id) payload.code = document.getElementById('qrCode').value;
+  try {
+    await api(id ? '/qr/' + id : '/qr', { method: id ? 'PATCH' : 'POST', body: JSON.stringify(payload) });
+    closeQrForm();
+    await loadQrLinks();
+    showToast(id ? 'QR code updated.' : 'QR code created — download the PNG or SVG to print.');
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.remove('hidden');
+  }
+});

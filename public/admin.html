@@ -50,6 +50,103 @@
     <!-- Admin dashboard -->
     <div id="dashboard" class="hidden max-w-6xl mx-auto px-6 py-10">
 
+        <!-- Leads (free-assessment requests from /assessment.html) -->
+        <div id="leads" class="mb-12 scroll-mt-6">
+            <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                <div>
+                    <h2 class="text-2xl font-semibold">Leads</h2>
+                    <p class="text-sm text-gray-500">Free-assessment requests from <a href="/assessment.html" target="_blank" class="text-blue-600 hover:underline">/assessment.html</a>. Change the status as you follow up.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <select id="leadStatusFilter" onchange="renderLeads()" class="border border-gray-300 rounded-xl px-3 py-2 text-sm bg-white">
+                        <option value="">All statuses</option>
+                    </select>
+                    <a href="/api/leads/export.csv" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl text-sm font-medium"><i class="fa-solid fa-download mr-1"></i> CSV</a>
+                </div>
+            </div>
+            <div id="leadSummary" class="flex flex-wrap gap-2 mb-4 text-sm"></div>
+            <div class="bg-white rounded-3xl shadow overflow-x-auto">
+                <table class="w-full text-sm min-w-[860px]">
+                    <thead class="bg-gray-50 text-left text-gray-500">
+                        <tr>
+                            <th class="px-4 py-3">Received</th>
+                            <th class="px-4 py-3">Parent</th>
+                            <th class="px-4 py-3">Grade / Interests</th>
+                            <th class="px-4 py-3">Source</th>
+                            <th class="px-4 py-3">Status</th>
+                            <th class="px-4 py-3">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leadsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- QR Campaigns (trackable /go/<code> links) -->
+        <div id="qr" class="mb-12 scroll-mt-6">
+            <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                <div>
+                    <h2 class="text-2xl font-semibold">QR Campaigns</h2>
+                    <p class="text-sm text-gray-500">Each printed QR code points to a short <code>/go/…</code> link. Scans are counted here and tagged for Google Analytics.</p>
+                </div>
+                <button onclick="openQrForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-2xl font-semibold text-sm">
+                    <i class="fa-solid fa-plus mr-1"></i> New QR Code
+                </button>
+            </div>
+
+            <div id="qrFormCard" class="hidden bg-white rounded-3xl shadow p-6 mb-6">
+                <h3 id="qrFormTitle" class="font-semibold text-lg mb-4">New QR Code</h3>
+                <form id="qrForm" class="grid sm:grid-cols-2 gap-4">
+                    <input type="hidden" id="qrId">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Code <span class="text-gray-400 font-normal">(goes in the printed link — can't be changed later)</span></label>
+                        <input required id="qrCode" placeholder="e.g. library-flyer" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm disabled:bg-gray-100 disabled:text-gray-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Label</label>
+                        <input id="qrLabel" placeholder="e.g. Flyer at the public library" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium mb-1">Destination page</label>
+                        <input id="qrDestination" value="/assessment.html" placeholder="/assessment.html" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">utm_source <span class="text-gray-400 font-normal">(defaults to the code)</span></label>
+                        <input id="qrUtmSource" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">utm_campaign</label>
+                        <input id="qrUtmCampaign" placeholder="e.g. free_assessment" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm">
+                    </div>
+                    <label class="flex items-center gap-2 text-sm">
+                        <input type="checkbox" id="qrActive" checked> Active (when off, scans go to the assessment page untracked)
+                    </label>
+                    <p id="qrFormError" class="hidden sm:col-span-2 bg-red-50 text-red-600 text-sm rounded-xl px-4 py-2"></p>
+                    <div class="sm:col-span-2 flex gap-3">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-semibold text-sm">Save</button>
+                        <button type="button" onclick="closeQrForm()" class="bg-gray-100 hover:bg-gray-200 px-6 py-3 rounded-2xl font-semibold text-sm">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow overflow-x-auto">
+                <table class="w-full text-sm min-w-[860px]">
+                    <thead class="bg-gray-50 text-left text-gray-500">
+                        <tr>
+                            <th class="px-4 py-3">QR</th>
+                            <th class="px-4 py-3">Link</th>
+                            <th class="px-4 py-3">Goes to</th>
+                            <th class="px-4 py-3 text-right">Scans</th>
+                            <th class="px-4 py-3 text-right">Last 7 days</th>
+                            <th class="px-4 py-3 text-right">Leads</th>
+                            <th class="px-4 py-3"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="qrTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
         <div class="flex flex-wrap justify-between items-center gap-4 mb-8">
             <h1 class="text-2xl font-semibold">Manage Classes</h1>
             <button onclick="openClassForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-2xl font-semibold text-sm">

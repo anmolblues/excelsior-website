@@ -269,7 +269,43 @@ with repeated Event IDs made unique). After deploying and restarting, run
 re-run; it skips Event IDs that already exist). After that the Sheet and
 `google-apps-script/events-backend.gs` are no longer used by the site.
 
-## 9. Before going live (deploying for real families to use)
+## 9. Lead capture & QR codes
+
+**Landing page:** `/assessment.html` — a mobile-first "free academic assessment"
+form. Parents don't need an account. Each submission:
+
+- is saved to the `leads` table (with the UTM tags / QR code that brought them),
+- emails an alert to `LEAD_NOTIFY_EMAIL` (default `contact@eepcenter.com`), and
+- emails the parent a thank-you (both via `mailer.js`; logged only if SMTP isn't set up),
+- fires a `generate_lead` event in Google Analytics.
+
+Spam protection: a hidden honeypot field plus a limit of 5 submissions per IP
+per 10 minutes.
+
+Work the leads in **admin.html → Leads**: change status
+(New → Contacted → Assessed → Enrolled / Lost), add notes, or download a CSV.
+
+**Trackable QR codes:** printed QR codes point at short links like
+`https://excelsiorenrichmentprogram.com/go/flyer`. The server counts the scan
+and redirects to the destination page with `utm_source / utm_medium / utm_campaign`
+(and `qr=<code>`) added, so GA4 attributes the visit and the lead form records
+which QR code it came from. A `flyer` link is created automatically.
+
+Create a new one for each flyer/location in **admin.html → QR Campaigns**
+(no code change or redeploy), then download its PNG/SVG to print. You can change
+a link's destination or tags after printing; the code itself can't change.
+
+Optional environment variables (in `ecosystem.config.js`):
+
+```
+LEAD_NOTIFY_EMAIL=contact@eepcenter.com   # where new-lead alerts go (comma-separate several)
+PUBLIC_BASE_URL=https://excelsiorenrichmentprogram.com   # domain used inside generated QR codes
+```
+
+Deploying this feature needs `npm install` (new `qrcode` package) before the
+PM2 restart. The new tables are created automatically on startup.
+
+## 10. Before going live (deploying for real families to use)
 
 A few important things to change before this is a public, real-world site:
 
@@ -293,7 +329,7 @@ A few important things to change before this is a public, real-world site:
 5. **Back up `data/eep.db`** regularly (see "How data is stored" above), or
    migrate to a managed database if you expect a lot of traffic.
 
-## 10. Project structure
+## 11. Project structure
 
 ```
 excelsior-website/
@@ -309,12 +345,15 @@ excelsior-website/
 │   ├── classes.js      # /api/classes/* (listing, search/filter, admin CRUD)
 │   ├── bookings.js     # /api/bookings/* (enroll, my bookings, cancel, admin view)
 │   ├── events.js       # /api/events/* (Workshop Events: list, register, cancel, admin add/edit/delete)
-│   └── students.js     # /api/students/* (a parent's saved children: list, add, edit, remove)
+│   ├── students.js     # /api/students/* (a parent's saved children: list, add, edit, remove)
+│   ├── leads.js        # /api/leads/* (free-assessment form submit, admin list/update/CSV)
+│   └── qr.js           # /go/:code QR redirect + /api/qr/* (admin QR campaigns, scan counts, images)
 ├── data/               # eep.db lives here (back this up!)
 └── public/
     ├── index.html       # main site
     ├── app.js           # main site frontend logic
     ├── calendar.html     # Workshop Events page (its own self-contained script)
+    ├── assessment.html   # free-assessment lead-capture landing page (QR codes point here)
     ├── admin.html        # admin dashboard
     └── admin.js          # admin dashboard logic
 ```

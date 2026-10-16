@@ -160,6 +160,56 @@ db.exec(`
     createdAt      TEXT NOT NULL
   );
 
+  -- Lead capture (public/assessment.html → routes/leads.js). A lead is a
+  -- parent who asked for a free assessment; no account needed. The utm*
+  -- and qrCode columns record which flyer/campaign brought them in.
+  -- status moves New → Contacted → Assessed → Enrolled (or Lost) from
+  -- the admin panel.
+  CREATE TABLE IF NOT EXISTS leads (
+    id           INTEGER PRIMARY KEY,
+    parentName   TEXT NOT NULL,
+    email        TEXT NOT NULL,
+    phone        TEXT NOT NULL DEFAULT '',
+    studentGrade TEXT NOT NULL DEFAULT '',
+    interests    TEXT NOT NULL DEFAULT '',
+    message      TEXT NOT NULL DEFAULT '',
+    utmSource    TEXT NOT NULL DEFAULT '',
+    utmMedium    TEXT NOT NULL DEFAULT '',
+    utmCampaign  TEXT NOT NULL DEFAULT '',
+    qrCode       TEXT NOT NULL DEFAULT '',
+    status       TEXT NOT NULL DEFAULT 'New',
+    adminNotes   TEXT NOT NULL DEFAULT '',
+    createdAt    TEXT NOT NULL,
+    updatedAt    TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_leads_createdAt ON leads(createdAt);
+
+  -- Trackable QR links (routes/qr.js). A printed QR code points at
+  -- /go/<code>; the server logs a row in qrScans and redirects to
+  -- 'destination' with UTM tags added. The destination/tags can be changed
+  -- from the admin panel after the flyer is printed. Don't rename 'code'
+  -- once it's printed — that's what the physical QR code contains.
+  CREATE TABLE IF NOT EXISTS qrLinks (
+    id          INTEGER PRIMARY KEY,
+    code        TEXT NOT NULL UNIQUE,
+    label       TEXT NOT NULL DEFAULT '',
+    destination TEXT NOT NULL DEFAULT '/assessment.html',
+    utmSource   TEXT NOT NULL DEFAULT '',
+    utmMedium   TEXT NOT NULL DEFAULT 'qr',
+    utmCampaign TEXT NOT NULL DEFAULT '',
+    active      INTEGER NOT NULL DEFAULT 1,
+    createdAt   TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS qrScans (
+    id        INTEGER PRIMARY KEY,
+    code      TEXT NOT NULL,
+    createdAt TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_qrScans_code ON qrScans(code);
+
   CREATE TABLE IF NOT EXISTS counters (
     name  TEXT PRIMARY KEY,
     value INTEGER NOT NULL DEFAULT 0
