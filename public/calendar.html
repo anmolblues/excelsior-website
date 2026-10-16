@@ -121,16 +121,15 @@
         .cal-daycell.hasEvents:hover{ border-color:var(--cal-accent); }
         .cal-evchip{
             font-size:10.5px; line-height:1.35; font-weight:600; padding:2px 6px; border-radius:6px;
-            white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;
+            white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:none;
         }
-        .cal-evchip:hover{ filter:brightness(0.94); }
         .cal-evchip .t{ font-family:"IBM Plex Mono",monospace; font-weight:500; opacity:.8; margin-right:3px; }
-        .cal-more{ font-size:10.5px; font-weight:600; color:var(--cal-ink-faint); padding:1px 6px; cursor:pointer; }
-        .cal-more:hover{ color:var(--cal-accent); }
+        .cal-more{ font-size:10.5px; font-weight:600; color:var(--cal-ink-faint); padding:1px 6px; pointer-events:none; }
         .cal-daycell.selected{ background:#fff; border-color:var(--cal-accent); box-shadow:0 0 0 1px var(--cal-accent) inset; }
 
-        /* Day details under the month grid — only used on phones (see renderDayPanel). */
-        .cal-daypanel{ display:none; margin-top:14px; }
+        /* Day details under the month grid, on every screen size (see renderDayPanel).
+           Event chips in the grid are display-only; only a day can be clicked. */
+        .cal-daypanel{ display:block; margin-top:14px; }
         .cal-daypanel h3{ font-size:14px; font-weight:700; color:var(--cal-ink); margin:0 0 8px; }
         .cal-dayrow{ display:flex; gap:12px; align-items:center; justify-content:space-between; background:#fff;
             border:1px solid var(--cal-line); border-radius:14px; padding:12px 14px; margin-bottom:8px; }
@@ -779,9 +778,8 @@
       var cell = elt('div','cal-daycell inmonth'+(evs.length?' hasEvents':'')+(state.selectedDay===iso?' selected':''));
       cell.setAttribute('data-date', iso);
 
-      // Event IDs are free-text slugs from the Sheet, so they go through a
-      // data attribute + the delegated listener below, not an inline onclick
-      // (see the same note on the Register buttons in renderList).
+      // Chips are display-only: clicking a day (the whole cell) selects it and
+      // shows its sessions, with Register buttons, in the day panel below.
       // Desktop shows at most 3 named chips plus "+N more"; phones show one
       // dot per session (there's no room for a "+N more" label there).
       var maxChips = isPhone() ? evs.length : MAX_CHIPS_PER_DAY;
@@ -789,13 +787,13 @@
         var cat = catMeta(e.cat) || {label: e.cat || 'Other'};
         var ss = seatState(e);
         var tooltip = (e.start ? e.start+' – ' : '') + e.name + (ss.left<=0 ? ' (Waitlist)' : '');
-        return '<div class="cal-evchip" data-open-id="'+escapeAttr(e.id)+'" title="'+escapeAttr(tooltip)+'" ' +
+        return '<div class="cal-evchip" title="'+escapeAttr(tooltip)+'" ' +
           'style="background:var(--cal-'+e.cat+'-bg);color:var(--cal-'+e.cat+')">' +
           e.name + (ss.left<=0 ? ' • waitlist' : '') +
           '</div>';
       }).join('');
       var moreHtml = evs.length > maxChips
-        ? '<div class="cal-more" data-filter-date="'+iso+'">+'+(evs.length-maxChips)+' more</div>'
+        ? '<div class="cal-more">+'+(evs.length-maxChips)+' more</div>'
         : '';
 
       cell.innerHTML = '<div class="num">'+day+'</div>' + chipsHtml + moreHtml;
@@ -812,16 +810,14 @@
   function isPhone(){ return window.matchMedia && window.matchMedia('(max-width:640px)').matches; }
   function escapeText(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-  // Phones only (the panel is display:none on wider screens): the sessions
-  // for the tapped day, with the same details and Register buttons as the
-  // list view.
+  // The sessions for the selected day, with the same details and Register
+  // buttons as the list view. Shown on every screen size.
   function renderDayPanel(){
     var host=document.getElementById('dayPanel');
     var sel=state.selectedDay;
-    if(!isPhone()){ host.innerHTML=''; return; }
     var evs = sel ? EVENTS.filter(function(e){ return e.date===sel; }).sort(function(a,b){ return timeMinutes(a.start)-timeMinutes(b.start); }) : [];
     if(!sel || !evs.length){
-      host.innerHTML='<div class="cal-dayhint">Tap a day with colored dots to see its sessions.</div>';
+      host.innerHTML='<div class="cal-dayhint">'+(isPhone() ? 'Tap a day with colored dots to see its sessions.' : 'Click a day with sessions to see them here.')+'</div>';
       return;
     }
     var d=parseDate(sel);
@@ -962,25 +958,14 @@
   document.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ closeModal(); closeAuthModal(); } });
 
   document.getElementById('monthGrid').addEventListener('click', function(ev){
-    var chip = ev.target.closest('[data-open-id]');
-    if(chip){ openModal(chip.getAttribute("data-open-id")); return; }
-    var more = ev.target.closest('[data-filter-date]');
-    if(more){ state.dateFilter = more.getAttribute('data-filter-date'); setView('list'); return; }
+    // Only a day cell with sessions is clickable (the chips inside it are
+    // display-only). It selects the day and shows its sessions below the grid.
     var cell = ev.target.closest('.cal-daycell.hasEvents');
-    if(cell){
-      if(isPhone()){
-        // Phones: stay on the month grid and show that day's sessions below it.
-        state.selectedDay = cell.getAttribute('data-date');
-        renderMonth();
-        var panel=document.getElementById('dayPanel');
-        if(panel && panel.scrollIntoView) panel.scrollIntoView({behavior:'smooth', block:'nearest'});
-        return;
-      }
-      // Clicked the day background (not a specific chip) — jump to the list
-      // view filtered to that date.
-      state.dateFilter = cell.getAttribute('data-date');
-      setView('list');
-    }
+    if(!cell) return;
+    state.selectedDay = cell.getAttribute('data-date');
+    renderMonth();
+    var panel=document.getElementById('dayPanel');
+    if(panel && panel.scrollIntoView) panel.scrollIntoView({behavior:'smooth', block:'nearest'});
   });
 
   document.getElementById('listView').addEventListener('click', function(ev){
