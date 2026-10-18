@@ -112,6 +112,7 @@
             <nav class="hidden md:flex items-center gap-6 text-sm font-semibold text-gray-700">
                 <a href="#about" class="hover:text-blue-600">Who We Are</a>
                 <a href="#programs" class="hover:text-blue-600">Programs</a>
+                <a href="#pricing" class="hover:text-blue-600">Pricing</a>
                 <a href="#faq" class="hover:text-blue-600">FAQ</a>
                 <a href="#blog" class="hover:text-blue-600">Blog</a>
             </nav>
@@ -267,32 +268,50 @@
                 <p class="text-gray-500">The free assessment helps us recommend the right starting point.</p>
             </div>
             <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                <a href="#form" onclick="track('program_click',{program:'math'})" class="group bg-white rounded-3xl shadow-sm hover:shadow-lg transition overflow-hidden">
+                <a href="#form" data-program="math" onclick="track('program_click',{program:'math'})" class="group bg-white rounded-3xl shadow-sm hover:shadow-lg transition overflow-hidden">
                     <div class="h-40 bg-blue-50 overflow-hidden"><img src="images/algebra.png" alt="" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
                     <div class="p-5"><h3 class="font-semibold text-lg mb-1">Math</h3><p class="text-sm text-gray-600">From building strong foundations to advanced problem solving.</p></div>
                 </a>
-                <a href="#form" onclick="track('program_click',{program:'coding'})" class="group bg-white rounded-3xl shadow-sm hover:shadow-lg transition overflow-hidden">
+                <a href="#form" data-program="coding" onclick="track('program_click',{program:'coding'})" class="group bg-white rounded-3xl shadow-sm hover:shadow-lg transition overflow-hidden">
                     <div class="h-40 bg-blue-50 overflow-hidden"><img src="images/python.png" alt="" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
                     <div class="p-5"><h3 class="font-semibold text-lg mb-1">Coding</h3><p class="text-sm text-gray-600">Scratch, Python, and web projects, from first steps to real builds.</p></div>
                 </a>
-                <a href="#form" onclick="track('program_click',{program:'stem'})" class="group bg-white rounded-3xl shadow-sm hover:shadow-lg transition overflow-hidden">
+                <a href="#form" data-program="stem" onclick="track('program_click',{program:'stem'})" class="group bg-white rounded-3xl shadow-sm hover:shadow-lg transition overflow-hidden">
                     <div class="h-40 bg-blue-50 overflow-hidden"><img src="images/robotics.png" alt="" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
                     <div class="p-5"><h3 class="font-semibold text-lg mb-1">Robotics &amp; STEM</h3><p class="text-sm text-gray-600">Hands-on science and engineering challenges.</p></div>
                 </a>
-                <a href="#form" onclick="track('program_click',{program:'writing'})" class="group bg-white rounded-3xl shadow-sm hover:shadow-lg transition overflow-hidden">
+                <a href="#form" data-program="writing" onclick="track('program_click',{program:'writing'})" class="group bg-white rounded-3xl shadow-sm hover:shadow-lg transition overflow-hidden">
                     <div class="h-40 bg-blue-50 overflow-hidden"><img src="images/writing.png" alt="" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
                     <div class="p-5"><h3 class="font-semibold text-lg mb-1">Reading &amp; Writing</h3><p class="text-sm text-gray-600">Stories, arguments, and a confident written voice.</p></div>
                 </a>
-                <a href="#form" onclick="track('program_click',{program:'speaking'})" class="group bg-white rounded-3xl shadow-sm hover:shadow-lg transition overflow-hidden">
+                <a href="#form" data-program="speaking" onclick="track('program_click',{program:'speaking'})" class="group bg-white rounded-3xl shadow-sm hover:shadow-lg transition overflow-hidden">
                     <div class="h-40 bg-gray-900 overflow-hidden"><img src="images/publicspeaking.png" alt="" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition"></div>
                     <div class="p-5"><h3 class="font-semibold text-lg mb-1">Public Speaking &amp; Debate</h3><p class="text-sm text-gray-600">Think on your feet, argue clearly, and present with confidence.</p></div>
                 </a>
-                <a href="#form" onclick="track('program_click',{program:'test_prep'})" class="group bg-white rounded-3xl shadow-sm hover:shadow-lg transition overflow-hidden">
+                <a href="#form" data-program="test_prep" onclick="track('program_click',{program:'test_prep'})" class="group bg-white rounded-3xl shadow-sm hover:shadow-lg transition overflow-hidden">
                     <div class="h-40 hero-bg flex items-center justify-center text-white">
                         <div class="text-center"><i class="fa-solid fa-pen-to-square text-4xl mb-2"></i><div class="font-bold tracking-wide">SAT · PSAT · ACT</div></div>
                     </div>
                     <div class="p-5"><h3 class="font-semibold text-lg mb-1">Test Prep</h3><p class="text-sm text-gray-600">SAT/ACT and grade-level exams, with a plan that fits the timeline.</p></div>
                 </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Classes & pricing (live from /api/classes, same data as the homepage) -->
+    <section id="pricing" class="py-14 scroll-mt-16">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+            <div class="text-center mb-8">
+                <span class="text-sm font-bold uppercase tracking-wide text-blue-600">Classes &amp; pricing</span>
+                <h2 class="text-2xl sm:text-3xl font-bold mt-2 mb-2">Current classes</h2>
+                <p class="text-gray-500">Prices shown per class.</p>
+                <p class="inline-flex items-center gap-2 mt-3 bg-yellow-100 text-yellow-900 text-sm font-semibold px-4 py-2 rounded-full"><i class="fa-solid fa-gift"></i> Register today and get a $20 credit toward your selected program</p>
+            </div>
+            <div id="classPriceList" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                <div class="text-gray-400 text-sm">Loading classes…</div>
+            </div>
+            <div class="text-center mt-6">
+                <button id="showAllClasses" type="button" class="hidden bg-gray-100 hover:bg-gray-200 text-gray-900 px-6 py-3 rounded-2xl font-semibold">Show all classes</button>
             </div>
         </div>
     </section>
@@ -540,6 +559,88 @@
             showError((err && err.message ? err.message : 'Something went wrong.') + ' You can also call us at (201) 908-7279.');
           })
           .finally(function(){ btn.disabled = false; btn.textContent = 'Get my free assessment'; });
+      });
+    })();
+    </script>
+
+    <script>
+    // Classes & pricing: live class list + "From $X" on the program cards.
+    (function(){
+      var host = document.getElementById('classPriceList');
+      var moreBtn = document.getElementById('showAllClasses');
+      if (!host) return;
+      var INITIAL = 6;
+      // Which classes count toward each program card (by subject, or by title keyword).
+      var PROGRAMS = {
+        math:     { subjects: ['math'] },
+        coding:   { subjects: ['coding'], exclude: /robot/i },
+        stem:     { subjects: ['science', 'science lab', 'stem'], titles: /robot/i },
+        writing:  { subjects: ['english', 'writing', 'reading'] },
+        speaking: { subjects: ['public speaking', 'debate'] },
+        test_prep:{ subjects: ['test prep', 'sat', 'act'] }
+      };
+      function esc(s){ var d=document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+      function money(n){ n = Number(n) || 0; return '$' + (n % 1 ? n.toFixed(2) : n); }
+      function unit(u){ u = String(u || 'per class').trim(); return u.replace(/^per\s+/i, '/ '); }
+      function fmt(f){ return String(f || '').split('/').map(function(x){ x = x.trim(); return x === 'in-person' ? 'In person' : x.charAt(0).toUpperCase() + x.slice(1); }).join(' or '); }
+      function matches(c, rule){
+        var subj = String(c.subject || '').toLowerCase();
+        if (rule.exclude && rule.exclude.test(c.title)) return false;
+        return rule.subjects.indexOf(subj) !== -1 || (rule.titles && rule.titles.test(c.title));
+      }
+      function card(c){
+        var seats = c.spotsLeft <= 0 ? '<span class="text-red-600 font-semibold">Full – join waitlist</span>'
+                  : c.spotsLeft <= 3 ? '<span class="text-amber-600 font-semibold">' + c.spotsLeft + ' spot' + (c.spotsLeft === 1 ? '' : 's') + ' left</span>'
+                  : '<span class="text-green-700 font-semibold">Open</span>';
+        var img = c.image ? '<div class="h-36 bg-blue-50 overflow-hidden"><img src="' + esc(c.image) + '" alt="" loading="lazy" class="w-full h-full object-cover"></div>' : '';
+        return '<div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">' + img +
+          '<div class="p-5 flex flex-col flex-1">' +
+            '<div class="flex items-start justify-between gap-3 mb-2">' +
+              '<div><div class="text-xs font-semibold text-blue-700 mb-1">' + esc(c.subject) + '</div>' +
+              '<h3 class="font-semibold leading-snug">' + esc(c.title) + '</h3></div>' +
+              '<div class="text-right shrink-0"><div class="text-2xl font-extrabold text-blue-700 leading-none">' + money(c.price) + '</div>' +
+              '<div class="text-xs text-gray-500 mt-1">' + esc(unit(c.priceUnit)) + '</div></div>' +
+            '</div>' +
+            '<div class="text-sm text-gray-600 space-y-1 mb-4">' +
+              '<div><i class="fa-solid fa-user-graduate w-4 text-gray-400"></i> Ages ' + esc(c.ageMin) + '–' + esc(c.ageMax) + '</div>' +
+              (c.schedule ? '<div><i class="fa-regular fa-clock w-4 text-gray-400"></i> ' + esc(c.schedule) + '</div>' : '') +
+              (c.format ? '<div><i class="fa-solid fa-location-dot w-4 text-gray-400"></i> ' + esc(fmt(c.format)) + '</div>' : '') +
+              '<div><i class="fa-solid fa-chair w-4 text-gray-400"></i> ' + seats + '</div>' +
+            '</div>' +
+            '<a href="#form" onclick="track(\'pricing_click\',{class_id:' + Number(c.id) + '})" class="mt-auto text-center bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-2xl font-semibold text-sm">Get started</a>' +
+          '</div></div>';
+      }
+      fetch('/api/classes').then(function(r){ return r.json(); }).then(function(data){
+        // Mix subjects so the first few cards aren't all one subject:
+        // take one class from each subject in turn (cheapest first within a subject).
+        var bySubject = {};
+        (data.classes || []).forEach(function(c){ (bySubject[c.subject] = bySubject[c.subject] || []).push(c); });
+        var groups = Object.keys(bySubject).sort().map(function(k){
+          return bySubject[k].sort(function(a, b){ return a.price - b.price || String(a.title).localeCompare(String(b.title)); });
+        });
+        var classes = [];
+        for (var i = 0; groups.some(function(g){ return g.length > i; }); i++) {
+          groups.forEach(function(g){ if (g[i]) classes.push(g[i]); });
+        }
+        if (!classes.length) { host.innerHTML = '<p class="text-gray-500 text-center sm:col-span-2 lg:col-span-3">New classes are coming soon. Call us at (201) 908-7279 for current pricing.</p>'; return; }
+        function render(all){
+          host.innerHTML = (all ? classes : classes.slice(0, INITIAL)).map(card).join('');
+          moreBtn.classList.toggle('hidden', all || classes.length <= INITIAL);
+        }
+        render(false);
+        moreBtn.textContent = 'Show all ' + classes.length + ' classes';
+        moreBtn.onclick = function(){ render(true); track('pricing_show_all', {}); };
+
+        // "From $X / class" on each program card that has matching classes
+        Object.keys(PROGRAMS).forEach(function(key){
+          var el = document.querySelector('[data-program="' + key + '"] h3');
+          var list = classes.filter(function(c){ return matches(c, PROGRAMS[key]); });
+          if (!el || !list.length) return;
+          var min = list.reduce(function(m, c){ return Number(c.price) < Number(m.price) ? c : m; });
+          el.insertAdjacentHTML('afterend', '<div class="text-sm font-semibold text-blue-700 mb-1">From ' + money(min.price) + ' ' + esc(unit(min.priceUnit)) + '</div>');
+        });
+      }).catch(function(){
+        host.innerHTML = '<p class="text-gray-500 text-center sm:col-span-2 lg:col-span-3">Call us at (201) 908-7279 for current class pricing.</p>';
       });
     })();
     </script>
