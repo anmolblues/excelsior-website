@@ -142,6 +142,8 @@
         .cal-dayrow .meta{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:4px; font-size:12.5px; color:var(--cal-ink-soft); }
         .cal-dayrow .seats{ margin-top:4px; font-size:12px; color:var(--cal-ink-faint); }
         .cal-dayrow .cal-btn{ width:auto; flex:none; padding-left:14px; padding-right:14px; }
+        .cal-daycell.today .num{ background:var(--cal-accent); color:#fff; border-radius:999px; min-width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; padding:0 6px; }
+        .cal-nextbtn{ display:inline-flex; align-items:center; gap:6px; margin-top:8px; font-size:13px; font-weight:600; color:var(--cal-accent); background:#fff; border:1px solid var(--cal-line); border-radius:999px; padding:6px 14px; cursor:pointer; }
         .cal-dayhint{ text-align:center; font-size:13px; color:var(--cal-ink-faint); padding:6px 0; }
 
         /* Phones: 7 columns are too narrow for event names, so each day shows
@@ -445,7 +447,7 @@
   // registrations table. Registering is handled by our server as well.
 
   var EVENTS = [];
-  var state = { cats:new Set(), grades:new Set(), q:'', view:'month', dateFilter:null, monthCursor:new Date(new Date().getFullYear(), new Date().getMonth(), 1), selectedDay:null };
+  var state = { cats:new Set(), grades:new Set(), q:'', view:'month', dateFilter:null, monthCursor:new Date(new Date().getFullYear(), new Date().getMonth(), 1), selectedDay:todayIso() };
   var activeEventId = null;
   var currentUser = null;
   // Registration details captured before the user logs in / signs up — same
@@ -790,6 +792,10 @@
     }).join('');
   }
 
+  // Today's date in the visitor's time zone, as yyyy-mm-dd.
+  function todayIso(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function isCurrentMonth(c){ var n=new Date(); return c.getFullYear()===n.getFullYear() && c.getMonth()===n.getMonth(); }
+
   function renderMonth(){
     var cur=state.monthCursor;
     document.getElementById('monthLabel').textContent = MONTHS[cur.getMonth()]+' '+cur.getFullYear();
@@ -807,7 +813,7 @@
     for(var day=1; day<=daysInMonth; day++){
       var iso = cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
       var evs = (evByDate[iso]||[]).slice().sort(function(a,b){ return timeMinutes(a.start)-timeMinutes(b.start); });
-      var cell = elt('div','cal-daycell inmonth'+(evs.length?' hasEvents':'')+(state.selectedDay===iso?' selected':''));
+      var cell = elt('div','cal-daycell inmonth'+(evs.length?' hasEvents':'')+(state.selectedDay===iso?' selected':'')+(iso===todayIso()?' today':''));
       cell.setAttribute('data-date', iso);
 
       // Chips are display-only: clicking a day (the whole cell) selects it and
@@ -848,12 +854,24 @@
     var host=document.getElementById('dayPanel');
     var sel=state.selectedDay;
     var evs = sel ? EVENTS.filter(function(e){ return e.date===sel; }).sort(function(a,b){ return timeMinutes(a.start)-timeMinutes(b.start); }) : [];
+    var hint = isPhone() ? 'Tap a day with colored dots to see its sessions.' : 'Click a day with sessions to see them here.';
+    var isToday = sel===todayIso();
+    if(sel && !evs.length && isToday){
+      // Nothing today: say so, and offer the next day that has sessions.
+      var next = EVENTS.filter(function(e){ return e.date>sel; }).sort(function(a,b){ return a.date.localeCompare(b.date) || timeMinutes(a.start)-timeMinutes(b.start); })[0];
+      var td=parseDate(sel);
+      host.innerHTML = '<h3>Today &middot; '+fmtDow(td)+', '+MONTHS[td.getMonth()]+' '+td.getDate()+'</h3>' +
+        '<div class="cal-dayhint" style="text-align:left">No sessions today.' +
+        (next ? '<br><button type="button" class="cal-nextbtn" data-goto-date="'+escapeAttr(next.date)+'">Next: '+escapeText(next.name)+' &middot; '+(function(nd){ return fmtDow(nd)+', '+MONTHS[nd.getMonth()].slice(0,3)+' '+nd.getDate(); })(parseDate(next.date))+' &rarr;</button>' : '') +
+        '<br><span style="display:inline-block;margin-top:8px">'+hint+'</span></div>';
+      return;
+    }
     if(!sel || !evs.length){
-      host.innerHTML='<div class="cal-dayhint">'+(isPhone() ? 'Tap a day with colored dots to see its sessions.' : 'Click a day with sessions to see them here.')+'</div>';
+      host.innerHTML='<div class="cal-dayhint">'+hint+'</div>';
       return;
     }
     var d=parseDate(sel);
-    host.innerHTML = '<h3>'+fmtDow(d)+', '+MONTHS[d.getMonth()]+' '+d.getDate()+' &middot; '+evs.length+(evs.length===1?' session':' sessions')+'</h3>' +
+    host.innerHTML = '<h3>'+(isToday ? 'Today &middot; ' : '')+fmtDow(d)+', '+MONTHS[d.getMonth()]+' '+d.getDate()+' &middot; '+evs.length+(evs.length===1?' session':' sessions')+'</h3>' +
       evs.map(function(e){
         var cat=catMeta(e.cat) || {label: e.cat || 'Other'};
         var ss=seatState(e);
@@ -871,6 +889,14 @@
   }
   if(window.matchMedia){ window.matchMedia('(max-width:640px)').addEventListener('change', function(){ if(state.view==='month') renderMonth(); }); }
   document.getElementById('dayPanel').addEventListener('click', function(ev){
+    var go = ev.target.closest('[data-goto-date]');
+    if(go){
+      var nd=parseDate(go.getAttribute('data-goto-date'));
+      state.monthCursor=new Date(nd.getFullYear(), nd.getMonth(), 1);
+      state.selectedDay=go.getAttribute('data-goto-date');
+      renderMonth();
+      return;
+    }
     var btn = ev.target.closest('[data-register-id]');
     if(btn) openModal(btn.getAttribute('data-register-id'));
   });
@@ -885,7 +911,11 @@
     render();
   }
   function clearDateFilter(){ state.dateFilter=null; render(); }
-  function shiftMonth(n){ state.monthCursor=new Date(state.monthCursor.getFullYear(), state.monthCursor.getMonth()+n, 1); state.selectedDay=null; renderMonth(); }
+  function shiftMonth(n){
+    state.monthCursor=new Date(state.monthCursor.getFullYear(), state.monthCursor.getMonth()+n, 1);
+    state.selectedDay = isCurrentMonth(state.monthCursor) ? todayIso() : null;
+    renderMonth();
+  }
 
   function render(){
     renderResultsLine();
