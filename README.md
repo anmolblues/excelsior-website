@@ -251,6 +251,10 @@ classes. Both halves live in this app's own database:
 - **Event name, Category** (Test Prep / Enrichment / Workshop / Info Session),
   **Event type** (Online / In-person / Hybrid), **Grades** (typed like the
   Sheet: `9`, `3-6`, or `5-6,7-8`), **Date, Start/End time, Capacity**.
+- **Price per session** — shown on the calendar, the registration popup and
+  the homepage "Upcoming Workshops" cards as e.g. "$30 / session". Enter `0`
+  to show **Free**; leave blank to show no price. Display only — payment is
+  still collected offline. (The CSV importer accepts an optional `Price` column.)
 - **Recurrence** — None, Daily, Weekly, Every 2 Weeks, or Monthly. A recurring event
   is one row that expands into dated sessions (each with its own seats). Set
   **Recurrence ends**; optionally list **Skip dates** to cancel single

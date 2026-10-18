@@ -103,6 +103,9 @@
         }
         .cal-btn:hover{ background:var(--cal-accent-hover); }
         .cal-btn.ghost{ background:transparent; border-color:var(--cal-line); color:var(--cal-ink); }
+        .cal-price{ font-size:20px; font-weight:800; color:var(--cal-ink); line-height:1; white-space:nowrap; }
+        .cal-price small{ font-size:12px; font-weight:500; color:var(--cal-ink-faint); margin-left:2px; }
+        .cal-price.free{ color:var(--cal-success); }
         .cal-btn.waitlist{ background:var(--cal-full-bg); color:var(--cal-full); }
 
         @media (max-width:640px){
@@ -700,6 +703,18 @@
     }).sort(function(a,b){ return a.date.localeCompare(b.date); });
   }
 
+  // Per-session price set in admin: null = not shown, 0 = Free.
+  function hasPrice(e){ return e.price !== null && e.price !== undefined && e.price !== ''; }
+  function priceText(e){
+    if(!hasPrice(e)) return '';
+    var n=Number(e.price);
+    return n===0 ? 'Free' : '$'+(n%1 ? n.toFixed(2) : n);
+  }
+  function priceHtml(e){
+    if(!hasPrice(e)) return '';
+    return Number(e.price)===0 ? '<div class="cal-price free">Free</div>' : '<div class="cal-price">'+priceText(e)+'<small>/ session</small></div>';
+  }
+
   function seatState(e){
     var left=e.capacity-e.booked;
     var pct=Math.min(100, Math.round((e.booked/e.capacity)*100));
@@ -753,7 +768,7 @@
             '<div class="cal-bar"><span class="'+ss.cls+'" style="width:'+ss.pct+'%"></span></div>' +
           '</div>' +
         '</div>' +
-        '<div class="flex items-end">'+actionBtn+'</div>' +
+        '<div class="flex flex-col items-end justify-between gap-3">'+priceHtml(e)+actionBtn+'</div>' +
       '</div>';
     }).join('');
   }
@@ -834,7 +849,7 @@
           '<div class="nm">'+escapeText(e.name)+'</div>' +
           '<div class="meta"><span class="cal-mono">'+escapeText(e.start)+'&ndash;'+escapeText(e.end)+'</span>' +
             '<span class="cal-chip" style="background:var(--cal-'+e.cat+'-bg);color:var(--cal-'+e.cat+')">'+escapeText(cat.label)+'</span>'+gradesChips+'</div>' +
-          '<div class="seats">'+seatLabel+'</div></div>' + btn + '</div>';
+          '<div class="seats">'+(hasPrice(e) ? '<b style="color:var(--cal-ink)">'+priceText(e)+(Number(e.price)===0 ? '' : ' / session')+'</b> &middot; ' : '')+seatLabel+'</div></div>' + btn + '</div>';
       }).join('');
   }
   if(window.matchMedia){ window.matchMedia('(max-width:640px)').addEventListener('change', function(){ if(state.view==='month') renderMonth(); }); }
@@ -867,7 +882,8 @@
     var waitlist = ss.left<=0;
     document.getElementById('modalTitle').textContent = waitlist ? 'Join waitlist' : 'Register';
     var d=parseDate(e.date);
-    document.getElementById('modalSub').textContent = e.name+' · '+MONTHS[d.getMonth()]+' '+d.getDate()+', '+e.start+'–'+e.end;
+    document.getElementById('modalSub').textContent = e.name+' · '+MONTHS[d.getMonth()]+' '+d.getDate()+', '+e.start+'–'+e.end +
+      (hasPrice(e) ? ' · '+(Number(e.price)===0 ? 'Free' : priceText(e)+' per session') : '');
     document.getElementById('submitBtn').textContent = waitlist ? 'Join waitlist' : 'Confirm registration';
     document.getElementById('submitBtn').disabled = false;   // clears a stuck disabled state left by a prior successful submission
     document.getElementById('bookingForm').reset();

@@ -157,6 +157,7 @@ db.exec(`
     startTime      TEXT NOT NULL DEFAULT '',
     endTime        TEXT NOT NULL DEFAULT '',
     capacity       INTEGER NOT NULL DEFAULT 10,
+    price          REAL,
     createdAt      TEXT NOT NULL
   );
 
@@ -245,6 +246,13 @@ if (!existingBookingColumns.includes('studentGrade')) {
   // with no grade, same as how studentId was added above.
   db.exec('ALTER TABLE bookings ADD COLUMN studentGrade TEXT');
 }
+// Additive migration: per-session price on events. NULL = no price shown
+// on the calendar, 0 = "Free".
+const existingEventColumns = db.prepare('PRAGMA table_info(events)').all().map((c) => c.name);
+if (!existingEventColumns.includes('price')) {
+  db.exec('ALTER TABLE events ADD COLUMN price REAL');
+}
+
 // Additive migration: childName was added to leads after the table first
 // shipped, so an existing production table needs the column added by hand.
 const existingLeadColumns = db.prepare('PRAGMA table_info(leads)').all().map((c) => c.name);
@@ -266,7 +274,7 @@ const TABLE_COLUMNS = {
   passwordResets: ['id', 'userId', 'tokenHash', 'expiresAt', 'used', 'createdAt'],
   eventRegistrations: ['id', 'userId', 'eventId', 'eventName', 'eventDate', 'studentName', 'studentGrade', 'studentAge', 'optIn', 'status', 'createdAt', 'studentId'],
   students: ['id', 'userId', 'name', 'grade', 'age', 'notes', 'createdAt'],
-  events: ['id', 'slug', 'status', 'name', 'category', 'eventType', 'grades', 'date', 'recurrence', 'recurrenceEnds', 'skipDates', 'startTime', 'endTime', 'capacity', 'createdAt'],
+  events: ['id', 'slug', 'status', 'name', 'category', 'eventType', 'grades', 'date', 'recurrence', 'recurrenceEnds', 'skipDates', 'startTime', 'endTime', 'capacity', 'createdAt', 'price'],
 };
 
 const seedCounter = db.prepare('INSERT OR IGNORE INTO counters (name, value) VALUES (?, 0)');

@@ -266,7 +266,7 @@ async function loadEvents() {
   tbody.innerHTML = '';
 
   if (allEvents.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-6 text-center text-gray-400">No events yet. Click “Add Event” to create one.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-6 text-center text-gray-400">No events yet. Click “Add Event” to create one.</td></tr>';
     return;
   }
 
@@ -285,6 +285,7 @@ async function loadEvents() {
       <td class="px-4 py-3">${escapeHtml(ev.eventType)}</td>
       <td class="px-4 py-3">${escapeHtml(ev.grades.join(', '))}</td>
       <td class="px-4 py-3">${ev.capacity}${ev.registrations ? '<br><span class="text-xs text-gray-400">' + ev.registrations + ' registered</span>' : ''}</td>
+      <td class="px-4 py-3 whitespace-nowrap">${ev.price == null ? '<span class="text-gray-400">—</span>' : Number(ev.price) === 0 ? 'Free' : '$' + escapeHtml(Number(ev.price).toFixed(Number(ev.price) % 1 ? 2 : 0))}</td>
       <td class="px-4 py-3 text-right whitespace-nowrap">
         <button onclick="openEventForm(${ev.id})" class="text-blue-600 hover:underline mr-3">Edit</button>
         <button onclick="deleteEvent(${ev.id})" class="text-red-600 hover:underline">Delete</button>
@@ -327,11 +328,13 @@ function openEventForm(id) {
     document.getElementById('eventStartTime').value = timeTo24h(ev.startTime);
     document.getElementById('eventEndTime').value = timeTo24h(ev.endTime);
     document.getElementById('eventCapacity').value = ev.capacity;
+    document.getElementById('eventPrice').value = ev.price == null ? '' : ev.price;
   } else {
     document.getElementById('eventFormTitle').textContent = 'Add Event';
     document.getElementById('eventRowId').value = '';
     slugEl.disabled = false;
     document.getElementById('eventCapacity').value = 20;
+    document.getElementById('eventPrice').value = '';
   }
   toggleEventRecurrenceFields();
   card.scrollIntoView({ behavior: 'smooth' });
@@ -361,6 +364,7 @@ document.getElementById('eventForm').addEventListener('submit', async (e) => {
     startTime: document.getElementById('eventStartTime').value,
     endTime: document.getElementById('eventEndTime').value,
     capacity: document.getElementById('eventCapacity').value,
+    price: document.getElementById('eventPrice').value,
   };
 
   try {

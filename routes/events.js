@@ -160,6 +160,7 @@ function getOccurrences() {
             start: row.startTime,
             end: row.endTime,
             capacity: Number(row.capacity),
+            price: row.price == null ? null : Number(row.price),
           });
         });
     });
@@ -201,6 +202,14 @@ function isValidGradeRange(g) {
 
 function slugify(text) {
   return String(text || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+}
+
+// "", null -> null (no price shown); "30", "$30", 30 -> 30; "0" -> 0 (Free).
+function parsePrice(value) {
+  if (value === undefined || value === null || String(value).trim() === '') return { value: null };
+  const n = Number(String(value).replace(/[$,\s]/g, ''));
+  if (!Number.isFinite(n) || n < 0 || n > 10000) return { error: 'Price must be a number like 30 or 29.50 (use 0 for Free), or leave it blank.' };
+  return { value: Math.round(n * 100) / 100 };
 }
 
 // Validates + normalizes an add/update payload. Returns {error} or {value}.
@@ -251,8 +260,13 @@ function parseEventInput(body) {
   const capacity = parseInt(b.capacity, 10);
   if (!Number.isInteger(capacity) || capacity < 1) return { error: 'Capacity must be a whole number of at least 1.' };
 
+  // Price per session: blank = not shown, 0 = Free.
+  const priceParsed = parsePrice(b.price);
+  if (priceParsed.error) return { error: priceParsed.error };
+  const price = priceParsed.value;
+
   return {
-    value: { name, status, category, eventType, grades: grades.join(','), date, recurrence, recurrenceEnds, skipDates, startTime, endTime, capacity },
+    value: { name, status, category, eventType, grades: grades.join(','), date, recurrence, recurrenceEnds, skipDates, startTime, endTime, capacity, price },
   };
 }
 

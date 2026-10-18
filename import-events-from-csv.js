@@ -9,7 +9,8 @@
 // Safe to re-run: an Event ID that already exists in the database is skipped.
 // If the same Event ID appears twice in the file, later ones get -2, -3, ...
 // (Event IDs must be unique; registrations point at them).
-// The Sheet's "Calendar Event ID" column is ignored.
+// The Sheet's "Calendar Event ID" column is ignored. An optional "Price"
+// column sets the per-session price (blank = not shown, 0 = Free).
 const fs = require('fs');
 const path = require('path');
 const { readTable, writeTable, nextId } = require('./db');
@@ -87,6 +88,8 @@ table.forEach((row, i) => {
     startTime: normTime(col(row, 'Start Time')),
     endTime: normTime(col(row, 'End Time')),
     capacity: parseInt(col(row, 'Capacity'), 10),
+    // Optional "Price" column (per session): blank = not shown, 0 = Free.
+    price: (() => { const v = String(col(row, 'Price') || '').replace(/[$,\s]/g, ''); return v === '' || !Number.isFinite(Number(v)) ? null : Number(v); })(),
   };
   const missing = Object.entries({ 'Event ID': baseSlug, Status: e.status, 'Event Name': e.name, Category: e.category,
     'Event Type': e.eventType, Grades: e.grades, Date: e.date, Recurrence: e.recurrence, 'Start Time': e.startTime,
