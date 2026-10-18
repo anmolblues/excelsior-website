@@ -103,6 +103,8 @@
         }
         .cal-btn:hover{ background:var(--cal-accent-hover); }
         .cal-btn.ghost{ background:transparent; border-color:var(--cal-line); color:var(--cal-ink); }
+        .cal-chip.type-inperson{ background:#fef3c7; color:#92400e; }
+        .cal-chip.type-other{ background:#f3f4f6; color:#4b5563; }
         .cal-price{ font-size:20px; font-weight:800; color:var(--cal-ink); line-height:1; white-space:nowrap; }
         .cal-price small{ font-size:12px; font-weight:500; color:var(--cal-ink-faint); margin-left:2px; }
         .cal-price.free{ color:var(--cal-success); }
@@ -191,8 +193,8 @@
                     <a href="/index.html#classes" class="nav-link"><b>Ages 8 - 18</b></a>
                     <a href="/calendar.html" class="nav-link active"><b>Workshop Calendar</b></a>
                     <a href="/blog.html" class="nav-link"><b>Blog</b></a>
-                    <a href="/index.html?format=online#classes" class="nav-link"><b>Online</b></a>
                     <a href="/index.html?format=in-person#classes" class="nav-link"><b>In-person</b></a>
+                    <a href="/index.html?format=online#classes" class="nav-link"><b>Online</b></a>
                 </div>
                 <div class="flex items-center gap-3 flex-1 justify-end">
                     <span id="authStatus" class="text-sm"></span>
@@ -207,7 +209,10 @@
             <i class="fa-solid fa-calendar-days"></i> Excelsior Enrichment Program
         </div>
         <h1 class="cal-h text-4xl font-bold text-gray-900">Workshop Calendar</h1>
-        <p class="mt-3 max-w-2xl text-gray-600 leading-relaxed">Browse upcoming test-prep bootcamps, enrichment labs, and workshops for grades 3&ndash;12. Seats update as sessions fill &mdash; register directly from a session card.</p>
+        <p class="mt-3 max-w-2xl text-gray-600 leading-relaxed">Browse upcoming in-person test-prep bootcamps, enrichment labs, and workshops for grades 3&ndash;12 at our learning center in Pearl River, NY. Seats update as sessions fill &mdash; register directly from a session card.</p>
+        <a href="https://maps.app.goo.gl/tqFRSx3PgnXRtwZW6" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 mt-3 text-sm font-semibold text-blue-700 hover:underline">
+            <i class="fa-solid fa-location-dot"></i> Pearl River, NY &middot; next to Retro Fitness &middot; Get directions
+        </a>
 
         <div class="cal-controls mt-8">
             <div class="flex flex-wrap gap-3 items-center justify-between">
@@ -703,6 +708,18 @@
     }).sort(function(a,b){ return a.date.localeCompare(b.date); });
   }
 
+  // Where a session happens. We lead with in-person, so that gets a highlighted tag.
+  function typeLabel(e){
+    var t=String(e.eventType||'').toLowerCase();
+    return t==='in-person' ? 'In person' : t==='hybrid' ? 'In person + online' : t==='online' ? 'Online' : '';
+  }
+  function typeChip(e){
+    var label=typeLabel(e); if(!label) return '';
+    var t=String(e.eventType||'').toLowerCase();
+    return t==='online' ? '<span class="cal-chip type-other"><i class="fa-solid fa-laptop"></i> '+label+'</span>'
+                        : '<span class="cal-chip type-inperson"><i class="fa-solid fa-location-dot"></i> '+label+'</span>';
+  }
+
   // Per-session price set in admin: null = not shown, 0 = Free.
   function hasPrice(e){ return e.price !== null && e.price !== undefined && e.price !== ''; }
   function priceText(e){
@@ -761,7 +778,7 @@
           '<div class="flex flex-wrap gap-2 items-center mt-1.5 text-sm text-gray-600">' +
             '<span class="cal-mono text-[12.5px]">'+e.start+'&ndash;'+e.end+'</span>' +
             '<span class="cal-chip" style="background:var(--cal-'+e.cat+'-bg);color:var(--cal-'+e.cat+')">'+cat.label+'</span>' +
-            gradesChips +
+            typeChip(e) + gradesChips +
           '</div>' +
           '<div class="mt-3.5 max-w-sm">' +
             '<div class="flex justify-between items-baseline mb-1.5 text-xs"><span>'+seatLabel+'</span><span class="cal-mono font-semibold">'+e.booked+'/'+e.capacity+'</span></div>' +
@@ -848,7 +865,7 @@
         return '<div class="cal-dayrow"><div class="min-w-0">' +
           '<div class="nm">'+escapeText(e.name)+'</div>' +
           '<div class="meta"><span class="cal-mono">'+escapeText(e.start)+'&ndash;'+escapeText(e.end)+'</span>' +
-            '<span class="cal-chip" style="background:var(--cal-'+e.cat+'-bg);color:var(--cal-'+e.cat+')">'+escapeText(cat.label)+'</span>'+gradesChips+'</div>' +
+            '<span class="cal-chip" style="background:var(--cal-'+e.cat+'-bg);color:var(--cal-'+e.cat+')">'+escapeText(cat.label)+'</span>'+typeChip(e)+gradesChips+'</div>' +
           '<div class="seats">'+(hasPrice(e) ? '<b style="color:var(--cal-ink)">'+priceText(e)+(Number(e.price)===0 ? '' : ' / session')+'</b> &middot; ' : '')+seatLabel+'</div></div>' + btn + '</div>';
       }).join('');
   }
@@ -883,6 +900,7 @@
     document.getElementById('modalTitle').textContent = waitlist ? 'Join waitlist' : 'Register';
     var d=parseDate(e.date);
     document.getElementById('modalSub').textContent = e.name+' · '+MONTHS[d.getMonth()]+' '+d.getDate()+', '+e.start+'–'+e.end +
+      (typeLabel(e) && typeLabel(e)!=='Online' ? ' · '+typeLabel(e)+', Pearl River, NY' : (typeLabel(e) ? ' · Online' : '')) +
       (hasPrice(e) ? ' · '+(Number(e.price)===0 ? 'Free' : priceText(e)+' per session') : '');
     document.getElementById('submitBtn').textContent = waitlist ? 'Join waitlist' : 'Confirm registration';
     document.getElementById('submitBtn').disabled = false;   // clears a stuck disabled state left by a prior successful submission

@@ -409,7 +409,13 @@ async function loadClasses() {
       `${data.classes.length} class${data.classes.length === 1 ? '' : 'es'} found`;
 
     if (data.classes.length === 0) { noClasses.classList.remove('hidden'); return; }
-    data.classes.forEach(cls => grid.appendChild(renderClassCard(cls)));
+    // We lead with in-person: classes offered in person come first,
+    // online-only classes after (otherwise the server's order is kept).
+    const inPerson = (c) => (/in-person/i.test(c.format || '') ? 1 : 0);
+    data.classes
+      .map((c, i) => ({ c, i }))
+      .sort((a, b) => inPerson(b.c) - inPerson(a.c) || a.i - b.i)
+      .forEach(({ c }) => grid.appendChild(renderClassCard(c)));
   } catch (err) {
     loading.classList.add('hidden');
     showToast('Could not load classes: ' + err.message, true);
@@ -424,6 +430,10 @@ function renderClassCard(cls) {
     ? `<span class="text-blue-600">${cls.rating.toFixed(2)} ★</span>`
     : `<span class="text-gray-400">New</span>`;
 
+  // "online/in-person" -> "In-person / Online" (in-person always listed first)
+  const formatLabel = String(cls.format || '').split('/').map((x) => x.trim())
+    .sort((x, y) => (y === 'in-person') - (x === 'in-person'))
+    .map((x) => x.charAt(0).toUpperCase() + x.slice(1)).join(' / ');
   const formatBadgeColor = cls.format === 'online'
     ? 'bg-purple-100 text-purple-700'
     : 'bg-amber-100 text-amber-700';
@@ -442,7 +452,7 @@ function renderClassCard(cls) {
     <div class="p-6 flex flex-col flex-1">
       <div class="flex items-center gap-2 text-xs mb-2 flex-wrap">
         <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded">Ages ${cls.ageMin}-${cls.ageMax}</span>
-        <span class="${formatBadgeColor} px-2 py-1 rounded capitalize">${cls.format}</span>
+        <span class="${formatBadgeColor} px-2 py-1 rounded">${formatLabel}</span>
         <span class="text-gray-400">•</span>
         ${ratingBadge}
       </div>
