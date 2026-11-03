@@ -27,7 +27,6 @@
         .band-high        { background:#dcfce7; color:#166534; border-color:#86efac; }
         .slot { border-left-width:4px; }
         .slot.dim { opacity:.18; }
-        .daytab[aria-selected="true"] { background:#2563eb; color:#fff; border-color:#2563eb; }
         .bandbtn[aria-pressed="true"] { box-shadow:0 0 0 2px #1e3a8a inset; }
         .noscroll::-webkit-scrollbar { display:none; }
     </style>
@@ -98,10 +97,9 @@
             </table>
         </div>
 
-        <!-- Phones: one day at a time -->
-        <div class="md:hidden">
-            <div id="dayTabs" class="grid grid-cols-5 gap-2 mb-4" role="tablist" aria-label="Day of the week"></div>
-            <div id="dayList" class="space-y-3"></div>
+        <!-- Phones: the whole week as one table, stacked by day -->
+        <div class="md:hidden bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <table class="w-full text-sm"><tbody id="weekTable"></tbody></table>
         </div>
 
         <p class="text-sm text-gray-500 mt-6">Schedule subject to change. Not sure which class fits? A free assessment helps us recommend the right starting point.</p>
@@ -166,7 +164,6 @@
 
       var band = '';                                    // '' = all grades
       var today = new Date().getDay();                  // 0 Sun .. 6 Sat
-      var day = (today >= 1 && today <= 5) ? today - 1 : 0;   // weekends open on Monday
 
       function esc(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
       function track(name, params){ try { if (window.gtag) gtag('event', name, params || {}); } catch(e){} }
@@ -195,22 +192,28 @@
         }).join('');
       }
 
-      // Phone: tabs + list for one day
+      // Phone: the whole week as one table, stacked by day (Monday..Friday),
+      // each day listing its time slots. The grade filter hides slots that
+      // don't match (and any day left with no slots).
       function renderPhone(){
-        document.getElementById('dayTabs').innerHTML = DAYS.map(function(d, i){
+        var html = '';
+        DAYS.forEach(function(d, i){
           var isToday = (today - 1) === i;
-          return '<button type="button" role="tab" class="daytab border border-gray-300 bg-white rounded-xl py-2 text-sm font-semibold" data-day="'+i+'" aria-selected="'+(i===day)+'">' +
-            d.slice(0,3) + (isToday ? '<span class="block text-[10px] font-bold opacity-80">Today</span>' : '') + '</button>';
-        }).join('');
-        var items = SCHEDULE.map(function(row){ return { time: row.time, c: row.classes[day] }; })
-          .filter(function(x){ return !band || x.c[2] === band; });
-        document.getElementById('dayList').innerHTML =
-          '<h2 class="font-bold text-lg mb-1">'+DAYS[day]+((today-1)===day ? ' <span class="text-xs font-bold bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 align-middle">Today</span>' : '')+'</h2>' +
-          (items.length ? items.map(function(x){
-            return '<div class="slot band-'+x.c[2]+' rounded-2xl px-4 py-3 flex items-center justify-between gap-3">' +
-              '<div><div class="font-semibold">'+esc(x.c[0])+'</div><div class="text-sm opacity-80">'+esc(x.c[1])+'</div></div>' +
-              '<div class="text-sm font-semibold whitespace-nowrap">'+esc(x.time)+'</div></div>';
-          }).join('') : '<p class="text-gray-500 text-sm">No classes for this grade group on '+DAYS[day]+'.</p>');
+          var rows = SCHEDULE.map(function(r){ return { time: r.time, c: r.classes[i] }; })
+            .filter(function(x){ return !band || x.c[2] === band; });
+          if (!rows.length) return;
+          html += '<tr class="bg-gray-50"><th colspan="2" class="text-left px-3 py-2 font-bold text-gray-800 border-t border-gray-200">' + d +
+            (isToday ? ' <span class="text-xs font-bold bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 ml-1">Today</span>' : '') + '</th></tr>';
+          rows.forEach(function(x){
+            html += '<tr class="border-t border-gray-100 align-top">' +
+              '<td class="px-3 py-2.5 w-24 text-[11px] font-semibold text-gray-600 leading-tight">' + esc(x.time).replace(' \u2013 ', '<br>&ndash; ') + '</td>' +
+              '<td class="px-3 py-2"><div class="slot band-' + x.c[2] + ' rounded-lg px-2.5 py-1.5">' +
+                '<div class="font-semibold leading-snug">' + esc(x.c[0]) + '</div>' +
+                '<div class="text-xs opacity-80">' + esc(x.c[1]) + '</div></div></td></tr>';
+          });
+        });
+        document.getElementById('weekTable').innerHTML = html ||
+          '<tr><td class="p-4 text-gray-500 text-sm">No classes for this grade group.</td></tr>';
       }
 
       function render(){ renderGrid(); renderPhone(); }
@@ -223,8 +226,6 @@
           track('schedule_filter', { band: band || 'all' });
           render(); return;
         }
-        var t = ev.target.closest('.daytab');
-        if (t) { day = Number(t.getAttribute('data-day')); renderPhone(); }
       });
 
       render();
