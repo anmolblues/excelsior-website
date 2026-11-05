@@ -1,7 +1,6 @@
 // app.js — frontend logic for the Excelsior Enrichment Program site
 
 let currentUser = null;
-let debounceTimer = null;
 let pendingBooking = null; // booking details captured before the user logs in / signs up
 
 // ---------- Helpers ----------
@@ -353,42 +352,7 @@ async function logout() {
   showToast('Logged out.');
 }
 
-// ---------- Subjects ----------
-
-async function loadSubjects() {
-  try {
-    const data = await api('/classes/subjects');
-    const select = document.getElementById('filterSubject');
-    data.subjects.forEach(subject => {
-      const opt = document.createElement('option');
-      opt.value = subject;
-      opt.textContent = subject;
-      select.appendChild(opt);
-    });
-  } catch (err) {
-    console.error('Failed to load subjects', err);
-  }
-}
-
 // ---------- Classes ----------
-
-function getCurrentFilters() {
-  const filters = {};
-  const search    = document.getElementById('filterSearch').value.trim();
-  const subject   = document.getElementById('filterSubject').value;
-  const format    = document.getElementById('filterFormat').value;
-  const age       = document.getElementById('filterAge').value;
-  const maxPriceInput = document.getElementById('filterMaxPrice');
-  const maxPrice  = maxPriceInput.value;
-
-  if (search)   filters.search   = search;
-  if (subject)  filters.subject  = subject;
-  if (format)   filters.format   = format;
-  if (age)      filters.age      = age;
-  if (maxPrice && Number(maxPrice) < Number(maxPriceInput.max)) filters.maxPrice = maxPrice;
-
-  return filters;
-}
 
 async function loadClasses() {
   const grid      = document.getElementById('classesGrid');
@@ -400,9 +364,7 @@ async function loadClasses() {
   grid.innerHTML = '';
 
   try {
-    const filters = getCurrentFilters();
-    const params  = new URLSearchParams(filters).toString();
-    const data    = await api('/classes' + (params ? `?${params}` : ''));
+    const data    = await api('/classes');
 
     loading.classList.add('hidden');
     document.getElementById('resultsCount').textContent =
@@ -478,28 +440,6 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str ?? '';
   return div.innerHTML;
-}
-
-function debouncedLoadClasses() {
-  clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(loadClasses, 300);
-}
-
-function resetFilters() {
-  document.getElementById('filterSearch').value  = '';
-  document.getElementById('filterSubject').value = '';
-  document.getElementById('filterFormat').value  = '';
-  document.getElementById('filterAge').value     = '';
-  const maxPriceInput = document.getElementById('filterMaxPrice');
-  maxPriceInput.value = maxPriceInput.max;
-  updateMaxPriceLabel();
-  loadClasses();
-}
-
-function updateMaxPriceLabel() {
-  const input = document.getElementById('filterMaxPrice');
-  const label = document.getElementById('filterMaxPriceLabel');
-  label.textContent = Number(input.value) >= Number(input.max) ? 'Any price' : `Up to $${input.value}`;
 }
 
 // ---------- Booking ----------
@@ -892,64 +832,13 @@ async function deleteStudent(id) {
 
 // ---------- Filters / search / nav links ----------
 
-document.getElementById('filterSearch').addEventListener('input', debouncedLoadClasses);
-['filterSubject','filterFormat','filterAge'].forEach(id => {
-  document.getElementById(id).addEventListener('change', loadClasses);
-});
-document.getElementById('filterMaxPrice').addEventListener('input', () => {
-  updateMaxPriceLabel();
-  debouncedLoadClasses();
-});
-
 function scrollToClasses() {
   document.getElementById('classes').scrollIntoView({ behavior: 'smooth' });
 }
 
-document.getElementById('navSearchBtn').addEventListener('click', runNavSearch);
-document.getElementById('navSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') runNavSearch(); });
-document.getElementById('navSearchInputMobile').addEventListener('keydown', e => { if (e.key === 'Enter') runNavSearchMobile(); });
-
-function runNavSearch() {
-  document.getElementById('filterSearch').value = document.getElementById('navSearchInput').value;
-  loadClasses(); scrollToClasses();
-}
-function runNavSearchMobile() {
-  document.getElementById('filterSearch').value = document.getElementById('navSearchInputMobile').value;
-  loadClasses(); scrollToClasses();
-}
-
-document.querySelectorAll('.subject-link').forEach(link => {
-  link.addEventListener('click', e => {
-    e.preventDefault();
-    document.getElementById('filterSubject').value = link.dataset.subjectFilter;
-    loadClasses(); scrollToClasses();
-  });
-});
-
-document.querySelectorAll('.category-filter-link').forEach(link => {
-  link.addEventListener('click', e => {
-    e.preventDefault();
-    if (link.dataset.formatFilter) document.getElementById('filterFormat').value = link.dataset.formatFilter;
-    loadClasses(); scrollToClasses();
-  });
-});
-
 // ---------- Init ----------
 
-// Other pages (calendar, blog, about) link to /index.html?format=online#classes
-// or ?format=in-person#classes so that clicking "Online"/"In-person" there
-// actually pre-filters the class list here, not just navigates to the page.
-function applyFormatFromQuery() {
-  const format = new URLSearchParams(window.location.search).get('format');
-  if (format) document.getElementById('filterFormat').value = format;
-  return format;
-}
-
 (async function init() {
-  updateMaxPriceLabel();
   await checkAuth();
-  await loadSubjects();
-  const formatFromQuery = applyFormatFromQuery();
   await loadClasses();
-  if (formatFromQuery) scrollToClasses();
 })();

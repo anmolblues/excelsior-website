@@ -22,6 +22,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="schedule.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
 
@@ -98,21 +99,10 @@
                 <div class="hidden lg:flex items-center gap-6 text-sm font-medium shrink-0">
                     <a href="/schedule.html" class="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-4 py-2 rounded-full shadow-sm transition"><b>Class Schedule</b></a>
                     <a href="/calendar.html" class="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-4 py-2 rounded-full shadow-sm transition"><i class="fa-solid fa-calendar-days"></i><b>Workshop Calendar</b></a>
-                    <a href="/blog.html" class="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-4 py-2 rounded-full shadow-sm transition"><b>Blog</b></a>
                     <a href="/contact.html" class="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-4 py-2 rounded-full shadow-sm transition"><b>Contact Us</b></a>
                 </div>
 
                 <div class="flex items-center gap-3 flex-1 justify-end">
-                    <div class="relative w-full max-w-xs hidden sm:block lg:hidden xl:block">
-                        <input type="text"
-                               id="navSearchInput"
-                               class="w-full bg-gray-100 border border-gray-300 rounded-full py-3 px-5 pl-12 text-sm focus:outline-none focus:border-blue-500"
-                               placeholder="What's your child's interest?">
-                        <button id="navSearchBtn" class="absolute left-5 top-3.5 text-gray-400 hover:text-blue-600">
-                            <i class="fa-solid fa-magnifying-glass"></i>
-                        </button>
-                    </div>
-
                     <!-- Logged-out state -->
                     <div id="authButtons" class="flex items-center gap-2 shrink-0">
                         <button onclick="openAuthModal('login')" class="hidden md:block text-sm font-medium px-4 py-2 hover:bg-gray-100 rounded-full"><b>Log In</b></button>
@@ -148,19 +138,7 @@
             <div class="lg:hidden pb-3 flex flex-wrap gap-2 text-sm font-semibold">
                 <a href="/schedule.html" class="inline-flex items-center gap-2 bg-yellow-400 text-blue-900 px-4 py-2 rounded-full shadow-sm shrink-0">Class Schedule</a>
                 <a href="/calendar.html" class="inline-flex items-center gap-2 bg-yellow-400 text-blue-900 px-4 py-2 rounded-full shadow-sm shrink-0"><i class="fa-solid fa-calendar-days"></i>Workshop Calendar</a>
-                <a href="/blog.html" class="inline-flex items-center gap-2 bg-yellow-400 text-blue-900 px-4 py-2 rounded-full shadow-sm shrink-0">Blog</a>
                 <a href="/contact.html" class="inline-flex items-center gap-2 bg-yellow-400 text-blue-900 px-4 py-2 rounded-full shadow-sm shrink-0">Contact Us</a>
-            </div>
-            <!-- Mobile search (also used on mid-size laptops, where the
-                 desktop menu leaves no room for the inline search box) -->
-            <div class="sm:hidden lg:block xl:hidden pb-3">
-                <div class="relative">
-                    <input type="text"
-                           id="navSearchInputMobile"
-                           class="w-full bg-gray-100 border border-gray-300 rounded-full py-3 px-5 pl-12 text-sm focus:outline-none focus:border-blue-500"
-                           placeholder="What's your child's interest?">
-                    <i class="fa-solid fa-magnifying-glass absolute left-5 top-3.5 text-gray-400"></i>
-                </div>
             </div>
         </div>
     </nav>
@@ -181,19 +159,6 @@
                    class="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 rounded-2xl px-4 py-2 text-base font-semibold">
                     <i class="fa-solid fa-location-dot text-yellow-400"></i> Pearl River, NY · next to Retro Fitness
                 </a>
-
-                <div class="flex flex-wrap gap-4">
-                    <a href="#classes"
-                            class="bg-white text-blue-700 hover:bg-blue-50 px-8 py-4 rounded-2xl font-semibold text-lg flex items-center gap-3">
-                        Find Classes
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </a>
-                    <a href="/calendar.html"
-                       class="bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-8 py-4 rounded-2xl font-semibold text-lg flex items-center gap-3">
-                        <i class="fa-solid fa-calendar-days"></i>
-                        Workshop Calendar
-                    </a>
-                </div>
             </div>
 
             <div class="relative">
@@ -205,115 +170,64 @@
         </div>
     </section>
 
-    <!-- Upcoming workshops (next sessions from the Workshop Calendar) -->
-    <section id="upcomingWorkshops" class="py-12 bg-white border-b">
+    <!-- Class Schedule (full weekly schedule; same data/rendering as /schedule.html, see schedule.js) -->
+    <section id="classSchedule" class="py-12 bg-white border-b">
         <div class="max-w-7xl mx-auto px-6">
-            <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
-                <div>
-                    <div class="text-sm font-bold uppercase tracking-wide text-blue-600"><i class="fa-solid fa-calendar-days mr-1"></i> Workshop Calendar</div>
-                    <h2 class="text-3xl font-semibold mt-1">Upcoming Workshops</h2>
-                </div>
-                <a href="/calendar.html" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-semibold">
-                    View full calendar <i class="fa-solid fa-arrow-right"></i>
-                </a>
+            <div class="mb-6">
+                <div class="text-sm font-bold uppercase tracking-wide text-blue-600"><i class="fa-solid fa-clock mr-1"></i> Class Schedule</div>
+                <h2 class="text-3xl font-semibold mt-1">Weekly Classes, Monday to Friday</h2>
+                <p class="text-gray-600 mt-2">In-person classes at our learning center in Pearl River, NY.</p>
             </div>
-            <div id="upcomingWorkshopsList" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div class="text-gray-400 text-sm">Loading upcoming sessions…</div>
+
+            <!-- Grade filter -->
+            <div class="flex flex-wrap items-center gap-2 mb-6" role="group" aria-label="Filter by grade">
+                <span class="text-xs font-bold uppercase tracking-wide text-gray-500 mr-1">Show</span>
+                <button type="button" class="bandbtn px-3.5 py-2 rounded-full text-sm font-semibold border bg-white text-gray-800 border-gray-300" data-band="" aria-pressed="true">All grades</button>
+                <div id="bandButtons" class="contents"></div>
             </div>
+
+            <!-- Desktop / tablet: weekly grid -->
+            <div class="hidden md:block bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                <table class="sched w-full text-sm table-fixed">
+                    <thead>
+                        <tr>
+                            <th class="w-28 px-4 py-3 text-left font-semibold">Time</th>
+                            <th class="px-3 py-3 text-left font-semibold" data-daycol="1">Monday</th>
+                            <th class="px-3 py-3 text-left font-semibold" data-daycol="2">Tuesday</th>
+                            <th class="px-3 py-3 text-left font-semibold" data-daycol="3">Wednesday</th>
+                            <th class="px-3 py-3 text-left font-semibold" data-daycol="4">Thursday</th>
+                            <th class="px-3 py-3 text-left font-semibold" data-daycol="5">Friday</th>
+                        </tr>
+                    </thead>
+                    <tbody id="gridBody"></tbody>
+                </table>
+            </div>
+
+            <!-- Phones: the whole week as one table, stacked by day -->
+            <div class="md:hidden bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <table class="w-full text-sm"><tbody id="weekTable"></tbody></table>
+            </div>
+
+            <p class="text-sm text-gray-500 mt-6">Schedule subject to change. Not sure which class fits? A free assessment helps us recommend the right starting point.</p>
         </div>
     </section>
 
-    <!-- Categories -->
-    <section class="py-16 bg-gray-50">
+    <!-- Classes offered: one tile per class on the weekly schedule (built from the schedule data in schedule.js) -->
+    <section id="classOfferings" class="py-16 bg-gray-50">
         <div class="max-w-7xl mx-auto px-6">
-            <h2 class="text-3xl font-semibold text-center mb-10">Explore by Subject</h2>
-
-            <div id="subjectCategoryGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-                <!-- Filled in dynamically from the subjects in the data, but with sensible fallbacks -->
-                <a href="#classes" data-subject-filter="Math" class="subject-link group bg-white rounded-3xl p-6 text-center hover:shadow-xl transition-all">
-                    <div class="text-5xl mb-4">🧮</div>
-                    <div class="font-semibold">Math</div>
-                </a>
-                <a href="#classes" data-subject-filter="Science" class="subject-link group bg-white rounded-3xl p-6 text-center hover:shadow-xl transition-all">
-                    <div class="text-5xl mb-4">🧪</div>
-                    <div class="font-semibold">Science</div>
-                </a>
-                <a href="#classes" data-subject-filter="English" class="subject-link group bg-white rounded-3xl p-6 text-center hover:shadow-xl transition-all">
-                    <div class="text-5xl mb-4">📖</div>
-                    <div class="font-semibold">English</div>
-                </a>
-                <a href="#classes" data-subject-filter="Coding" class="subject-link group bg-white rounded-3xl p-6 text-center hover:shadow-xl transition-all">
-                    <div class="text-5xl mb-4">💻</div>
-                    <div class="font-semibold">Coding</div>
-                </a>
-                <a href="#classes" data-subject-filter="Debate" class="subject-link group bg-white rounded-3xl p-6 text-center hover:shadow-xl transition-all">
-                    <div class="text-5xl mb-4">🗣️</div>
-                    <div class="font-semibold">Debate</div>
-                </a>
-                <a href="#classes" data-subject-filter="Public Speaking" class="subject-link group bg-white rounded-3xl p-6 text-center hover:shadow-xl transition-all">
-                    <div class="text-6xl mb-4">📢</div>
-                    <div class="font-semibold">Public Speaking</div>
-                </a>
-            </div>
+            <h2 class="text-3xl font-semibold">Classes We Offer</h2>
+            <p class="text-gray-500 text-sm mt-1">Every class on our weekly schedule, in person at our learning center in Pearl River, NY.</p>
+            <div id="classTiles" class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8"></div>
         </div>
     </section>
 
-    <!-- Classes -->
-    <section id="classes" class="py-16">
+    <!-- Find a class (class cards from the database). Hidden for now: remove the "hidden" class on the <section> below to show it again. -->
+    <section id="classes" class="hidden py-16">
         <div class="max-w-7xl mx-auto px-6">
             <div class="flex flex-wrap justify-between items-end gap-4 mb-8">
                 <div>
                     <h2 class="text-3xl font-semibold">Find a class</h2>
                     <p id="resultsCount" class="text-gray-500 text-sm mt-1"></p>
-                </div>
-            </div>
-
-            <!-- Filter bar -->
-            <div class="bg-gray-50 border border-gray-100 rounded-3xl p-5 mb-10 grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                <div class="lg:col-span-2">
-                    <label class="block text-xs font-semibold text-gray-500 mb-1">Search</label>
-                    <input id="filterSearch" type="text" placeholder="e.g. Python, art, debate..."
-                           class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 mb-1">Subject</label>
-                    <select id="filterSubject" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
-                        <option value="">All subjects</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 mb-1">Format</label>
-                    <select id="filterFormat" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
-                        <option value="">In-person or online</option>
-                        <option value="in-person">In-person</option>
-                        <option value="online">Online</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 mb-1">Child's age</label>
-                    <select id="filterAge" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
-                        <option value="">Any age</option>
-                        <option value="5">5</option>
-                        <option value="6">6</option>
-                        <option value="7">7</option>
-                        <option value="8">8</option>
-                        <option value="9">9</option>
-                        <option value="10">10</option>
-                        <option value="11">11</option>
-                        <option value="12">12</option>
-                        <option value="13">13</option>
-                        <option value="14">14</option>
-                        <option value="15">15</option>
-                        <option value="16">16</option>
-                        <option value="17">17</option>
-                        <option value="18">18</option>
-                    </select>
-                </div>
-                <div class="lg:col-span-5 flex items-center gap-3">
-                    <label class="block text-xs font-semibold text-gray-500">Max price</label>
-                    <input id="filterMaxPrice" type="range" min="10" max="60" step="1" value="60" class="flex-1 accent-blue-600">
-                    <span id="filterMaxPriceLabel" class="text-sm font-semibold w-24 text-right">Any price</span>
-                    <button onclick="resetFilters()" class="text-sm text-blue-600 hover:underline whitespace-nowrap">Reset filters</button>
                 </div>
             </div>
 
@@ -377,7 +291,7 @@
                 <div>
                     <h4 class="font-semibold text-white mb-4">Explore</h4>
                     <ul class="space-y-2 text-sm">
-                        <li><a href="#classes" class="hover:text-white">All Classes</a></li>
+                        <li><a href="#classOfferings" class="hover:text-white">All Classes</a></li>
                         <li><a href="/calendar.html" class="hover:text-white">Workshop Calendar</a></li>
                         <li><a href="/schedule.html" class="hover:text-white">Class Schedule</a></li>
                     </ul>
@@ -687,51 +601,6 @@
     <div id="toast" class="toast hidden fixed bottom-6 right-6 bg-gray-900 text-white px-6 py-4 rounded-2xl shadow-xl z-[200] text-sm"></div>
 
     <script src="app.js"></script>
-    <script>
-    // Homepage "Upcoming Workshops": the next 3 sessions from /api/events.
-    (function(){
-      var host = document.getElementById('upcomingWorkshopsList');
-      if (!host) return;
-      var CAT = { testprep:'Test Prep', enrichment:'Enrichment', workshop:'Workshop', info:'Info Session' };
-      function esc(s){ var d=document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
-      function todayIso(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-      function fallback(msg){
-        host.innerHTML = '<a href="/calendar.html" class="sm:col-span-2 lg:col-span-3 flex items-center justify-between gap-4 bg-blue-50 hover:bg-blue-100 rounded-3xl p-6">' +
-          '<span><span class="block font-semibold text-lg">' + esc(msg) + '</span><span class="text-sm text-gray-600">Check the Workshop Calendar for new dates.</span></span>' +
-          '<i class="fa-solid fa-arrow-right text-blue-600 text-xl"></i></a>';
-      }
-      fetch('/api/events').then(function(r){ return r.json(); }).then(function(data){
-        var today = todayIso();
-        var next = (data.events || []).filter(function(e){ return e.date >= today; }).slice(0, 3);
-        if (!next.length) return fallback('New workshops coming soon');
-        host.innerHTML = next.map(function(e){
-          var d = new Date(e.date + 'T12:00:00');
-          var left = Math.max(0, (e.capacity || 0) - (e.booked || 0));
-          var seats = left <= 0 ? '<span class="text-red-600 font-semibold">Waitlist</span>'
-                    : left <= 3 ? '<span class="text-amber-600 font-semibold">' + left + ' seat' + (left === 1 ? '' : 's') + ' left</span>'
-                    : '<span class="text-green-700 font-semibold">Open</span>';
-          var grades = (e.grades || []).length ? 'Grades ' + e.grades.join(', ') : '';
-          var type = e.eventType ? e.eventType.charAt(0).toUpperCase() + e.eventType.slice(1) : '';
-          var hasPrice = e.price !== null && e.price !== undefined;
-          var price = !hasPrice ? '' : Number(e.price) === 0 ? '<span class="text-green-700 font-bold">Free</span>'
-                    : '<span class="font-bold text-gray-900">$' + (Number(e.price) % 1 ? Number(e.price).toFixed(2) : Number(e.price)) + '</span><span class="text-gray-500"> / session</span>';
-          return '<a href="/calendar.html" class="flex gap-4 bg-gray-50 hover:bg-white hover:shadow-lg border border-gray-100 rounded-3xl p-5 transition">' +
-              '<div class="shrink-0 w-16 text-center bg-white rounded-2xl shadow-sm py-2">' +
-                '<div class="text-xs font-bold uppercase text-blue-600">' + d.toLocaleDateString('en-US', { month: 'short' }) + '</div>' +
-                '<div class="text-2xl font-bold leading-tight">' + d.getDate() + '</div>' +
-                '<div class="text-xs text-gray-500">' + d.toLocaleDateString('en-US', { weekday: 'short' }) + '</div>' +
-              '</div>' +
-              '<div class="min-w-0">' +
-                '<div class="text-xs font-semibold text-blue-700 mb-1">' + esc(CAT[e.cat] || e.cat || 'Workshop') + '</div>' +
-                '<div class="font-semibold leading-snug mb-1">' + esc(e.name) + '</div>' +
-                '<div class="text-sm text-gray-600">' + esc([e.start && e.end ? e.start + ' – ' + e.end : e.start, type].filter(Boolean).join(' · ')) + '</div>' +
-                '<div class="text-sm text-gray-600">' + esc(grades) + (grades ? ' · ' : '') + seats + '</div>' +
-                (price ? '<div class="text-sm mt-1">' + price + '</div>' : '') +
-              '</div>' +
-            '</a>';
-        }).join('');
-      }).catch(function(){ fallback('See upcoming workshops'); });
-    })();
-    </script>
+    <script src="schedule.js"></script>
 </body>
 </html>

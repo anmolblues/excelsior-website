@@ -16,18 +16,11 @@
     <link rel="canonical" href="https://excelsiorenrichmentprogram.com/schedule.html">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="schedule.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         body { font-family: 'Inter', sans-serif; }
         .hero-bg { background: linear-gradient(135deg, #2047bb 0%, #241d95 100%); }
-        /* Grade-band colours (also used by the filter buttons) */
-        .band-afterschool { background:#fef3c7; color:#92400e; border-color:#fcd34d; }
-        .band-elementary  { background:#dbeafe; color:#1e40af; border-color:#93c5fd; }
-        .band-middle      { background:#ede9fe; color:#5b21b6; border-color:#c4b5fd; }
-        .band-high        { background:#dcfce7; color:#166534; border-color:#86efac; }
-        .slot { border-left-width:4px; }
-        .slot.dim { opacity:.18; }
-        .bandbtn[aria-pressed="true"] { box-shadow:0 0 0 2px #1e3a8a inset; }
         .noscroll::-webkit-scrollbar { display:none; }
     </style>
 </head>
@@ -45,7 +38,6 @@
                 <div class="hidden lg:flex items-center gap-6 text-sm font-semibold">
                     <a href="/schedule.html" class="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-4 py-2 rounded-full shadow-sm transition ring-2 ring-blue-700">Class Schedule</a>
                     <a href="/calendar.html" class="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-4 py-2 rounded-full shadow-sm transition"><i class="fa-solid fa-calendar-days"></i>Workshop Calendar</a>
-                    <a href="/blog.html" class="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-4 py-2 rounded-full shadow-sm transition">Blog</a>
                     <a href="/contact.html" class="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-4 py-2 rounded-full shadow-sm transition">Contact Us</a>
                 </div>
                 <a href="/assessment.html?utm_source=schedule&utm_medium=site" class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-semibold">Free Assessment</a>
@@ -54,7 +46,6 @@
             <div class="lg:hidden pb-3 flex flex-wrap gap-2 text-sm font-semibold">
                 <a href="/schedule.html" class="inline-flex items-center gap-2 bg-yellow-400 text-blue-900 px-4 py-2 rounded-full shadow-sm shrink-0 ring-2 ring-blue-700">Class Schedule</a>
                 <a href="/calendar.html" class="inline-flex items-center gap-2 bg-yellow-400 text-blue-900 px-4 py-2 rounded-full shadow-sm shrink-0"><i class="fa-solid fa-calendar-days"></i>Workshop Calendar</a>
-                <a href="/blog.html" class="inline-flex items-center gap-2 bg-yellow-400 text-blue-900 px-4 py-2 rounded-full shadow-sm shrink-0">Blog</a>
                 <a href="/contact.html" class="inline-flex items-center gap-2 bg-yellow-400 text-blue-900 px-4 py-2 rounded-full shadow-sm shrink-0">Contact Us</a>
             </div>
         </div>
@@ -82,9 +73,9 @@
 
         <!-- Desktop / tablet: weekly grid -->
         <div class="hidden md:block bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            <table class="w-full text-sm table-fixed">
+            <table class="sched w-full text-sm table-fixed">
                 <thead>
-                    <tr class="bg-gray-50 text-gray-600">
+                    <tr>
                         <th class="w-28 px-4 py-3 text-left font-semibold">Time</th>
                         <th class="px-3 py-3 text-left font-semibold" data-daycol="1">Monday</th>
                         <th class="px-3 py-3 text-left font-semibold" data-daycol="2">Tuesday</th>
@@ -121,115 +112,6 @@
         <div>© 2026 Excelsior Enrichment Program</div>
     </footer>
 
-    <script>
-    (function(){
-      // ---- Edit the schedule here ------------------------------------------
-      // Grade bands: the key is used for colour and the "Show" filter.
-      var BANDS = {
-        afterschool: 'After School · Gr 3–7',
-        elementary:  'Grades 3–6',
-        middle:      'Grades 7–8',
-        high:        'High School'
-      };
-      // One row per time block; one entry per weekday (Mon..Fri).
-      // Each entry: [class name, grade label shown, band key]
-      var SCHEDULE = [
-        { time: '2:30 – 4:30 PM', classes: [
-          ['After-School Program with Homework Help', 'Grade 3–7', 'afterschool'],
-          ['After-School Program with Homework Help', 'Grade 3–7', 'afterschool'],
-          ['After-School Program with Homework Help', 'Grade 3–7', 'afterschool'],
-          ['After-School Program with Homework Help', 'Grade 3–7', 'afterschool'],
-          ['After-School Program with Homework Help', 'Grade 3–7', 'afterschool'] ] },
-        { time: '4:30 – 5:30 PM', classes: [
-          ['Art', 'Grade 3–6', 'elementary'],
-          ['Math', 'Grade 3–6', 'elementary'],
-          ['Scratch Coding', 'Grade 3–6', 'elementary'],
-          ['Debate', 'Grade 3–6', 'elementary'],
-          ['Reading & Writing', 'Grade 3–6', 'elementary'] ] },
-        { time: '5:30 – 6:30 PM', classes: [
-          ['Reading & Writing', 'Grade 7–8', 'middle'],
-          ['Debate', 'Grade 7–8', 'middle'],
-          ['Python', 'Grade 7–8', 'middle'],
-          ['AMC 8', 'Grade 7–8', 'middle'],
-          ['Robotics', 'Grade 7–8', 'middle'] ] },
-        { time: '6:30 – 7:30 PM', classes: [
-          ['SAT/ACT', 'High School', 'high'],
-          ['AMC 10', 'High School', 'high'],
-          ['Science', 'High School', 'high'],
-          ['Coding', 'High School', 'high'],
-          ['Public Speaking', 'High School', 'high'] ] }
-      ];
-      var DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-      // -----------------------------------------------------------------------
-
-      var band = '';                                    // '' = all grades
-      var today = new Date().getDay();                  // 0 Sun .. 6 Sat
-
-      function esc(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
-      function track(name, params){ try { if (window.gtag) gtag('event', name, params || {}); } catch(e){} }
-
-      // Filter buttons
-      document.getElementById('bandButtons').outerHTML = Object.keys(BANDS).map(function(k){
-        return '<button type="button" class="bandbtn band-'+k+' px-3.5 py-2 rounded-full text-sm font-semibold border" data-band="'+k+'" aria-pressed="false">'+esc(BANDS[k])+'</button>';
-      }).join('');
-
-      // Desktop grid
-      function renderGrid(){
-        if (today >= 1 && today <= 5) {
-          var th = document.querySelector('[data-daycol="'+today+'"]');
-          if (th) { th.classList.add('text-blue-700'); th.innerHTML = DAYS[today-1] + ' <span class="text-xs font-bold bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 ml-1">Today</span>'; }
-        }
-        document.getElementById('gridBody').innerHTML = SCHEDULE.map(function(row){
-          return '<tr class="border-t border-gray-100 align-top">' +
-            '<td class="px-4 py-3 font-semibold text-gray-700 whitespace-nowrap">'+esc(row.time)+'</td>' +
-            row.classes.map(function(c){
-              var dim = band && c[2] !== band ? ' dim' : '';
-              return '<td class="p-2"><div class="slot band-'+c[2]+dim+' rounded-xl px-3 py-2 h-full">' +
-                '<div class="font-semibold leading-snug">'+esc(c[0])+'</div>' +
-                '<div class="text-xs mt-0.5 opacity-80">'+esc(c[1])+'</div></div></td>';
-            }).join('') +
-          '</tr>';
-        }).join('');
-      }
-
-      // Phone: the whole week as one table, stacked by day (Monday..Friday),
-      // each day listing its time slots. The grade filter hides slots that
-      // don't match (and any day left with no slots).
-      function renderPhone(){
-        var html = '';
-        DAYS.forEach(function(d, i){
-          var isToday = (today - 1) === i;
-          var rows = SCHEDULE.map(function(r){ return { time: r.time, c: r.classes[i] }; })
-            .filter(function(x){ return !band || x.c[2] === band; });
-          if (!rows.length) return;
-          html += '<tr class="bg-gray-50"><th colspan="2" class="text-left px-3 py-2 font-bold text-gray-800 border-t border-gray-200">' + d +
-            (isToday ? ' <span class="text-xs font-bold bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 ml-1">Today</span>' : '') + '</th></tr>';
-          rows.forEach(function(x){
-            html += '<tr class="border-t border-gray-100 align-top">' +
-              '<td class="px-3 py-2.5 w-24 text-[11px] font-semibold text-gray-600 leading-tight">' + esc(x.time).replace(' \u2013 ', '<br>&ndash; ') + '</td>' +
-              '<td class="px-3 py-2"><div class="slot band-' + x.c[2] + ' rounded-lg px-2.5 py-1.5">' +
-                '<div class="font-semibold leading-snug">' + esc(x.c[0]) + '</div>' +
-                '<div class="text-xs opacity-80">' + esc(x.c[1]) + '</div></div></td></tr>';
-          });
-        });
-        document.getElementById('weekTable').innerHTML = html ||
-          '<tr><td class="p-4 text-gray-500 text-sm">No classes for this grade group.</td></tr>';
-      }
-
-      function render(){ renderGrid(); renderPhone(); }
-
-      document.addEventListener('click', function(ev){
-        var b = ev.target.closest('.bandbtn');
-        if (b) {
-          band = b.getAttribute('data-band');
-          document.querySelectorAll('.bandbtn').forEach(function(x){ x.setAttribute('aria-pressed', String(x === b)); });
-          track('schedule_filter', { band: band || 'all' });
-          render(); return;
-        }
-      });
-
-      render();
-    })();
-    </script>
+    <script src="schedule.js"></script>
 </body>
 </html>
