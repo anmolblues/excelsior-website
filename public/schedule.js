@@ -50,8 +50,15 @@
   function esc(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
   function track(name, params){ try { if (window.gtag) gtag('event', name, params || {}); } catch(e){} }
 
+  // Schedule table filter: three grade groups. The after-school class (Grade 3-7) has no
+  // button of its own; it stays lit under both the Grades 3-6 and Grades 7-8 filters.
+  var TABLE_BANDS = ['elementary', 'middle', 'high'];
+  function inBand(key, b){
+    return !b || key === b || (key === 'afterschool' && (b === 'elementary' || b === 'middle'));
+  }
+
   // Filter buttons
-  document.getElementById('bandButtons').outerHTML = Object.keys(BANDS).map(function(k){
+  document.getElementById('bandButtons').outerHTML = TABLE_BANDS.map(function(k){
     return '<button type="button" class="bandbtn band-'+k+' px-3.5 py-2 rounded-full text-sm font-semibold border" data-band="'+k+'" aria-pressed="false">'+esc(BANDS[k])+'</button>';
   }).join('');
 
@@ -65,7 +72,7 @@
       return '<tr class="align-top">' +
         '<td class="px-4 py-4 whitespace-nowrap">'+esc(row.time)+'</td>' +
         row.classes.map(function(c, i){
-          var dim = band && c[2] !== band ? ' dim' : '';
+          var dim = inBand(c[2], band) ? '' : ' dim';
           var isToday = (today - 1) === i ? ' is-today' : '';
           return '<td class="p-2'+isToday+'"><div class="slot band-'+c[2]+dim+' rounded-xl px-3 py-2 h-full">' +
             '<div class="font-semibold leading-snug">'+esc(c[0])+'</div>' +
@@ -183,7 +190,7 @@
         seen[k].days.push(i);
       });
     });
-    host.innerHTML = order.filter(function(k){ return !tileBand || seen[k].band === tileBand; }).map(function(k){
+    host.innerHTML = order.filter(function(k){ return inBand(seen[k].band, tileBand); }).map(function(k){
       var t = seen[k];
       var days = t.days.length === DAYS.length ? 'Monday to Friday' : t.days.map(function(i){ return DAYS[i] + 's'; }).join(', ');
       var icon = TILE_ICONS[t.name] || 'fa-star';
@@ -209,7 +216,7 @@
   // Grade filter buttons for the class tiles (the 'All grades' button is in the page markup)
   var tileBtns = document.getElementById('tileBandButtons');
   if (tileBtns) {
-    tileBtns.outerHTML = Object.keys(BANDS).map(function(k){
+    tileBtns.outerHTML = TABLE_BANDS.map(function(k){
       return '<button type="button" class="tilebtn band-'+k+' px-3.5 py-2 rounded-full text-sm font-semibold border" data-band="'+k+'" aria-pressed="false">'+esc(BANDS[k])+'</button>';
     }).join('');
   }
