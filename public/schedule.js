@@ -76,9 +76,10 @@
   }
 
   // Phones: the weekly grid is shown whole, scaled down to fit the screen like a
-  // picture (it is 640px wide, drawn smaller). Tapping it zooms to full size
-  // (scroll sideways); tapping again goes back to fit.
-  var FIT_W = 640, zoomed = false;
+  // picture (it is 640px wide, drawn smaller). Pinch with two fingers to zoom in
+  // (up to full size and beyond); drag sideways to pan; pinch back out to fit.
+  var FIT_W = 640, MAX_ZOOM = 2, userScale = 0, pinch = null;
+  function fitScale(frame){ return Math.min(1, frame.clientWidth / FIT_W); }
   function fit(){
     var frame = document.getElementById('schedFrame'), inner = document.getElementById('schedInner');
     if (!frame || !inner) return;
@@ -86,12 +87,48 @@
       frame.classList.remove('is-pic', 'is-zoomed'); frame.style.height = ''; inner.style.cssText = ''; return;
     }
     frame.classList.add('is-pic');
-    frame.classList.toggle('is-zoomed', zoomed);
+    var f = fitScale(frame), s = userScale ? Math.max(f, Math.min(MAX_ZOOM, userScale)) : f;
+    frame.classList.toggle('is-zoomed', s > f + 0.001);
     inner.style.width = FIT_W + 'px';
     inner.style.transformOrigin = '0 0';
-    var s = zoomed ? 1 : Math.min(1, frame.clientWidth / FIT_W);
     inner.style.transform = 'scale(' + s + ')';
     frame.style.height = Math.ceil(inner.offsetHeight * s) + 'px';
+    return s;
+  }
+  function curScale(frame){
+    var f = fitScale(frame);
+    return userScale ? Math.max(f, Math.min(MAX_ZOOM, userScale)) : f;
+  }
+  function dist(t){ var dx = t[0].clientX - t[1].clientX, dy = t[0].clientY - t[1].clientY; return Math.sqrt(dx*dx + dy*dy); }
+  var frameEl = document.getElementById('schedFrame');
+  if (frameEl) {
+    frameEl.addEventListener('touchstart', function(ev){
+      if (ev.touches.length === 2 && frameEl.classList.contains('is-pic')) {
+        var r = frameEl.getBoundingClientRect(), s0 = curScale(frameEl);
+        pinch = { d0: dist(ev.touches), s0: s0,
+                  cx: (ev.touches[0].clientX + ev.touches[1].clientX) / 2 - r.left,
+                  // point of the grid (in unscaled px) under the fingers
+                  gx: (frameEl.scrollLeft + (ev.touches[0].clientX + ev.touches[1].clientX) / 2 - r.left) / s0 };
+      }
+    }, { passive: true });
+    frameEl.addEventListener('touchmove', function(ev){
+      if (!pinch || ev.touches.length !== 2) return;
+      ev.preventDefault();                      // keep the browser from zooming the whole page
+      userScale = pinch.s0 * dist(ev.touches) / pinch.d0;
+      var s = fit();
+      if (s) frameEl.scrollLeft = pinch.gx * s - pinch.cx;
+    }, { passive: false });
+    function end(ev){
+      if (pinch && ev.touches.length < 2) {
+        pinch = null;
+        var f = fitScale(frameEl);
+        if (userScale && userScale <= f + 0.02) userScale = 0;   // snap back to "fit"
+        track('schedule_zoom', { scale: Math.round(curScale(frameEl) * 100) / 100 });
+        fit();
+      }
+    }
+    frameEl.addEventListener('touchend', end, { passive: true });
+    frameEl.addEventListener('touchcancel', end, { passive: true });
   }
 
   // ---- Class tiles (home page): one tile per class offered, built from SCHEDULE ----
@@ -161,10 +198,6 @@
       document.querySelectorAll('.tilebtn').forEach(function(x){ x.setAttribute('aria-pressed', String(x === tb)); });
       track('class_tiles_filter', { band: tileBand || 'all' });
       renderTiles(); return;
-    }
-    var fr = ev.target.closest('#schedFrame');
-    if (fr && fr.classList.contains('is-pic')) {
-      zoomed = !zoomed; track('schedule_zoom', { zoomed: zoomed }); fit();
     }
   });
   window.addEventListener('resize', fit);

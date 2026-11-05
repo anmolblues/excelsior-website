@@ -17,6 +17,6 @@
 .sched tbody td { background:#fff; border-top:1px solid #f1f5f9; }
 .sched tbody td:first-child { color:#374151; font-weight:600; }
 .sched tbody tr:first-child td { border-top:0; }
-/* Phones: the weekly grid is scaled down to fit (see fit() in schedule.js); tap to zoom. */
-.sched-frame.is-pic { cursor: zoom-in; }
-.sched-frame.is-pic.is-zoomed { cursor: zoom-out; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+/* Phones: the weekly grid is scaled down to fit (see fit() in schedule.js); pinch to zoom. */
+.sched-frame.is-pic { touch-action: pan-x pan-y; }
+.sched-frame.is-pic.is-zoomed { overflow-x: auto; -webkit-overflow-scrolling: touch; }
