@@ -143,6 +143,35 @@
     'Robotics': 'fa-robot', 'SAT/ACT': 'fa-graduation-cap', 'Science': 'fa-flask',
     'Coding': 'fa-laptop-code', 'Public Speaking': 'fa-microphone-lines'
   };
+  // Prices for a full 6-week program, per student (source: EEP Program Price Guide, Nov 2026).
+  // Key = class name | grade label, exactly as in SCHEDULE. Value = [one-on-one, small group (up to 3), group (up to 6)].
+  // The after-school class is priced by grade, so its value is a list of [grade label, one-on-one, up to 3, up to 6].
+  var PRICES = {
+    'Afterschool Tutor|Grade 3–7': [['Grades 3–6', 210, 72, 60], ['Grade 7', 270, 150, 120]],
+    'Art|Grade 3–6': [120, 60, 60],           'Math|Grade 3–6': [210, 60, 60],
+    'Scratch Coding|Grade 3–6': [150, 60, 60], 'Debate|Grade 3–6': [120, 60, 60],
+    'Reading & Writing|Grade 3–6': [210, 60, 60],
+    'Reading & Writing|Grade 7–8': [270, 90, 90], 'Debate|Grade 7–8': [240, 150, 120],
+    'Python|Grade 7–8': [240, 150, 120],        'AMC 8|Grade 7–8': [270, 150, 120],
+    'Robotics|Grade 7–8': [270, 150, 120],
+    'SAT/ACT|High School': [360, 180, 120],     'AMC 10|High School': [330, 150, 120],
+    'Science|High School': [330, 150, 120],     'Coding|High School': [270, 150, 120],
+    'Public Speaking|High School': [270, 120, 120]
+  };
+  function priceCells(p){
+    return '<div class="grid grid-cols-3 gap-2 text-center">' + [['One-on-one', p[0]], ['Group of 3', p[1]], ['Group of 6', p[2]]].map(function(x){
+      return '<div><div class="text-base font-bold text-gray-900">$' + x[1] + '</div><div class="text-[11px] text-gray-500 leading-tight">' + x[0] + '</div></div>';
+    }).join('') + '</div>';
+  }
+  function priceBlock(key){
+    var p = PRICES[key];
+    if (!p) return '';
+    var body = Array.isArray(p[0])
+      ? p.map(function(r){ return '<div class="text-[11px] font-semibold text-gray-600 mt-2 mb-1 first:mt-0">' + esc(r[0]) + '</div>' + priceCells(r.slice(1)); }).join('')
+      : priceCells(p);
+    return '<div class="mb-4 rounded-2xl bg-gray-50 border border-gray-100 p-3">' +
+      '<div class="text-[11px] uppercase tracking-wide font-semibold text-gray-500 mb-2">6 weeks \u00b7 per student</div>' + body + '</div>';
+  }
   function renderTiles(){
     var host = document.getElementById('classTiles');
     if (!host) return;
@@ -167,6 +196,7 @@
           '</div>' +
           '<h3 class="font-semibold leading-tight mb-4">'+esc(t.name)+'</h3>' +
           '<div class="mt-auto">' +
+            priceBlock(k) +
             '<div class="text-sm font-semibold text-gray-800">'+esc(days)+'</div>' +
             '<div class="text-sm text-gray-500">'+esc(t.time)+'</div>' +
           '</div>' +
