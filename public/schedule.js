@@ -169,7 +169,7 @@
     var body = Array.isArray(p[0])
       ? p.map(function(r){ return '<div class="text-[11px] font-semibold text-gray-600 mt-2 mb-1 first:mt-0">' + esc(r[0]) + '</div>' + priceCells(r.slice(1)); }).join('')
       : priceCells(p);
-    return '<div class="mb-4 rounded-2xl bg-gray-50 border border-gray-100 p-3">' +
+    return '<div class="rounded-2xl bg-gray-50 border border-gray-100 p-3">' +
       '<div class="text-[11px] uppercase tracking-wide font-semibold text-gray-500 mb-2">6 weeks \u00b7 per student</div>' + body + '</div>';
   }
   function renderTiles(){
@@ -188,18 +188,20 @@
       var days = t.days.length === DAYS.length ? 'Monday to Friday' : t.days.map(function(i){ return DAYS[i] + 's'; }).join(', ');
       var icon = TILE_ICONS[t.name] || 'fa-star';
       return '<div class="class-card bg-white border border-gray-100 rounded-3xl overflow-hidden flex flex-col">' +
-        '<div class="band-'+t.band+' h-32 flex items-center justify-center border-0"><i class="fa-solid '+icon+' text-5xl opacity-80"></i></div>' +
-        '<div class="p-6 flex flex-col flex-1">' +
-          '<div class="flex items-center gap-2 text-xs mb-2 flex-wrap">' +
-            '<span class="bg-blue-50 text-blue-700 px-2 py-1 rounded">'+esc(t.grade)+'</span>' +
-            '<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded">In-person</span>' +
+        // Header strip in the grade colour: icon, big class name, grade + format
+        '<div class="band-'+t.band+' flex items-center gap-4 px-5 py-5 border-0">' +
+          '<div class="w-14 h-14 shrink-0 rounded-2xl bg-white/60 flex items-center justify-center"><i class="fa-solid '+icon+' text-2xl"></i></div>' +
+          '<div class="min-w-0">' +
+            '<h3 class="text-xl font-bold leading-tight">'+esc(t.name)+'</h3>' +
+            '<div class="text-xs font-semibold mt-1 opacity-80">'+esc(t.grade)+' \u00b7 In-person</div>' +
           '</div>' +
-          '<h3 class="font-semibold leading-tight mb-4">'+esc(t.name)+'</h3>' +
-          '<div class="mt-auto">' +
-            priceBlock(k) +
-            '<div class="text-sm font-semibold text-gray-800">'+esc(days)+'</div>' +
-            '<div class="text-sm text-gray-500">'+esc(t.time)+'</div>' +
+        '</div>' +
+        '<div class="p-5 flex flex-col flex-1 gap-4">' +
+          '<div class="flex items-start gap-3 text-sm">' +
+            '<i class="fa-regular fa-clock text-gray-400 mt-1"></i>' +
+            '<div><div class="font-semibold text-gray-800">'+esc(days)+'</div><div class="text-gray-500">'+esc(t.time)+'</div></div>' +
           '</div>' +
+          '<div class="mt-auto">' + priceBlock(k) + '</div>' +
         '</div></div>';
     }).join('');
   }
