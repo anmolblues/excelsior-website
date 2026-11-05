@@ -6,17 +6,17 @@
 .band-high        { background:#dcfce7; color:#166534; border-color:#86efac; }
 .slot { border-left-width:4px; }
 .slot.dim { opacity:.18; }
-.bandbtn[aria-pressed="true"] { box-shadow:0 0 0 2px #1e3a8a inset; }
+.bandbtn[aria-pressed="true"], .tilebtn[aria-pressed="true"] { box-shadow:0 0 0 2px #1e3a8a inset; }
 
 /* Schedule table: plain light-gray headers and white cells holding the coloured
    grade-band blocks (.slot.band-*, defined above). Desktop/tablet grid = .sched;
-   phone table rows = .sched-day / .sched-time / .sched-cell. */
+   on phones it is scaled to fit (.sched-frame). */
 .sched { border-collapse: separate; border-spacing: 0; }
 .sched thead th { background:#f9fafb; color:#4b5563; }
 .sched thead th.is-today { color:#1d4ed8; }
 .sched tbody td { background:#fff; border-top:1px solid #f1f5f9; }
 .sched tbody td:first-child { color:#374151; font-weight:600; }
 .sched tbody tr:first-child td { border-top:0; }
-.sched-day { background:#f9fafb; color:#1f2937; border-top:1px solid #e5e7eb; }
-.sched-time { background:#fff; color:#4b5563; font-weight:600; border-top:1px solid #f1f5f9; }
-.sched-cell { background:#fff; border-top:1px solid #f1f5f9; }
+/* Phones: the weekly grid is scaled down to fit (see fit() in schedule.js); tap to zoom. */
+.sched-frame.is-pic { cursor: zoom-in; }
+.sched-frame.is-pic.is-zoomed { cursor: zoom-out; overflow-x: auto; -webkit-overflow-scrolling: touch; }
