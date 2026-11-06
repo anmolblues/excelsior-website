@@ -227,7 +227,7 @@
             '<div class="text-[11px] text-gray-500">Total ' + moneyTotal(tot) + '</div></div></div>';
       }).join('') +
       (t.name === 'Afterschool Tutor' ? '<div class="text-[11px] text-gray-500 border-t border-gray-200 pt-2">Each session is one 2-hour afternoon (2:30–4:30 PM).</div>' : '') +
-      (PRICES_LOCKED ? '<a href="' + LOCK_URL + '" class="price-lock block text-center text-sm font-bold text-blue-700 hover:text-blue-900 underline border-t border-gray-200 pt-3 mt-1">Sign-up and setup free evaluation to see the pricing</a>' : '') +
+      (PRICES_LOCKED ? '<a href="' + LOCK_URL + '" class="price-lock block text-center text-sm font-bold text-blue-700 hover:text-blue-900 underline border-t border-gray-200 pt-3 mt-1">Sign-up and setup appointment for pricing</a>' : '') +
       '</div>';
     return html;
   }
@@ -255,7 +255,7 @@
     return { seen: seen, order: order };
   }
   // Renders the tiles into #hostId, filtered by grade group, with the price box built by priceFn(key, tile).
-  function renderTileSet(hostId, bandSel, priceFn){
+  function renderTileSet(hostId, bandSel, priceFn, headFn){
     var host = document.getElementById(hostId);
     if (!host) return;
     var c = collectTiles(), seen = c.seen;
@@ -270,6 +270,7 @@
           '<div class="min-w-0">' +
             '<h3 class="text-xl font-bold leading-tight">'+esc(t.name)+'</h3>' +
             '<div class="text-xs font-semibold mt-1 opacity-80">'+esc(t.grade)+' · In-person</div>' +
+            (headFn ? headFn(k, t) : '') +
           '</div>' +
         '</div>' +
         '<div class="p-5 flex flex-col flex-1 gap-4">' +
@@ -282,7 +283,15 @@
     }).join('');
   }
   function renderTiles(){ renderTileSet('classTiles', tileBand, function(k){ return priceBlock(k); }); }
-  function renderSessionTiles(){ renderTileSet('sessionTiles', sessBand, sessionBlock); }
+  // "Starting at $X/hr": the lowest hourly rate for the course = Group of 6 on the 20-session package
+  // (the after-school course runs 2-hour afternoons, so its per-session price is halved to get an hourly rate).
+  function startingAt(k, t){
+    var d = SESSION_TOTALS[k];
+    if (!d) return '';
+    var perHour = d[2][2] / 20 / (t.name === 'Afterschool Tutor' ? 2 : 1);
+    return '<div class="text-sm font-bold mt-1.5">Starting at $' + perHour.toFixed(2).replace(/\.00$/, '') + '/hr</div>';
+  }
+  function renderSessionTiles(){ renderTileSet('sessionTiles', sessBand, sessionBlock, startingAt); }
 
   // Grade filter buttons for the class tiles (the 'All grades' button is in the page markup)
   var tileBtns = document.getElementById('tileBandButtons');
