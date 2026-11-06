@@ -23,3 +23,6 @@
 
 /* Locked prices: blurred placeholder digits, not selectable */
 .price-blur { filter: blur(6px); -webkit-user-select: none; user-select: none; pointer-events: none; }
+
+/* Anchor links (#classOfferings, #classSchedule ...) stop below the sticky nav; --nav-h is set from the real nav height in schedule.js */
+html { scroll-padding-top: var(--nav-h, 8rem); }

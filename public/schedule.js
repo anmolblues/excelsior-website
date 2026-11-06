@@ -438,6 +438,14 @@
       renderSessionTiles(); return;
     }
   });
+  // Keep anchor jumps from hiding under the sticky nav (it is taller on phones, where the buttons sit on a second row)
+  function setNavH(){
+    var nav = document.querySelector('nav.sticky');
+    if (nav) document.documentElement.style.setProperty('--nav-h', nav.offsetHeight + 'px');
+  }
+  setNavH();
+  window.addEventListener('resize', setNavH);
+  window.addEventListener('load', setNavH);
   window.addEventListener('resize', function(){ fit(); equalizeAll(); });
   window.addEventListener('load', function(){ fit(); equalizeAll(); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(equalizeAll);
