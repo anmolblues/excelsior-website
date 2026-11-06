@@ -182,7 +182,7 @@
   // ---- Per-session pricing (second tile section) ----
   // Total price per student for a package of 6 / 10 / 20 sessions (1 hour each), by format.
   // Value = [one-on-one, group of 3, group of 6], each [6 sessions, 10 sessions, 20 sessions].
-  // Source: EEP Program Price Guide (session pricing), Nov 2026. Per-session price = total / sessions.
+  // Source: EEP Pricing Lab (hourly-rate model), Nov 2026; after-school sessions are 2-hour afternoons. Per-session price = total / sessions.
   var FMT_LABELS = ['One-on-one', 'Group of 3', 'Group of 6'];
   var ES_ART = [[243, 384.80, 729], [140.40, 222.30, 421.20], [97.20, 153.90, 291.60]];
   var ES_MATH = [[297, 470.30, 891], [171.60, 271.70, 514.80], [118.80, 188.10, 356.40]];
@@ -192,8 +192,8 @@
   var HS_TEST = [[546, 864.50, 1638], [312, 494, 936], [218.40, 345.80, 655.20]];
   var HS_STEM = [[462, 731.50, 1386], [264, 418, 792], [184.80, 292.60, 554.40]];
   var SESSION_TOTALS = {
-    'Afterschool Tutor|Grade 3–6': [[148.50, 235.10, 445.60], [85.80, 135.90, 257.40], [59.40, 94.10, 178.20]],
-    'Afterschool Tutor|Grade 7–8': [[181.50, 287.40, 544.60], [105.60, 167.20, 316.80], [72.60, 115, 217.80]],
+    'Afterschool Tutor|Grade 3–6': [[216, 342, 648], [124.80, 197.60, 374.40], [86.40, 136.80, 259.20]],
+    'Afterschool Tutor|Grade 7–8': [[264, 418, 792], [153.60, 243.20, 460.80], [105.60, 167.20, 316.80]],
     'Art|Grade 3–6': ES_ART, 'Math|Grade 3–6': ES_MATH, 'Scratch Coding|Grade 3–6': ES_MATH,
     'Debate|Grade 3–6': ES_TALK, 'Reading & Writing|Grade 3–6': ES_TALK,
     'Reading & Writing|Grade 7–8': MS_TALK, 'Debate|Grade 7–8': MS_TALK,
@@ -222,7 +222,7 @@
           '<div class="text-right whitespace-nowrap"><div><span class="text-lg font-bold text-gray-900">' + money2(tot / r[0]) + '</span></div>' +
             '<div class="text-[11px] text-gray-500">Total ' + moneyTotal(tot) + '</div></div></div>';
       }).join('') +
-      (t.name === 'Afterschool Tutor' ? '<div class="text-[11px] text-gray-500 border-t border-gray-200 pt-2">Each 2-hour afternoon counts as 2 sessions.</div>' : '') +
+      (t.name === 'Afterschool Tutor' ? '<div class="text-[11px] text-gray-500 border-t border-gray-200 pt-2">Each session is one 2-hour afternoon (2:30–4:30 PM).</div>' : '') +
       '</div>';
     return html;
   }
@@ -290,8 +290,9 @@
   // Grade filter buttons for the per-session tiles (the 'All grades' button is in the page markup)
   var sessBtns = document.getElementById('sessBandButtons');
   if (sessBtns) {
+    var SHORT = { elementary: '3\u20136', middle: '7\u20138', high: 'High School' };
     sessBtns.outerHTML = TABLE_BANDS.map(function(k){
-      return '<button type="button" class="sessbtn band-'+k+' px-3.5 py-2 rounded-full text-sm font-semibold border" data-band="'+k+'" aria-pressed="false">'+esc(BANDS[k])+'</button>';
+      return '<button type="button" class="sessbtn band-'+k+' px-2 max-[380px]:px-1.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[13px] max-[380px]:text-[12px] sm:text-sm font-semibold border whitespace-nowrap" data-band="'+k+'" aria-pressed="false" aria-label="'+esc(BANDS[k])+'">'+esc(SHORT[k])+'</button>';
     }).join('');
   }
 
