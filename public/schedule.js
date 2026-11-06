@@ -255,7 +255,7 @@
     return { seen: seen, order: order };
   }
   // Renders the tiles into #hostId, filtered by grade group, with the price box built by priceFn(key, tile).
-  function renderTileSet(hostId, bandSel, priceFn, headFn){
+  function renderTileSet(hostId, bandSel, priceFn, headFn, footFn){
     var host = document.getElementById(hostId);
     if (!host) return;
     var c = collectTiles(), seen = c.seen;
@@ -279,6 +279,7 @@
             '<div><div class="font-semibold text-gray-800">'+esc(days)+'</div><div class="text-gray-500">'+esc(t.time)+'</div></div>' +
           '</div>' +
           '<div class="mt-auto">' + priceFn(k, t) + '</div>' +
+          (footFn ? footFn(k, t) : '') +
         '</div></div>';
     }).join('');
   }
@@ -291,7 +292,78 @@
     var perHour = d[2][2] / 20 / (t.name === 'Afterschool Tutor' ? 2 : 1);
     return '<div class="text-sm font-bold mt-1.5">Starting at $' + perHour.toFixed(2).replace(/\.00$/, '') + '/hr</div>';
   }
-  function renderSessionTiles(){ renderTileSet('sessionTiles', sessBand, sessionBlock, startingAt); }
+  // "What students learn" button at the bottom of each tile; opens the course pop-up (data in course-info.js)
+  function infoButton(k, t){
+    if (!(window.COURSE_INFO && COURSE_INFO[k])) return '';
+    return '<button type="button" class="infobtn w-full inline-flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white hover:bg-gray-50 px-4 py-2.5 text-sm font-semibold text-gray-800" data-key="' + esc(k) + '" aria-haspopup="dialog"><i class="fa-regular fa-circle-question"></i>What students learn</button>';
+  }
+  function renderSessionTiles(){ renderTileSet('sessionTiles', sessBand, sessionBlock, startingAt, infoButton); }
+
+  // ---- Course pop-up: per-grade focus and outcomes after 6 / 10 / 20 sessions ----
+  var modal = null, modalOpener = null, modalKey = '', modalTab = 0;
+  function buildModal(){
+    if (modal) return modal;
+    modal = document.createElement('div');
+    modal.id = 'courseModal';
+    modal.className = 'fixed inset-0 z-[100] hidden items-end sm:items-center justify-center bg-black/50 sm:p-6';
+    modal.innerHTML = '<div id="courseModalBox" role="dialog" aria-modal="true" aria-labelledby="courseModalTitle" tabindex="-1" class="bg-white w-full sm:max-w-3xl max-h-[92vh] flex flex-col rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl outline-none"></div>';
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(ev){ if (ev.target === modal || ev.target.closest('[data-close]')) closeModal(); });
+    modal.addEventListener('keydown', function(ev){
+      if (ev.key === 'Tab') { // keep keyboard focus inside the dialog
+        var f = modal.querySelectorAll('button, a[href]');
+        if (!f.length) return;
+        var first = f[0], last = f[f.length - 1];
+        if (ev.shiftKey && document.activeElement === first) { ev.preventDefault(); last.focus(); }
+        else if (!ev.shiftKey && document.activeElement === last) { ev.preventDefault(); first.focus(); }
+      }
+    });
+    return modal;
+  }
+  function renderModal(){
+    var t = collectTiles().seen[modalKey], tabs = COURSE_INFO[modalKey], tab = tabs[modalTab];
+    var PK = [['6 sessions', ''], ['10 sessions', 'Save 5%'], ['20 sessions', 'Best value · Save 10%']];
+    var html = '<div class="band-' + t.band + ' flex items-start gap-4 px-5 py-5 border-0 shrink-0">' +
+        '<div class="min-w-0 flex-1"><h3 id="courseModalTitle" class="text-2xl font-bold leading-tight">' + esc(t.name) + '</h3>' +
+        '<div class="text-xs font-semibold mt-1 opacity-80">' + esc(t.grade) + ' · What students learn</div></div>' +
+        '<button type="button" data-close class="shrink-0 w-10 h-10 rounded-full bg-white/60 hover:bg-white/90 flex items-center justify-center text-lg" aria-label="Close"><i class="fa-solid fa-xmark"></i></button></div>' +
+      '<div class="overflow-y-auto p-5 flex flex-col gap-4">';
+    if (tabs.length > 1) {
+      html += '<div class="flex flex-wrap gap-2" role="tablist" aria-label="Grade">' + tabs.map(function(x, i){
+        return '<button type="button" role="tab" class="modaltab px-3.5 py-1.5 rounded-full text-sm font-semibold border ' + (i === modalTab ? 'bg-blue-900 text-white border-blue-900' : 'bg-white text-gray-800 border-gray-300') + '" data-i="' + i + '" aria-selected="' + (i === modalTab) + '">' + esc(x.tab) + '</button>';
+      }).join('') + '</div>';
+    }
+    html += '<div class="grid gap-3 sm:grid-cols-3">' + PK.map(function(pk, i){
+      return '<div class="rounded-2xl bg-gray-50 border border-gray-100 p-4">' +
+        '<div class="font-bold text-gray-900">' + pk[0] + '</div>' +
+        (pk[1] ? '<div class="text-[11px] font-semibold text-emerald-700 mb-1">' + pk[1] + '</div>' : '<div class="mb-1 h-[16px] hidden sm:block"></div>') +
+        tab.rows.map(function(r){
+          return '<div class="mt-2"><div class="text-[11px] uppercase tracking-wide font-semibold text-gray-500">' + esc(r[0]) + '</div>' +
+            '<div class="text-sm text-gray-800">' + esc(r[1][i]) + '</div></div>';
+        }).join('') + '</div>';
+    }).join('') + '</div>' +
+      '<p class="text-xs text-gray-500">Content is adjusted to each student’s current level and goals. The 20-session package gives the most complete development and is the best value.</p>' +
+      '<a href="/assessment.html?utm_source=home&utm_medium=site&utm_campaign=course_popup" class="self-start inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-5 py-2.5 rounded-full font-bold text-sm">Get a free assessment <i class="fa-solid fa-arrow-right text-xs"></i></a>' +
+      '</div>';
+    document.getElementById('courseModalBox').innerHTML = html;
+  }
+  function openModal(key, opener){
+    if (!(window.COURSE_INFO && COURSE_INFO[key])) return;
+    buildModal();
+    modalKey = key; modalTab = 0; modalOpener = opener || null;
+    renderModal();
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('courseModalBox').focus();
+    track('course_info_open', { course: key });
+  }
+  function closeModal(){
+    if (!modal) return;
+    modal.classList.add('hidden'); modal.classList.remove('flex');
+    document.body.style.overflow = '';
+    if (modalOpener && modalOpener.focus) modalOpener.focus();
+  }
+  document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape' && modal && !modal.classList.contains('hidden')) closeModal(); });
 
   // Grade filter buttons for the class tiles (the 'All grades' button is in the page markup)
   var tileBtns = document.getElementById('tileBandButtons');
@@ -312,6 +384,10 @@
   function render(){ renderGrid(); fit(); }
 
   document.addEventListener('click', function(ev){
+    var ib = ev.target.closest('.infobtn');
+    if (ib) { openModal(ib.getAttribute('data-key'), ib); return; }
+    var mt = ev.target.closest('.modaltab');
+    if (mt) { modalTab = +mt.getAttribute('data-i'); renderModal(); var a = modal.querySelector('.modaltab[aria-selected="true"]'); if (a) a.focus(); return; }
     var b = ev.target.closest('.bandbtn');
     if (b) {
       band = b.getAttribute('data-band');
