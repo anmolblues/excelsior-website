@@ -6,7 +6,7 @@
 .band-high        { background:#dcfce7; color:#166534; border-color:#86efac; }
 .slot { border-left-width:4px; }
 .slot.dim { opacity:.18; }
-.bandbtn[aria-pressed="true"], .tilebtn[aria-pressed="true"] { box-shadow:0 0 0 2px #1e3a8a inset; }
+.bandbtn[aria-pressed="true"], .tilebtn[aria-pressed="true"], .sessbtn[aria-pressed="true"], .fmtbtn[aria-pressed="true"] { box-shadow:0 0 0 2px #1e3a8a inset; }
 
 /* Schedule table: plain light-gray headers and white cells holding the coloured
    grade-band blocks (.slot.band-*, defined above). Desktop/tablet grid = .sched;

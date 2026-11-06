@@ -238,6 +238,28 @@
         </div>
     </section>
 
+    <!-- Same class tiles, priced per session for 6 / 10 / 20 session packages (built from schedule.js) -->
+    <section id="sessionPricing" class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-3xl font-semibold">Price Per Session</h2>
+            <p class="text-gray-500 text-sm mt-1">The same classes, priced per 1-hour session. Prices are per student. Choose a package of 6, 10 or 20 sessions: save 5% on 10 sessions and 10% on 20 sessions.</p>
+
+            <div class="flex flex-wrap items-center gap-2 mt-6" role="group" aria-label="Choose class format">
+                <span class="text-xs font-bold uppercase tracking-wide text-gray-500 mr-1">Format</span>
+                <button type="button" class="fmtbtn px-3.5 py-2 rounded-full text-sm font-semibold border bg-white text-gray-800 border-gray-300" data-fmt="0" aria-pressed="false">One-on-one</button>
+                <button type="button" class="fmtbtn px-3.5 py-2 rounded-full text-sm font-semibold border bg-white text-gray-800 border-gray-300" data-fmt="1" aria-pressed="true">Group of 3</button>
+                <button type="button" class="fmtbtn px-3.5 py-2 rounded-full text-sm font-semibold border bg-white text-gray-800 border-gray-300" data-fmt="2" aria-pressed="false">Group of 6</button>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 mt-3" role="group" aria-label="Filter classes by grade">
+                <span class="text-xs font-bold uppercase tracking-wide text-gray-500 mr-1">Show</span>
+                <button type="button" class="sessbtn px-3.5 py-2 rounded-full text-sm font-semibold border bg-white text-gray-800 border-gray-300" data-band="" aria-pressed="true">All grades</button>
+                <div id="sessBandButtons" class="contents"></div>
+            </div>
+
+            <div id="sessionTiles" class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6"></div>
+        </div>
+    </section>
+
     <!-- Find a class (class cards from the database). Hidden for now: remove the "hidden" class on the <section> below to show it again. -->
     <section id="classes" class="hidden py-16">
         <div class="max-w-7xl mx-auto px-6">
