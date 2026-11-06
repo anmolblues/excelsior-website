@@ -15,11 +15,11 @@
   // Each entry: [class name, grade label shown, band key]
   var SCHEDULE = [
     { time: '2:30 – 4:30 PM', classes: [
-      ['Afterschool Tutor', 'Grade 3–7', 'afterschool'],
-      ['Afterschool Tutor', 'Grade 3–7', 'afterschool'],
-      ['Afterschool Tutor', 'Grade 3–7', 'afterschool'],
-      ['Afterschool Tutor', 'Grade 3–7', 'afterschool'],
-      ['Afterschool Tutor', 'Grade 3–7', 'afterschool'] ] },
+      ['After-school Homework Help', 'Grade 3–7', 'afterschool'],
+      ['After-school Homework Help', 'Grade 3–7', 'afterschool'],
+      ['After-school Homework Help', 'Grade 3–7', 'afterschool'],
+      ['After-school Homework Help', 'Grade 3–7', 'afterschool'],
+      ['After-school Homework Help', 'Grade 3–7', 'afterschool'] ] },
     { time: '4:30 – 5:30 PM', classes: [
       ['Art', 'Grade 3–6', 'elementary'],
       ['Math', 'Grade 3–6', 'elementary'],
@@ -143,7 +143,7 @@
   // Only shown on pages that have a #classTiles element. Has its own grade filter
   // (.tilebtn buttons); it is not linked to the table or the table's filter.
   var TILE_ICONS = {
-    'Afterschool Tutor': 'fa-book-open-reader',
+    'After-school Homework Help': 'fa-book-open-reader',
     'Art': 'fa-palette', 'Math': 'fa-calculator', 'Scratch Coding': 'fa-puzzle-piece',
     'Debate': 'fa-comments', 'Reading & Writing': 'fa-pen-nib', 'Python': 'fa-code',
     'AMC 8': 'fa-square-root-variable', 'AMC 10': 'fa-square-root-variable',
@@ -154,7 +154,7 @@
   // Key = class name | grade label, exactly as in SCHEDULE. Value = [one-on-one, small group (up to 3), group (up to 6)].
   // The after-school class has one tile per grade group (see renderTiles).
   var PRICES = {
-    'Afterschool Tutor|Grade 3–6': [210, 72, 60], 'Afterschool Tutor|Grade 7–8': [270, 150, 120],
+    'After-school Homework Help|Grade 3–6': [210, 72, 60], 'After-school Homework Help|Grade 7–8': [270, 150, 120],
     'Art|Grade 3–6': [120, 60, 60],           'Math|Grade 3–6': [210, 60, 60],
     'Scratch Coding|Grade 3–6': [150, 60, 60], 'Debate|Grade 3–6': [120, 60, 60],
     'Reading & Writing|Grade 3–6': [210, 60, 60],
@@ -192,8 +192,8 @@
   var HS_TEST = [[546, 864.50, 1638], [312, 494, 936], [218.40, 345.80, 655.20]];
   var HS_STEM = [[462, 731.50, 1386], [264, 418, 792], [184.80, 292.60, 554.40]];
   var SESSION_TOTALS = {
-    'Afterschool Tutor|Grade 3–6': [[216, 342, 648], [124.80, 197.60, 374.40], [86.40, 136.80, 259.20]],
-    'Afterschool Tutor|Grade 7–8': [[264, 418, 792], [153.60, 243.20, 460.80], [105.60, 167.20, 316.80]],
+    'After-school Homework Help|Grade 3–6': [[216, 342, 648], [124.80, 197.60, 374.40], [86.40, 136.80, 259.20]],
+    'After-school Homework Help|Grade 7–8': [[264, 418, 792], [153.60, 243.20, 460.80], [105.60, 167.20, 316.80]],
     'Art|Grade 3–6': ES_ART, 'Math|Grade 3–6': ES_MATH, 'Scratch Coding|Grade 3–6': ES_MATH,
     'Debate|Grade 3–6': ES_TALK, 'Reading & Writing|Grade 3–6': ES_TALK,
     'Reading & Writing|Grade 7–8': MS_TALK, 'Debate|Grade 7–8': MS_TALK,
@@ -226,7 +226,7 @@
           '<div class="text-right whitespace-nowrap' + (PRICES_LOCKED ? ' price-blur" aria-hidden="true' : '') + '"><div><span class="text-lg font-bold text-gray-900">' + money2(tot / r[0]) + '</span></div>' +
             '<div class="text-[11px] text-gray-500">Total ' + moneyTotal(tot) + '</div></div></div>';
       }).join('') +
-      (t.name === 'Afterschool Tutor' ? '<div class="text-[11px] text-gray-500 border-t border-gray-200 pt-2">Each session is one 2-hour afternoon (2:30–4:30 PM).</div>' : '') +
+      (t.name === 'After-school Homework Help' ? '<div class="text-[11px] text-gray-500 border-t border-gray-200 pt-2">Each session is one 2-hour afternoon (2:30–4:30 PM).</div>' : '') +
       (PRICES_LOCKED ? '<a href="' + LOCK_URL + '" class="price-lock block text-center text-sm font-bold text-blue-700 hover:text-blue-900 underline border-t border-gray-200 pt-3 mt-1">Sign-up and setup appointment for pricing</a>' : '') +
       '</div>';
     return html;
@@ -259,6 +259,16 @@
     var host = document.getElementById(hostId);
     if (!host) return;
     var c = collectTiles(), seen = c.seen;
+    // Display order for the Grade 3–6 tiles (other grades keep the schedule order). The 3–6 tiles keep their
+    // places in the list and are just rearranged among themselves.
+    var ORDER_36 = ['After-school Homework Help', 'Math', 'Reading & Writing', 'Scratch Coding', 'Art', 'Debate'];
+    var slots = [], el36 = [];
+    c.order.forEach(function(k, i){ if (seen[k].band === 'elementary') { slots.push(i); el36.push(k); } });
+    el36.sort(function(a, b){
+      var x = ORDER_36.indexOf(seen[a].name), y = ORDER_36.indexOf(seen[b].name);
+      return (x < 0 ? 99 : x) - (y < 0 ? 99 : y);
+    });
+    slots.forEach(function(i, n){ c.order[i] = el36[n]; });
     host.innerHTML = c.order.filter(function(k){ return seen[k].group ? (!bandSel || seen[k].group === bandSel) : inBand(seen[k].band, bandSel); }).map(function(k){
       var t = seen[k];
       var days = t.days.length === DAYS.length ? 'Monday to Friday' : t.days.map(function(i){ return DAYS[i] + 's'; }).join(', ');
@@ -268,7 +278,7 @@
         '<div class="band-'+t.band+' flex items-center gap-4 px-5 py-5 border-0">' +
           '<div class="w-14 h-14 shrink-0 rounded-2xl bg-white/60 flex items-center justify-center"><i class="fa-solid '+icon+' text-2xl"></i></div>' +
           '<div class="min-w-0">' +
-            '<h3 class="text-xl font-bold leading-tight">'+esc(t.name)+'</h3>' +
+            '<h3 class="'+(t.name.length > 18 ? 'text-lg' : 'text-xl')+' font-bold leading-tight">'+esc(t.name)+'</h3>' +
             '<div class="text-xs font-semibold mt-1 opacity-80">'+esc(t.grade)+' · In-person</div>' +
             (headFn ? headFn(k, t) : '') +
           '</div>' +
@@ -282,14 +292,25 @@
           (footFn ? footFn(k, t) : '') +
         '</div></div>';
     }).join('');
+    equalizeHeaders(host);
   }
+  // Give every tile header the same height (the tallest one), so a long course name wrapping onto a second
+  // line doesn't make its header taller than the others.
+  function equalizeHeaders(host){
+    var heads = host.querySelectorAll('.class-card > div:first-child');
+    var i, max = 0;
+    for (i = 0; i < heads.length; i++) heads[i].style.minHeight = '';
+    for (i = 0; i < heads.length; i++) max = Math.max(max, heads[i].offsetHeight);
+    if (max) for (i = 0; i < heads.length; i++) heads[i].style.minHeight = max + 'px';
+  }
+  function equalizeAll(){ ['classTiles', 'sessionTiles'].forEach(function(id){ var h = document.getElementById(id); if (h && h.offsetParent) equalizeHeaders(h); }); }
   function renderTiles(){ renderTileSet('classTiles', tileBand, function(k){ return priceBlock(k); }); }
   // "Starting at $X/hr": the lowest hourly rate for the course = Group of 6 on the 20-session package
   // (the after-school course runs 2-hour afternoons, so its per-session price is halved to get an hourly rate).
   function startingAt(k, t){
     var d = SESSION_TOTALS[k];
     if (!d) return '';
-    var perHour = d[2][2] / 20 / (t.name === 'Afterschool Tutor' ? 2 : 1);
+    var perHour = d[2][2] / 20 / (t.name === 'After-school Homework Help' ? 2 : 1);
     return '<div class="text-sm font-bold mt-1.5">Starting at $' + perHour.toFixed(2).replace(/\.00$/, '') + '/hr</div>';
   }
   // "What students learn" button at the bottom of each tile; opens the course pop-up (data in course-info.js)
@@ -417,8 +438,9 @@
       renderSessionTiles(); return;
     }
   });
-  window.addEventListener('resize', fit);
-  window.addEventListener('load', fit);
+  window.addEventListener('resize', function(){ fit(); equalizeAll(); });
+  window.addEventListener('load', function(){ fit(); equalizeAll(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(equalizeAll);
   // Re-fit whenever the grid's own size changes (late-loading styles/fonts, filter changes).
   if (window.ResizeObserver && document.getElementById('schedInner')) {
     new ResizeObserver(fit).observe(document.getElementById('schedInner'));

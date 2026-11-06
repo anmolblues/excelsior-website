@@ -712,7 +712,7 @@ window.COURSE_INFO = {
    ]
   }
  ],
- "Afterschool Tutor|Grade 3–6": [
+ "After-school Homework Help|Grade 3–6": [
   {
    "tab": "Grades 3–4",
    "rows": [
@@ -740,7 +740,7 @@ window.COURSE_INFO = {
    ]
   }
  ],
- "Afterschool Tutor|Grade 7–8": [
+ "After-school Homework Help|Grade 7–8": [
   {
    "tab": "Grades 5–7",
    "rows": [
