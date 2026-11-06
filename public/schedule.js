@@ -205,8 +205,12 @@
   };
   var sessBand = '';   // session-tiles grade filter (independent of the other two filters)
   var sessFmt = 1;     // 0 one-on-one, 1 group of 3, 2 group of 6
-  function money2(v){ return '$' + v.toFixed(2); }
-  function moneyTotal(v){ return '$' + (Math.round(v * 100) % 100 === 0 ? v.toFixed(0) : v.toFixed(2)); }
+  // Prices are blurred behind a prompt to book the free evaluation. While locked, the page only ever
+  // contains placeholder digits (the real numbers are not in the HTML). To show prices again set this to false.
+  var PRICES_LOCKED = true;
+  var LOCK_URL = '/assessment.html?utm_source=home&utm_medium=site&utm_campaign=price_lock';
+  function money2(v){ return PRICES_LOCKED ? '$88.88' : '$' + v.toFixed(2); }
+  function moneyTotal(v){ if (PRICES_LOCKED) return '$888'; return '$' + (Math.round(v * 100) % 100 === 0 ? v.toFixed(0) : v.toFixed(2)); }
   function sessionBlock(key, t){
     var d = SESSION_TOTALS[key];
     if (!d) return '';
@@ -219,10 +223,11 @@
         return '<div class="flex items-center justify-between gap-3 py-2' + (i ? ' border-t border-gray-200' : '') + '">' +
           '<div><div class="text-sm font-semibold text-gray-800">' + r[1] + '</div>' +
             (r[2] ? '<div class="text-[11px] font-semibold text-emerald-700 whitespace-nowrap">' + r[2] + '</div>' : '') + '</div>' +
-          '<div class="text-right whitespace-nowrap"><div><span class="text-lg font-bold text-gray-900">' + money2(tot / r[0]) + '</span></div>' +
+          '<div class="text-right whitespace-nowrap' + (PRICES_LOCKED ? ' price-blur" aria-hidden="true' : '') + '"><div><span class="text-lg font-bold text-gray-900">' + money2(tot / r[0]) + '</span></div>' +
             '<div class="text-[11px] text-gray-500">Total ' + moneyTotal(tot) + '</div></div></div>';
       }).join('') +
       (t.name === 'Afterschool Tutor' ? '<div class="text-[11px] text-gray-500 border-t border-gray-200 pt-2">Each session is one 2-hour afternoon (2:30–4:30 PM).</div>' : '') +
+      (PRICES_LOCKED ? '<a href="' + LOCK_URL + '" class="price-lock block text-center text-sm font-bold text-blue-700 hover:text-blue-900 underline border-t border-gray-200 pt-3 mt-1">Sign-up and setup free evaluation to see the pricing</a>' : '') +
       '</div>';
     return html;
   }

@@ -20,3 +20,6 @@
 /* Phones: the weekly grid is scaled down to fit (see fit() in schedule.js); pinch to zoom. */
 .sched-frame.is-pic { touch-action: pan-x pan-y; }
 .sched-frame.is-pic.is-zoomed { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* Locked prices: blurred placeholder digits, not selectable */
+.price-blur { filter: blur(6px); -webkit-user-select: none; user-select: none; pointer-events: none; }
