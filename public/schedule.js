@@ -184,6 +184,7 @@
   // Value = [one-on-one, group of 3, group of 6], each [6 sessions, 10 sessions, 20 sessions].
   // Source: EEP Pricing Lab (hourly-rate model), Nov 2026; after-school sessions are 2-hour afternoons. Per-session price = total / sessions.
   var FMT_LABELS = ['One-on-one', 'Group of 3', 'Group of 6'];
+  var FMT_SHORT = ['1:1', '1:3', '1:6'];   // labels on the format buttons inside each tile
   var ES_ART = [[243, 384.80, 729], [140.40, 222.30, 421.20], [97.20, 153.90, 291.60]];
   var ES_MATH = [[297, 470.30, 891], [171.60, 271.70, 514.80], [118.80, 188.10, 356.40]];
   var ES_TALK = [[270, 427.50, 810], [156, 247, 468], [108, 171, 324]];
@@ -204,7 +205,7 @@
     'Public Speaking|High School': [[420, 665, 1260], [240, 380, 720], [168, 266, 504]]
   };
   var sessBand = '';   // session-tiles grade filter (independent of the other two filters)
-  var sessFmt = 1;     // 0 one-on-one, 1 group of 3, 2 group of 6
+  var tileFmt = {};    // format chosen on each tile, by tile key: 0 one-on-one (1:1), 1 group of 3 (1:3, default), 2 group of 6 (1:6)
   // Prices are blurred (placeholder digits) until the visitor is logged in; logged-in users see the real prices.
   // currentUser comes from app.js; app.js calls window.eepAuthChanged() whenever the login state changes.
   function pricesLocked(){ return !(typeof currentUser !== 'undefined' && currentUser); }
@@ -214,10 +215,17 @@
   function sessionBlock(key, t){
     var d = SESSION_TOTALS[key];
     if (!d) return '';
-    var totals = d[sessFmt];
+    var fmt = tileFmt[key] == null ? 1 : tileFmt[key];
+    var totals = d[fmt];
     var rows = [[6, '6 sessions', ''], [10, '10 sessions', 'Save 5%'], [20, '20 sessions', 'Best value · Save 10%']];
     var html = '<div class="rounded-2xl bg-gray-50 border border-gray-100 p-3">' +
-      '<div class="text-[11px] uppercase tracking-wide font-semibold text-gray-500 mb-1">Per session · ' + FMT_LABELS[sessFmt] + '</div>' +
+      '<div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 mb-1">' +
+        '<div class="text-[11px] leading-tight uppercase tracking-wide font-semibold text-gray-500 whitespace-nowrap">Student-teacher ratio</div>' +
+        '<div class="inline-flex rounded-full bg-white border border-gray-200 p-0.5" role="group" aria-label="Class format">' +
+          FMT_SHORT.map(function(lab, i){
+            return '<button type="button" class="tilefmt px-2.5 py-1 rounded-full text-xs font-semibold ' + (i === fmt ? 'bg-blue-900 text-white' : 'text-gray-700 hover:bg-gray-100') + '" data-key="' + esc(key) + '" data-fmt="' + i + '" aria-pressed="' + (i === fmt) + '" title="' + FMT_LABELS[i] + '" aria-label="' + FMT_LABELS[i] + '">' + lab + '</button>';
+          }).join('') +
+        '</div></div>' +
       rows.map(function(r, i){
         var tot = totals[i];
         return '<div class="flex items-center justify-between gap-3 py-2' + (i ? ' border-t border-gray-200' : '') + '">' +
@@ -405,6 +413,13 @@
   function render(){ renderGrid(); fit(); }
 
   document.addEventListener('click', function(ev){
+    var gl = ev.target.closest('.gradelink');
+    if (gl) {   // hero grade tiles: show that grade's courses in Courses Offered, then the link scrolls there
+      sessBand = gl.getAttribute('data-band');
+      document.querySelectorAll('.sessbtn').forEach(function(x){ x.setAttribute('aria-pressed', String(x.getAttribute('data-band') === sessBand)); });
+      track('hero_grade_link', { band: sessBand });
+      renderSessionTiles(); return;
+    }
     var pl = ev.target.closest('.price-lock');
     if (pl) {
       ev.preventDefault();
@@ -447,12 +462,15 @@
       track('session_tiles_filter', { band: sessBand || 'all' });
       renderSessionTiles(); return;
     }
-    var fb = ev.target.closest('.fmtbtn');
-    if (fb) {
-      sessFmt = +fb.getAttribute('data-fmt');
-      document.querySelectorAll('.fmtbtn').forEach(function(x){ x.setAttribute('aria-pressed', String(x === fb)); });
-      track('session_tiles_format', { format: FMT_LABELS[sessFmt] });
-      renderSessionTiles(); return;
+    var tf = ev.target.closest('.tilefmt');
+    if (tf) {
+      var tk = tf.getAttribute('data-key'), tv = +tf.getAttribute('data-fmt');
+      tileFmt[tk] = tv;
+      track('session_tiles_format', { format: FMT_LABELS[tv], course: tk });
+      renderSessionTiles();
+      var again = document.querySelector('.tilefmt[data-key="' + tk.replace(/"/g, '\\"') + '"][data-fmt="' + tv + '"]');
+      if (again) again.focus({ preventScroll: true });
+      return;
     }
   });
   // Keep anchor jumps from hiding under the sticky nav (it is taller on phones, where the buttons sit on a second row)

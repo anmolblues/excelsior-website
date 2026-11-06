@@ -168,22 +168,35 @@
                 </div>
             </div>
 
-            <ul class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <li class="bg-white/10 rounded-2xl p-5 flex flex-col gap-3">
+            <ul class="mt-10 grid gap-4 sm:grid-cols-2 md:grid-cols-6 xl:grid-cols-5">
+                <li class="md:col-span-2 xl:col-span-1 bg-white/10 rounded-2xl p-5 flex flex-col gap-3">
                     <span class="w-11 h-11 rounded-xl bg-yellow-400 text-blue-900 flex items-center justify-center"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i></span>
                     <span class="leading-snug"><span class="block font-semibold text-lg">In-person classes</span><span class="block text-blue-100 text-sm mt-1">With dedicated instructors at our learning center in Pearl River, NY</span></span>
                 </li>
-                <li class="bg-white/10 rounded-2xl p-5 flex flex-col gap-3">
+                <li class="relative hover:bg-white/20 transition md:col-span-2 xl:col-span-1 bg-white/10 rounded-2xl p-5 flex flex-col gap-3">
                     <span class="w-11 h-11 rounded-xl bg-yellow-400 text-blue-900 flex items-center justify-center"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span>
                     <span class="leading-snug"><span class="block font-semibold text-lg">Grades 3–6</span><span class="block text-blue-100 text-sm mt-1">After-school Homework Help, Math, Reading &amp; Writing, Scratch Coding, Art, Debate</span></span>
+                
+                    <span class="mt-auto pt-1 text-sm font-semibold text-yellow-300">View courses <i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i></span>
+                    <a href="#classOfferings" data-band="elementary" class="gradelink absolute inset-0 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300" aria-label="View Grades 3–6 courses"></a>
                 </li>
-                <li class="bg-white/10 rounded-2xl p-5 flex flex-col gap-3">
+                <li class="relative hover:bg-white/20 transition md:col-span-2 xl:col-span-1 bg-white/10 rounded-2xl p-5 flex flex-col gap-3">
                     <span class="w-11 h-11 rounded-xl bg-yellow-400 text-blue-900 flex items-center justify-center"><i class="fa-solid fa-code" aria-hidden="true"></i></span>
                     <span class="leading-snug"><span class="block font-semibold text-lg">Grades 7–8</span><span class="block text-blue-100 text-sm mt-1">After-school Homework Help, Reading &amp; Writing, Debate, Python, AMC 8, Robotics</span></span>
+                
+                    <span class="mt-auto pt-1 text-sm font-semibold text-yellow-300">View courses <i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i></span>
+                    <a href="#classOfferings" data-band="middle" class="gradelink absolute inset-0 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300" aria-label="View Grades 7–8 courses"></a>
                 </li>
-                <li class="bg-white/10 rounded-2xl p-5 flex flex-col gap-3">
+                <li class="relative hover:bg-white/20 transition md:col-span-3 xl:col-span-1 bg-white/10 rounded-2xl p-5 flex flex-col gap-3">
                     <span class="w-11 h-11 rounded-xl bg-yellow-400 text-blue-900 flex items-center justify-center"><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i></span>
                     <span class="leading-snug"><span class="block font-semibold text-lg">High School</span><span class="block text-blue-100 text-sm mt-1">SAT/ACT, AMC 10, Science, Coding, Public Speaking</span></span>
+                
+                    <span class="mt-auto pt-1 text-sm font-semibold text-yellow-300">View courses <i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i></span>
+                    <a href="#classOfferings" data-band="high" class="gradelink absolute inset-0 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-yellow-300" aria-label="View High School courses"></a>
+                </li>
+                <li class="sm:col-span-2 md:col-span-3 xl:col-span-1 bg-white/10 rounded-2xl p-5 flex flex-col gap-3">
+                    <span class="w-11 h-11 rounded-xl bg-yellow-400 text-blue-900 flex items-center justify-center"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i></span>
+                    <span class="leading-snug"><span class="block font-semibold text-lg">Weekend Workshop</span><span class="block text-blue-100 text-sm mt-1">Test-prep bootcamps, enrichment labs, and workshops for grades 3–12</span></span>
                 </li>
             </ul>
         </div>
@@ -264,13 +277,7 @@
             <h2 class="text-3xl font-semibold">Courses Offered</h2>
             <p class="text-gray-500 text-sm mt-1">The same courses, priced per 1-hour session. Prices are per student. Choose a package of 6, 10 or 20 sessions: save 5% on 10 sessions and 10% on 20 sessions.</p>
 
-            <div class="flex flex-nowrap items-center gap-1.5 sm:gap-2 mt-6 overflow-x-auto" role="group" aria-label="Choose class format">
-                <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wide text-gray-500 w-12 sm:w-14 shrink-0">Format</span>
-                <button type="button" class="fmtbtn px-2 max-[380px]:px-1.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[13px] max-[380px]:text-[12px] sm:text-sm font-semibold border whitespace-nowrap bg-white text-gray-800 border-gray-300" data-fmt="0" aria-pressed="false">One-on-one</button>
-                <button type="button" class="fmtbtn px-2 max-[380px]:px-1.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[13px] max-[380px]:text-[12px] sm:text-sm font-semibold border whitespace-nowrap bg-white text-gray-800 border-gray-300" data-fmt="1" aria-pressed="true">Group of 3</button>
-                <button type="button" class="fmtbtn px-2 max-[380px]:px-1.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[13px] max-[380px]:text-[12px] sm:text-sm font-semibold border whitespace-nowrap bg-white text-gray-800 border-gray-300" data-fmt="2" aria-pressed="false">Group of 6</button>
-            </div>
-            <div class="flex flex-nowrap items-center gap-1.5 sm:gap-2 mt-3 overflow-x-auto" role="group" aria-label="Filter classes by grade">
+            <div class="flex flex-nowrap items-center gap-1.5 sm:gap-2 mt-6 overflow-x-auto" role="group" aria-label="Filter classes by grade">
                 <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wide text-gray-500 w-12 sm:w-14 shrink-0">Grade</span>
                 <button type="button" class="sessbtn px-2 max-[380px]:px-1.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[13px] max-[380px]:text-[12px] sm:text-sm font-semibold border whitespace-nowrap bg-white text-gray-800 border-gray-300" data-band="" aria-pressed="true">All</button>
                 <div id="sessBandButtons" class="contents"></div>
