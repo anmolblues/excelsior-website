@@ -59,6 +59,8 @@ function updateAuthUI() {
     userMenu.classList.add('hidden');
     userMenu.classList.remove('flex');
   }
+  // Let the home-page tiles show or hide prices (schedule.js)
+  if (window.eepAuthChanged) window.eepAuthChanged();
 }
 
 function toggleAccountDropdown() {

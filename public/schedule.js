@@ -205,12 +205,12 @@
   };
   var sessBand = '';   // session-tiles grade filter (independent of the other two filters)
   var sessFmt = 1;     // 0 one-on-one, 1 group of 3, 2 group of 6
-  // Prices are blurred behind a prompt to book the free evaluation. While locked, the page only ever
-  // contains placeholder digits (the real numbers are not in the HTML). To show prices again set this to false.
-  var PRICES_LOCKED = true;
-  var LOCK_URL = '/assessment.html?utm_source=home&utm_medium=site&utm_campaign=price_lock';
-  function money2(v){ return PRICES_LOCKED ? '$88.88' : '$' + v.toFixed(2); }
-  function moneyTotal(v){ if (PRICES_LOCKED) return '$888'; return '$' + (Math.round(v * 100) % 100 === 0 ? v.toFixed(0) : v.toFixed(2)); }
+  // Prices are blurred (placeholder digits) until the visitor is logged in; logged-in users see the real prices.
+  // currentUser comes from app.js; app.js calls window.eepAuthChanged() whenever the login state changes.
+  function pricesLocked(){ return !(typeof currentUser !== 'undefined' && currentUser); }
+  var LOCK_URL = '#signup';
+  function money2(v){ return pricesLocked() ? '$88.88' : '$' + v.toFixed(2); }
+  function moneyTotal(v){ if (pricesLocked()) return '$888'; return '$' + (Math.round(v * 100) % 100 === 0 ? v.toFixed(0) : v.toFixed(2)); }
   function sessionBlock(key, t){
     var d = SESSION_TOTALS[key];
     if (!d) return '';
@@ -223,11 +223,11 @@
         return '<div class="flex items-center justify-between gap-3 py-2' + (i ? ' border-t border-gray-200' : '') + '">' +
           '<div><div class="text-sm font-semibold text-gray-800">' + r[1] + '</div>' +
             (r[2] ? '<div class="text-[11px] font-semibold text-emerald-700 whitespace-nowrap">' + r[2] + '</div>' : '') + '</div>' +
-          '<div class="text-right whitespace-nowrap' + (PRICES_LOCKED ? ' price-blur" aria-hidden="true' : '') + '"><div><span class="text-lg font-bold text-gray-900">' + money2(tot / r[0]) + '</span></div>' +
+          '<div class="text-right whitespace-nowrap' + (pricesLocked() ? ' price-blur" aria-hidden="true' : '') + '"><div><span class="text-lg font-bold text-gray-900">' + money2(tot / r[0]) + '</span></div>' +
             '<div class="text-[11px] text-gray-500">Total ' + moneyTotal(tot) + '</div></div></div>';
       }).join('') +
       (t.name === 'After-school Homework Help' ? '<div class="text-[11px] text-gray-500 border-t border-gray-200 pt-2">Each session is one 2-hour afternoon (2:30–4:30 PM).</div>' : '') +
-      (PRICES_LOCKED ? '<a href="' + LOCK_URL + '" class="price-lock block text-center text-sm font-bold text-blue-700 hover:text-blue-900 underline border-t border-gray-200 pt-3 mt-1">Sign-up and setup appointment for pricing</a>' : '') +
+      (pricesLocked() ? '<a href="' + LOCK_URL + '" class="price-lock block text-center text-sm font-bold text-blue-700 hover:text-blue-900 underline border-t border-gray-200 pt-3 mt-1">See Pricing</a>' : '') +
       '</div>';
     return html;
   }
@@ -316,9 +316,10 @@
   // "What students learn" button at the bottom of each tile; opens the course pop-up (data in course-info.js)
   function infoButton(k, t){
     if (!(window.COURSE_INFO && COURSE_INFO[k])) return '';
-    return '<button type="button" class="infobtn w-full inline-flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white hover:bg-gray-50 px-4 py-2.5 text-sm font-semibold text-gray-800" data-key="' + esc(k) + '" aria-haspopup="dialog"><i class="fa-regular fa-circle-question"></i>What students learn</button>';
+    return '<button type="button" class="infobtn mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-white/80 hover:bg-white px-3 py-1.5 text-xs font-semibold text-gray-800 shadow-sm" data-key="' + esc(k) + '" aria-haspopup="dialog"><i class="fa-regular fa-circle-question"></i>What students learn</button>';
   }
-  function renderSessionTiles(){ renderTileSet('sessionTiles', sessBand, sessionBlock, startingAt, infoButton); }
+  function renderSessionTiles(){ renderTileSet('sessionTiles', sessBand, sessionBlock, function(k, t){ return startingAt(k, t) + infoButton(k, t); }); }
+  window.eepAuthChanged = function(){ renderSessionTiles(); };
 
   // ---- Course pop-up: per-grade focus and outcomes after 6 / 10 / 20 sessions ----
   var modal = null, modalOpener = null, modalKey = '', modalTab = 0;
@@ -364,7 +365,6 @@
         }).join('') + '</div>';
     }).join('') + '</div>' +
       '<p class="text-xs text-gray-500">Content is adjusted to each student’s current level and goals. The 20-session package gives the most complete development and is the best value.</p>' +
-      '<a href="/assessment.html?utm_source=home&utm_medium=site&utm_campaign=course_popup" class="self-start inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-5 py-2.5 rounded-full font-bold text-sm">Get a free assessment <i class="fa-solid fa-arrow-right text-xs"></i></a>' +
       '</div>';
     document.getElementById('courseModalBox').innerHTML = html;
   }
@@ -405,6 +405,23 @@
   function render(){ renderGrid(); fit(); }
 
   document.addEventListener('click', function(ev){
+    var pl = ev.target.closest('.price-lock');
+    if (pl) {
+      ev.preventDefault();
+      track('price_lock_signup_click');
+      if (typeof openAuthModal === 'function') {
+        openAuthModal('signup');
+        var cm = document.getElementById('authContextMsg');   // blue note at the top of the sign-up form
+        if (cm) {
+          cm.innerHTML = '<span class="flex items-center gap-3 text-left">' +
+            '<span class="shrink-0 w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center"><i class="fa-solid fa-tags"></i></span>' +
+            '<span><span class="block font-bold text-blue-900 text-base leading-snug">Sign-up for free to see pricing</span>' +
+            '<span class="block text-blue-800 text-[13px] leading-snug mt-0.5">Create your free account to view session prices for every course.</span></span></span>';
+          cm.classList.remove('hidden');
+        }
+      } else window.location.href = '/#signup';
+      return;
+    }
     var ib = ev.target.closest('.infobtn');
     if (ib) { openModal(ib.getAttribute('data-key'), ib); return; }
     var mt = ev.target.closest('.modaltab');
