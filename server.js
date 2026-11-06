@@ -32,6 +32,8 @@ app.use('/api/qr', qrRoutes);
 app.get('/go/:code', qrRoutes.goHandler);
 
 // Serve the website (HTML/CSS/JS/images) from /public
+// The standalone schedule page was removed; the Class Schedule now lives on the home page.
+app.get('/schedule.html', (req, res) => res.redirect(301, '/#classSchedule'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Fallback: send index.html for any other non-API GET request

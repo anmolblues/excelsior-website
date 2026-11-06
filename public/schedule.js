@@ -1,8 +1,7 @@
-// Class Schedule: data + rendering, shared by schedule.html (full page) and
-// index.html (home page). Needs these elements on the page:
+// Class Schedule: data + rendering for the home page (index.html). Needs these elements on the page:
 //   #bandButtons, .bandbtn[data-band=""] (the grade filter), #gridBody and
 //   [data-daycol] headers (desktop/tablet weekly grid), (on phones the same grid is scaled to fit).
-// Edit the class list in SCHEDULE below; both pages pick it up.
+// Edit the class list in SCHEDULE below; the table and the class tiles pick it up.
 (function(){
   // ---- Edit the schedule here ------------------------------------------
   // Grade bands: the key is used for colour and the "Show" filter.
