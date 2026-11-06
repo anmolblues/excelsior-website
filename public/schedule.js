@@ -52,13 +52,14 @@
   // Schedule table filter: three grade groups. The after-school class (Grade 3-7) has no
   // button of its own; it stays lit under both the Grades 3-6 and Grades 7-8 filters.
   var TABLE_BANDS = ['elementary', 'middle', 'high'];
+  var SHORT = { elementary: '3\u20136', middle: '7\u20138', high: 'High School' };   // short grade labels for the filter buttons
   function inBand(key, b){
     return !b || key === b || (key === 'afterschool' && (b === 'elementary' || b === 'middle'));
   }
 
   // Filter buttons
   document.getElementById('bandButtons').outerHTML = TABLE_BANDS.map(function(k){
-    return '<button type="button" class="bandbtn band-'+k+' px-3.5 py-2 rounded-full text-sm font-semibold border" data-band="'+k+'" aria-pressed="false">'+esc(BANDS[k])+'</button>';
+    return '<button type="button" class="bandbtn band-'+k+' px-2 max-[380px]:px-1.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[13px] max-[380px]:text-[12px] sm:text-sm font-semibold border whitespace-nowrap" data-band="'+k+'" aria-pressed="false" aria-label="'+esc(BANDS[k])+'">'+esc(SHORT[k])+'</button>';
   }).join('');
 
   // Desktop / tablet: weekly grid.
@@ -289,7 +290,6 @@
   // Grade filter buttons for the per-session tiles (the 'All grades' button is in the page markup)
   var sessBtns = document.getElementById('sessBandButtons');
   if (sessBtns) {
-    var SHORT = { elementary: '3\u20136', middle: '7\u20138', high: 'High School' };
     sessBtns.outerHTML = TABLE_BANDS.map(function(k){
       return '<button type="button" class="sessbtn band-'+k+' px-2 max-[380px]:px-1.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[13px] max-[380px]:text-[12px] sm:text-sm font-semibold border whitespace-nowrap" data-band="'+k+'" aria-pressed="false" aria-label="'+esc(BANDS[k])+'">'+esc(SHORT[k])+'</button>';
     }).join('');
