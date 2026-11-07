@@ -239,15 +239,16 @@
 
             <p class="text-sm text-gray-500 mt-6">Schedule subject to change. Not sure which class fits? A free assessment helps us recommend the right starting point.</p>
 
-            <div class="mt-8 bg-blue-600 text-white rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="mt-8 bg-blue-600 text-white rounded-3xl p-6 sm:p-8 flex flex-col sm:items-start gap-4">
                 <div>
                     <h2 class="text-xl sm:text-2xl font-bold">Find the right class for your child</h2>
-                    <p class="text-blue-100">Book a free academic assessment, call us at (201) 908-7279, or visit us in person.</p>
+                    <p class="text-blue-100">Book a free academic assessment, call us at (201) 908-7279, visit us in person, or send us a quick message.</p>
                 </div>
                 <div class="flex flex-wrap gap-3">
                     <a href="/assessment.html?utm_source=home&utm_medium=site" class="bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-6 py-3 rounded-2xl font-bold">Get a free assessment</a>
                     <a href="tel:+12019087279" class="bg-white/10 hover:bg-white/20 px-6 py-3 rounded-2xl font-semibold"><i class="fa-solid fa-phone mr-1"></i> Call</a>
                     <a href="https://maps.app.goo.gl/tqFRSx3PgnXRtwZW6" target="_blank" rel="noopener noreferrer" class="bg-white/10 hover:bg-white/20 px-6 py-3 rounded-2xl font-semibold"><i class="fa-solid fa-location-dot mr-1"></i> Visit in Person</a>
+                    <a href="#contactUs" class="bg-white/10 hover:bg-white/20 px-6 py-3 rounded-2xl font-semibold"><i class="fa-solid fa-envelope mr-1"></i> Quick Message</a>
                 </div>
             </div>
         </div>
@@ -316,14 +317,27 @@
 
     <!-- Contact us -->
     <section id="contactUs" class="py-6 bg-blue-50">
-        <div class="max-w-6xl mx-auto px-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 text-center lg:text-left">
-            <h2 class="text-xl font-semibold text-gray-800">Contact Us</h2>
-            <div class="flex flex-wrap justify-center lg:justify-end gap-x-6 gap-y-2 text-sm">
-                <a href="tel:+12019087279" class="inline-flex items-center gap-2 text-blue-700 hover:underline font-medium whitespace-nowrap"><i class="fa-solid fa-phone" aria-hidden="true"></i>+1 (201) 908-7279</a>
-                <a href="mailto:contact@eepcenter.com" class="inline-flex items-center gap-2 text-blue-700 hover:underline font-medium"><i class="fa-solid fa-envelope" aria-hidden="true"></i>contact@eepcenter.com</a>
-                <span class="inline-flex items-center gap-2 text-gray-700 whitespace-nowrap"><i class="fa-solid fa-clock text-blue-600" aria-hidden="true"></i>9 AM – 8 PM, every day</span>
-                <a href="https://maps.app.goo.gl/tqFRSx3PgnXRtwZW6" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-blue-700 hover:underline font-medium whitespace-nowrap"><i class="fa-solid fa-location-dot" aria-hidden="true"></i>Pearl River, NY · Directions</a>
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 text-center lg:text-left">
+                <h2 class="text-xl font-semibold text-gray-800">Contact Us</h2>
+                <div class="flex flex-wrap justify-center lg:justify-end gap-x-6 gap-y-2 text-sm">
+                    <a href="tel:+12019087279" class="inline-flex items-center gap-2 text-blue-700 hover:underline font-medium whitespace-nowrap"><i class="fa-solid fa-phone" aria-hidden="true"></i>+1 (201) 908-7279</a>
+                    <a href="mailto:contact@eepcenter.com" class="inline-flex items-center gap-2 text-blue-700 hover:underline font-medium"><i class="fa-solid fa-envelope" aria-hidden="true"></i>contact@eepcenter.com</a>
+                    <span class="inline-flex items-center gap-2 text-gray-700 whitespace-nowrap"><i class="fa-solid fa-clock text-blue-600" aria-hidden="true"></i>9 AM – 8 PM, every day</span>
+                    <a href="https://maps.app.goo.gl/tqFRSx3PgnXRtwZW6" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-blue-700 hover:underline font-medium whitespace-nowrap"><i class="fa-solid fa-location-dot" aria-hidden="true"></i>Pearl River, NY · Directions</a>
+                </div>
             </div>
+            <form id="quickMessage" class="mt-5 pt-5 border-t border-blue-100" aria-labelledby="qmTitle">
+                <h3 id="qmTitle" class="text-sm font-semibold text-gray-800 mb-3 text-center lg:text-left">Have a question? Send us a quick message.</h3>
+                <div class="grid gap-3 lg:max-w-xl items-start">
+                    <input type="text" name="name" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Your name" aria-label="Your name" autocomplete="name" maxlength="100" required>
+                    <input type="email" name="email" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Email address" aria-label="Email address" autocomplete="email" maxlength="200" required>
+                    <textarea name="question" rows="1" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y min-h-[42px] lg:min-h-[160px]" placeholder="Your question" aria-label="Your question" maxlength="1500" required></textarea>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-6 py-3 rounded-2xl text-sm font-semibold transition whitespace-nowrap lg:justify-self-start">Send message</button>
+                </div>
+                <div style="position:absolute;left:-9999px;" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+                <p id="qmStatus" class="mt-3 text-sm text-center lg:text-left" role="status" aria-live="polite"></p>
+            </form>
         </div>
     </section>
 
@@ -658,5 +672,6 @@
     <script src="app.js"></script>
     <script src="course-info.js"></script>
     <script src="schedule.js"></script>
+    <script src="contact-form.js"></script>
 </body>
 </html>

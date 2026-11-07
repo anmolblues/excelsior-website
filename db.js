@@ -187,6 +187,19 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_leads_createdAt ON leads(createdAt);
 
+  -- Quick messages from the "Contact Us" form on the home page
+  -- (public/contact-form.js -> routes/messages.js). Every message is saved
+  -- here and also emailed to the center, so nothing is lost if email fails.
+  CREATE TABLE IF NOT EXISTS messages (
+    id        INTEGER PRIMARY KEY,
+    name      TEXT NOT NULL,
+    email     TEXT NOT NULL,
+    question  TEXT NOT NULL,
+    createdAt TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_messages_createdAt ON messages(createdAt);
+
   -- Trackable QR links (routes/qr.js). A printed QR code points at
   -- /go/<code>; the server logs a row in qrScans and redirects to
   -- 'destination' with UTM tags added. The destination/tags can be changed

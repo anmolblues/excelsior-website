@@ -45,7 +45,7 @@ function escapeHtml(str) {
 // Fire-and-forget friendly: never throws. A failed/unconfigured send is
 // logged, not surfaced to the caller, so email problems can never break
 // signup, login, or bookings.
-async function sendMail({ to, subject, html, text }) {
+async function sendMail({ to, subject, html, text, replyTo }) {
   if (!transporter) {
     console.log(`[mailer] (not configured) would send "${subject}" to ${to}`);
     return;
@@ -54,6 +54,7 @@ async function sendMail({ to, subject, html, text }) {
     await transporter.sendMail({
       from: `"${FROM_NAME}" <${FROM_ADDRESS}>`,
       to,
+      ...(replyTo ? { replyTo } : {}),
       subject,
       html,
       text,

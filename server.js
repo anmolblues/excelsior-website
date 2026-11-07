@@ -10,6 +10,7 @@ const bookingRoutes = require('./routes/bookings');
 const eventRoutes = require('./routes/events');
 const studentRoutes = require('./routes/students');
 const leadRoutes = require('./routes/leads');
+const messageRoutes = require('./routes/messages');
 const qrRoutes = require('./routes/qr');
 
 const app = express();
@@ -26,6 +27,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/leads', leadRoutes);
+app.use('/api/messages', messageRoutes);
 app.use('/api/qr', qrRoutes);
 
 // Trackable QR-code short links (see routes/qr.js): /go/flyer etc.

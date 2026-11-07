@@ -235,7 +235,10 @@
             '<div class="text-[11px] text-gray-500">Total ' + moneyTotal(tot) + '</div></div></div>';
       }).join('') +
       (t.name === 'After-school Homework Help' ? '<div class="text-[11px] text-gray-500 border-t border-gray-200 pt-2">Each session is one 2-hour afternoon (2:30–4:30 PM).</div>' : '') +
-      (pricesLocked() ? '<a href="' + LOCK_URL + '" class="price-lock block text-center text-sm font-bold text-blue-700 hover:text-blue-900 underline border-t border-gray-200 pt-3 mt-1">See Pricing</a>' : '') +
+      '<div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 border-t border-gray-200 pt-3 mt-1 text-sm font-bold">' +
+        (pricesLocked() ? '<a href="' + LOCK_URL + '" class="price-lock text-blue-700 hover:text-blue-900 underline">See Pricing</a>' : '') +
+        '<a href="/#contactUs" class="qmlink text-blue-700 hover:text-blue-900 underline"><i class="fa-solid fa-envelope mr-1"></i>Quick Message</a>' +
+      '</div>' +
       '</div>';
     return html;
   }
