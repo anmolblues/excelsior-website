@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { readTable, writeTable, nextId } = require('../db');
 const { signToken, requireAuth, requireAdmin } = require('../middleware/auth');
-const { sendWelcomeEmail, sendPasswordResetEmail } = require('../mailer');
+const { sendWelcomeEmail, sendPasswordResetEmail, sendAdminNotice } = require('../mailer');
 
 const router = express.Router();
 
@@ -78,6 +78,14 @@ router.post('/signup', (req, res) => {
   // Fire-and-forget: never delays the response or fails signup if email
   // sending has a problem (mailer.js logs errors internally).
   sendWelcomeEmail(newUser);
+  // Heads-up to the center's inbox so a new sign-up doesn't go unnoticed.
+  sendAdminNotice({
+    subject: `New account: ${newUser.name}`,
+    text:
+      `A new account was just created on the website.\n\n` +
+      `Name: ${newUser.name}\nEmail: ${newUser.email}\nCreated: ${newUser.createdAt}\n`,
+    replyTo: newUser.email,
+  });
 });
 
 // POST /api/auth/login

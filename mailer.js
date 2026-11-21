@@ -112,4 +112,14 @@ function sendPasswordResetEmail(user, resetLink) {
   return sendMail({ to: user.email, subject, html, text });
 }
 
-module.exports = { sendMail, sendWelcomeEmail, sendPasswordResetEmail };
+// Plain-text alert to the center's own inbox (new account, new class booking, ...).
+// Goes to LEAD_NOTIFY_EMAIL (default contact@eepcenter.com) — same inbox as the
+// assessment and quick-message alerts. Never throws.
+const ADMIN_NOTIFY_EMAIL = process.env.LEAD_NOTIFY_EMAIL || 'contact@eepcenter.com';
+const oneLine = (v) => String(v ?? '').replace(/[\r\n]+/g, ' ').trim();
+
+function sendAdminNotice({ subject, text, replyTo }) {
+  return sendMail({ to: ADMIN_NOTIFY_EMAIL, subject: oneLine(subject), text, replyTo });
+}
+
+module.exports = { sendMail, sendWelcomeEmail, sendPasswordResetEmail, sendAdminNotice };

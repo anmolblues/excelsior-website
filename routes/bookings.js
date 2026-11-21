@@ -2,6 +2,7 @@
 const express = require('express');
 const { readTable, writeTable, nextId } = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { sendAdminNotice } = require('../mailer');
 
 const router = express.Router();
 
@@ -114,6 +115,22 @@ router.post('/', requireAuth, (req, res) => {
   writeTable('bookings', bookings);
 
   res.status(201).json({ booking: newBooking, class: cls });
+
+  // Alert the center's inbox about the new booking (fire-and-forget; never affects the response).
+  const parent = readTable('users').find(u => u.id === req.user.id) || {};
+  const spotsLeft = Math.max(0, cls.capacity - (activeBookings.length + 1));
+  sendAdminNotice({
+    subject: `New class booking: ${student.name} → ${cls.title}`,
+    text:
+      `A class was just booked on the website.\n\n` +
+      `Class: ${cls.title}${cls.schedule ? ` (${cls.schedule})` : ''}\n` +
+      `Student: ${student.name}, Grade ${student.grade}${student.age != null ? `, age ${student.age}` : ''}\n` +
+      `Parent/guardian: ${parent.name || '—'} <${parent.email || '—'}>\n` +
+      `Notes: ${newBooking.notes || '—'}\n` +
+      `Spots left in this class: ${spotsLeft} of ${cls.capacity}\n` +
+      `Booking #${newBooking.id}\n`,
+    replyTo: parent.email,
+  });
 });
 
 // GET /api/bookings/me — list the current user's bookings, with class details attached
