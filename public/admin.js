@@ -868,47 +868,16 @@ function attFmtTime(t) {
   return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
 }
 
-// Student filter for Attendance & Reports: null, or
-// { studentId, name, byClass: Map(classId -> { days, startDate }) }
-let attStudentFilter = null;
-
 function populateAttendanceClasses() {
   const sel = document.getElementById('attClass');
   const current = sel.value;
-  const list = attStudentFilter ? allClasses.filter((c) => attStudentFilter.byClass.has(c.id)) : allClasses;
-  sel.innerHTML = '<option value="">' + (attStudentFilter && !list.length ? 'Not enrolled in any classes' : 'Select a class…') + '</option>' +
-    list.map((c) => `<option value="${c.id}">${escapeHtml(c.title)}</option>`).join('');
-  if (current && list.some((c) => String(c.id) === current)) sel.value = current;
-  else if (attStudentFilter && list.length === 1) sel.value = String(list[0].id);
-}
-
-// Loads the selected student's classes/days/start dates (or clears the filter).
-async function refreshAttStudentFilter() {
-  const id = document.getElementById('attStudent').value;
-  if (!id) { attStudentFilter = null; return; }
-  const data = await api(`/portal/admin/students/${id}/enrollments`);
-  const byClass = new Map(data.classes.filter((c) => c.enrolled).map((c) => [c.id, c.enrolled]));
-  attStudentFilter = { studentId: Number(id), name: data.student.name, byClass };
-}
-
-async function onAttStudentChange() {
-  try { await refreshAttStudentFilter(); } catch (err) { return showToast(err.message, true); }
-  populateAttendanceClasses();
-  loadSessions();
-}
-
-// Does the filtered student attend this date? (their days + start date)
-function attStudentAttends(session) {
-  if (!attStudentFilter) return true;
-  const e = attStudentFilter.byClass.get(session.classId);
-  if (!e) return false;
-  if (e.startDate && session.date < e.startDate) return false;
-  return !e.days.length || e.days.includes(new Date(session.date + 'T00:00:00Z').getUTCDay());
+  sel.innerHTML = '<option value="">Select a class…</option>' +
+    allClasses.map((c) => `<option value="${c.id}">${escapeHtml(c.title)}</option>`).join('');
+  if (current) sel.value = current;
 }
 
 async function loadSessions() {
   const classId = document.getElementById('attClass').value;
-  closeRoster();
   document.getElementById('addSessionsForm').classList.toggle('hidden', !classId);
   document.getElementById('sessionsCard').classList.toggle('hidden', !classId);
   document.getElementById('enrollCard').classList.toggle('hidden', !classId);
@@ -916,18 +885,10 @@ async function loadSessions() {
   loadEnrollments();
 
   const data = await api(`/portal/admin/sessions?classId=${classId}`);
-  attSessions = data.sessions.filter(attStudentAttends);
-
-  const note = document.getElementById('attStudentNote');
-  const e = attStudentFilter && attStudentFilter.byClass.get(Number(classId));
-  note.classList.toggle('hidden', !e);
-  if (e) {
-    const days = e.days.length ? WEEKDAY_ORDER.filter((d) => e.days.includes(d)).map((d) => WEEKDAY_SHORT[d]).join(', ') : 'every class day';
-    note.innerHTML = `<i class="fa-solid fa-filter mr-1"></i>Showing only <b>${escapeHtml(attStudentFilter.name)}</b>'s dates: ${escapeHtml(days)}${e.startDate ? ', starting ' + escapeHtml(attFmtDate(e.startDate)) : ''}. Choose "All students" to see the whole class.`;
-  }
+  attSessions = data.sessions;
   const tbody = document.getElementById('sessionsTableBody');
   if (!attSessions.length) {
-    tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">${attStudentFilter ? 'No dates for this student in this class.' : 'No dates yet — add some above.'}</td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">No dates yet — add some above.</td></tr>';
     return;
   }
   tbody.innerHTML = attSessions.map((s) => {
@@ -946,7 +907,6 @@ async function loadSessions() {
         </td>
         <td class="px-4 py-3 text-xs whitespace-nowrap">${status}</td>
         <td class="px-4 py-3 text-right whitespace-nowrap">
-          <button onclick="openRoster(${s.id})" class="text-blue-600 hover:underline font-semibold mr-3">Attendance &amp; reports</button>
           <button onclick="deleteSession(${s.id})" class="text-red-500 hover:underline">Delete</button>
         </td>
       </tr>`;
@@ -1000,25 +960,27 @@ async function deleteSession(id) {
 function closeRoster() {
   attRoster = null;
   document.getElementById('rosterCard').classList.add('hidden');
+  document.getElementById('arPlaceholder').classList.remove('hidden');
 }
 
+// Opens the attendance + report form for one date, for the student picked
+// in Attendance & Reports.
 async function openRoster(sessionId) {
   try {
     attRoster = await api(`/portal/admin/sessions/${sessionId}/roster`);
   } catch (err) {
     return showToast(err.message, true);
   }
-  if (attStudentFilter) {
-    attRoster.roster = attRoster.roster.filter((r) => r.studentId === attStudentFilter.studentId);
-  }
-  const { session, roster } = attRoster;
+  attRoster.roster = attRoster.roster.filter((r) => r.studentId === arState.studentId);
+  const { session } = attRoster;
   document.getElementById('rosterTitle').textContent = `${session.classTitle} — ${attFmtDate(session.date)}`;
-  document.getElementById('rosterSub').textContent = (attStudentFilter ? `Showing ${attStudentFilter.name} only` : `${roster.length} enrolled`) + (session.topic ? ' · ' + session.topic : '');
+  document.getElementById('rosterSub').textContent = arState.studentName + (session.topic ? ' · ' + session.topic : '');
+  document.querySelector('#rosterCard [onclick="markAllPresent()"]').classList.add('hidden');
+  document.querySelector('#rosterCard [onclick="closeRoster()"]').classList.add('hidden');
 
   renderRoster();
-  const card = document.getElementById('rosterCard');
-  card.classList.remove('hidden');
-  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('arPlaceholder').classList.add('hidden');
+  document.getElementById('rosterCard').classList.remove('hidden');
 }
 
 function renderRoster() {
@@ -1037,7 +999,7 @@ function renderRoster() {
     return `
       <div class="border rounded-2xl p-4" data-idx="${i}">
         <div class="grid sm:grid-cols-12 gap-3 items-end">
-          <div class="sm:col-span-3">
+          <div class="sm:col-span-12">
             <p class="font-semibold">${escapeHtml(r.name)}</p>
             <p class="text-xs text-gray-400">${escapeHtml(r.grade || '')}</p>
           </div>
@@ -1047,17 +1009,17 @@ function renderRoster() {
               ${opt('', '— Not marked', rec.attendance)}${opt('present', '✓ Present', rec.attendance)}${opt('absent', '✗ Absent', rec.attendance)}
             </select>
           </div>
-          <div class="sm:col-span-2 rf">
+          <div class="sm:col-span-3 rf">
             <label class="block text-xs font-semibold text-gray-500 mb-1">Score (0–100)</label>
             <input data-f="score" type="number" min="0" max="100" value="${rec.score ?? ''}" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm">
           </div>
-          <div class="sm:col-span-2 rf">
+          <div class="sm:col-span-3 rf">
             <label class="block text-xs font-semibold text-gray-500 mb-1">Participation</label>
             <select data-f="participation" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm">
               ${opt('', '—', rec.participation)}${[1, 2, 3, 4, 5].map((n) => opt(n, '★'.repeat(n), rec.participation)).join('')}
             </select>
           </div>
-          <div class="sm:col-span-2 rf">
+          <div class="sm:col-span-3 rf">
             <label class="block text-xs font-semibold text-gray-500 mb-1">Homework</label>
             <select data-f="homework" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm">
               ${opt('', '—', rec.homework)}${opt('complete', 'Complete', rec.homework)}${opt('partial', 'Partial', rec.homework)}${opt('missing', 'Missing', rec.homework)}${opt('none', 'None assigned', rec.homework)}
@@ -1103,10 +1065,10 @@ async function saveRoster() {
   });
   try {
     await api(`/portal/admin/sessions/${attRoster.session.id}/records`, { method: 'PUT', body: JSON.stringify({ records }) });
-    showToast('Attendance & reports saved.');
+    showToast('Attendance & report saved.');
     const id = attRoster.session.id;
-    await loadSessions();
-    openRoster(id);
+    if (document.getElementById('attClass').value) loadSessions(); // refresh Class Dates counts
+    await loadArDates(id);
   } catch (err) {
     showToast(err.message, true);
   }
@@ -1190,15 +1152,12 @@ async function unenrollStudent(bookingId, name) {
   }
 }
 
-// Reloads the dates table + enrollments, and re-opens the roster if one was open.
+// Reloads Class Dates (dates table + enrolled students), the Enroll section
+// and Attendance & Reports after an enrollment change.
 async function loadSessionsKeepRoster() {
-  const openId = attRoster && attRoster.session.id;
-  if (attStudentFilter) {
-    try { await refreshAttStudentFilter(); populateAttendanceClasses(); } catch (err) { /* keep old filter */ }
-  }
   if (enrData && !afterEnrollmentChange.running) loadStudentEnrollments();
+  if (arState.studentId) refreshArStudent();
   await loadSessions();
-  if (openId) openRoster(openId);
 }
 
 async function enrollStudentInClass() {
@@ -1236,11 +1195,11 @@ function populateEnrollStudents() {
   if (current && allStudents.some((s) => String(s.id) === current)) sel.value = current;
   else enrData = null;
 
-  // Attendance & Reports student filter uses the same list
-  const att = document.getElementById('attStudent');
-  const attCur = att.value;
-  att.innerHTML = '<option value="">All students</option>' + sel.innerHTML.replace('<option value="">Select a student…</option>', '');
-  if (attCur && allStudents.some((s) => String(s.id) === attCur)) att.value = attCur;
+  // Attendance & Reports uses the same list
+  const ar = document.getElementById('arStudent');
+  const arCur = ar.value;
+  ar.innerHTML = sel.innerHTML;
+  if (arCur && allStudents.some((s) => String(s.id) === arCur)) ar.value = arCur;
 }
 
 async function loadStudentEnrollments() {
@@ -1316,7 +1275,8 @@ async function afterEnrollmentChange() {
   try {
     await loadStudentEnrollments();
     await loadBookings();
-    if (document.getElementById('attClass').value) await loadSessionsKeepRoster();
+    if (arState.studentId) refreshArStudent();
+    if (document.getElementById('attClass').value) await loadSessions();
   } finally {
     afterEnrollmentChange.running = false;
   }
@@ -1381,4 +1341,96 @@ async function unenrollFromEnrollSection(classId) {
   } catch (err) {
     showToast(err.message, true);
   }
+}
+
+// ---------- Attendance & Reports: student -> class -> date ----------
+
+let arState = { studentId: null, studentName: '', classId: null, selectedSessionId: null };
+
+const AR_ICON = {
+  attended: '<i class="fa-solid fa-circle-check text-green-600 text-lg"></i>',
+  absent: '<i class="fa-solid fa-circle-xmark text-red-500 text-lg"></i>',
+  upcoming: '<i class="fa-regular fa-circle text-gray-400 text-lg"></i>',
+};
+
+async function onArStudentChange() {
+  arState = { studentId: null, studentName: '', classId: null, selectedSessionId: null };
+  closeRoster();
+  document.getElementById('arBody').classList.add('hidden');
+  const cls = document.getElementById('arClass');
+  const id = document.getElementById('arStudent').value;
+  cls.disabled = !id;
+  cls.innerHTML = '<option value="">' + (id ? 'Loading…' : 'Pick a student first') + '</option>';
+  if (!id) return;
+  arState.studentId = Number(id);
+  await refreshArStudent();
+}
+
+// (Re)loads the picked student's enrolled classes into "Classes enrolled".
+async function refreshArStudent() {
+  let data;
+  try {
+    data = await api(`/portal/admin/students/${arState.studentId}/enrollments`);
+  } catch (err) {
+    return showToast(err.message, true);
+  }
+  arState.studentName = data.student.name;
+  const enrolled = data.classes.filter((c) => c.enrolled);
+  const sel = document.getElementById('arClass');
+  const keep = sel.value;
+  sel.innerHTML = '<option value="">' + (enrolled.length ? 'Select a class…' : 'Not enrolled in any classes') + '</option>' +
+    enrolled.map((c) => `<option value="${c.id}">${escapeHtml(c.title)}</option>`).join('');
+  if (keep && enrolled.some((c) => String(c.id) === keep)) sel.value = keep;
+  else if (enrolled.length === 1) sel.value = String(enrolled[0].id);
+  if (sel.value) loadArDates(arState.selectedSessionId);
+  else { document.getElementById('arBody').classList.add('hidden'); closeRoster(); }
+}
+
+// Lists the student's dates in the chosen class (their days, from their
+// start date) with attendance status; opens one date's form.
+async function loadArDates(selectId) {
+  const classId = Number(document.getElementById('arClass').value);
+  arState.classId = classId || null;
+  const body = document.getElementById('arBody');
+  if (!classId) { body.classList.add('hidden'); closeRoster(); return; }
+
+  let data;
+  try {
+    data = await api(`/portal/students/${arState.studentId}/schedule`);
+  } catch (err) {
+    return showToast(err.message, true);
+  }
+  const dates = data.sessions.filter((s) => s.classId === classId);
+  body.classList.remove('hidden');
+  const list = document.getElementById('arDates');
+  if (!dates.length) {
+    list.innerHTML = '<p class="p-6 text-sm text-gray-400 text-center">No dates for this student in this class yet. Add dates in Class Dates.</p>';
+    closeRoster();
+    return;
+  }
+
+  // Default date: the latest unmarked date up to today, else the latest past date, else the first.
+  if (typeof selectId !== 'number' || !dates.some((d) => d.sessionId === selectId)) {
+    const past = dates.filter((d) => d.date <= data.today);
+    const unmarked = past.filter((d) => d.status === 'upcoming');
+    selectId = (unmarked.pop() || past.pop() || dates[0]).sessionId;
+  }
+  arState.selectedSessionId = selectId;
+
+  list.innerHTML = dates.map((d) => `
+    <button onclick="selectArDate(${d.sessionId})" data-session="${d.sessionId}"
+      class="w-full text-left flex items-center gap-3 px-5 py-3 border-l-4 ${d.sessionId === selectId ? 'bg-blue-50 border-blue-600' : 'border-transparent hover:bg-gray-50'}">
+      ${AR_ICON[d.status]}
+      <div class="min-w-0 flex-1">
+        <p class="text-sm font-semibold">${escapeHtml(attFmtDate(d.date))}${d.date === data.today ? ' <span class="ml-1 text-[10px] uppercase bg-yellow-300 text-blue-900 px-1.5 py-0.5 rounded">Today</span>' : ''}</p>
+        <p class="text-xs text-gray-500 truncate">${escapeHtml(attFmtTime(d.startTime))}${d.endTime ? ' – ' + escapeHtml(attFmtTime(d.endTime)) : ''}${d.topic ? ' · ' + escapeHtml(d.topic) : ''}</p>
+      </div>
+    </button>`).join('');
+  const sel = list.querySelector(`[data-session="${selectId}"]`);
+  if (sel) list.scrollTop = Math.max(0, sel.offsetTop - list.offsetTop - 80);
+  openRoster(selectId);
+}
+
+function selectArDate(sessionId) {
+  loadArDates(sessionId);
 }
