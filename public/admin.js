@@ -1276,17 +1276,25 @@ function renderStudentEnrollments() {
     return days.map((d) => WEEKDAY_SHORT[d]).join(', ');
   };
   const enrolled = enrData.classes.filter((c) => c.enrolled);
+  // Summary: one line per enrolled class, details underneath
   summary.innerHTML = enrolled.length
-    ? `<i class="fa-solid fa-circle-check mr-1"></i><b>${escapeHtml(enrData.student.name)}</b> is enrolled in: ` +
+    ? `<p class="font-semibold mb-2"><i class="fa-solid fa-circle-check mr-1"></i>${escapeHtml(enrData.student.name)} is enrolled in ${enrolled.length} class${enrolled.length === 1 ? '' : 'es'}:</p>
+       <ul class="space-y-2">` +
       enrolled.map((c) => {
         const bits = [];
-        if (c.weekdays.length > 1) bits.push(daysLabel(c));
-        if (c.enrolled.startDate) bits.push('from ' + attFmtDate(c.enrolled.startDate));
-        if (c.enrolled.sessions) bits.push(c.enrolled.sessions + ' sessions');
-        return escapeHtml(c.title) + (bits.length ? ' (' + escapeHtml(bits.join(', ')) + ')' : '');
-      }).join(' · ')
+        const days = daysLabel(c);
+        if (days) bits.push(days);
+        bits.push(c.enrolled.startDate ? 'from ' + attFmtDate(c.enrolled.startDate) : 'from the first class');
+        bits.push(c.enrolled.sessions ? `${c.enrolled.sessions} sessions` : 'no end date');
+        if (c.enrolled.endDate) bits.push('ends ' + attFmtDate(c.enrolled.endDate));
+        return `<li class="flex items-start gap-2">
+          <i class="fa-solid fa-book-open text-green-600 mt-1 text-xs"></i>
+          <div><div class="font-medium">${escapeHtml(c.title)}</div>
+          <div class="text-xs text-green-700">${escapeHtml(bits.join(' · '))}</div></div>
+        </li>`;
+      }).join('') + '</ul>'
     : `${escapeHtml(enrData.student.name)} isn't enrolled in any classes yet.`;
-  summary.className = `mt-4 text-sm rounded-xl px-4 py-2 ${enrolled.length ? 'bg-green-50 text-green-800' : 'bg-gray-50 text-gray-600'}`;
+  summary.className = `mt-4 text-sm rounded-xl px-4 py-3 ${enrolled.length ? 'bg-green-50 text-green-800' : 'bg-gray-50 text-gray-600'}`;
 
   const q = document.getElementById('enrFilter').value.trim().toLowerCase();
   const rows = enrData.classes.filter((c) => !q || (c.title + ' ' + c.schedule).toLowerCase().includes(q));
