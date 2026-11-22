@@ -2,6 +2,55 @@
 
 let adminUser = null;
 
+// ---------- Tabs ----------
+// Each tab shows one .tab-panel. The URL hash (#classes, #students, ...) and
+// localStorage remember the current tab.
+const ADMIN_TABS = ['classes', 'students', 'attendance', 'workshops', 'marketing'];
+
+// The tab that holds a section, for deep links like admin.html#leads.
+function tabForSectionId(id) {
+  const el = id && document.getElementById(id);
+  const panel = el && el.closest('.tab-panel');
+  return panel ? panel.dataset.tab : null;
+}
+
+function initialAdminTab() {
+  const fromHash = location.hash.replace('#', '');
+  if (ADMIN_TABS.includes(fromHash)) return fromHash;
+  const sectionTab = tabForSectionId(fromHash);
+  if (sectionTab) return sectionTab;
+  try {
+    const saved = localStorage.getItem('eepAdminTab');
+    if (ADMIN_TABS.includes(saved)) return saved;
+  } catch (e) { /* storage unavailable */ }
+  return 'classes';
+}
+
+// keepHash: leave a section deep link (e.g. #leads) in the URL so the page
+// can scroll to it after loading.
+function setAdminTab(tab, keepHash = false) {
+  if (!ADMIN_TABS.includes(tab)) tab = 'classes';
+  document.querySelectorAll('.tab-panel').forEach((p) => p.classList.toggle('hidden', p.dataset.tab !== tab));
+  document.querySelectorAll('.admin-tab').forEach((b) => {
+    const on = b.dataset.tab === tab;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', on);
+  });
+  if (!keepHash && location.hash !== '#' + tab) history.replaceState(null, '', '#' + tab);
+  try { localStorage.setItem('eepAdminTab', tab); } catch (e) { /* storage unavailable */ }
+  window.scrollTo(0, 0);
+}
+
+window.addEventListener('hashchange', () => {
+  const id = location.hash.replace('#', '');
+  if (ADMIN_TABS.includes(id)) return setAdminTab(id);
+  const tab = tabForSectionId(id);
+  if (tab) {
+    setAdminTab(tab, true);
+    document.getElementById(id).scrollIntoView();
+  }
+});
+
 function showToast(message, isError = false) {
   const toast = document.getElementById('toast');
   toast.textContent = message;
@@ -49,6 +98,7 @@ async function showCorrectScreen() {
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('dashboard').classList.remove('hidden');
     document.getElementById('logoutBtn').classList.remove('hidden');
+    setAdminTab(initialAdminTab(), true);
     await loadClasses();
     await loadBookings();
     await loadEvents();
