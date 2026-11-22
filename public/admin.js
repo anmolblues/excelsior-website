@@ -1180,16 +1180,6 @@ function renderEnrollments() {
         <button onclick="unenrollStudent(${e.bookingId}, '${escapeHtml(e.name).replace(/'/g, "\\'")}')" class="text-xs text-red-500 hover:underline">Unenroll</button>
       </div>`;
   }).join('') : '<p class="text-sm text-gray-400 py-3">No students enrolled yet.</p>';
-
-  // enroll form: student picker (not already enrolled) + day pills
-  const enrolledIds = new Set(enrollments.map((e) => e.studentId));
-  document.getElementById('enrollStudent').innerHTML = '<option value="">Select a student…</option>' +
-    allStudents.filter((s) => !enrolledIds.has(s.id))
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((s) => `<option value="${s.id}">${escapeHtml(s.name)}${s.parent ? ' (parent: ' + escapeHtml(s.parent.name) + ')' : ''}</option>`).join('');
-  document.getElementById('enrollDays').innerHTML = ordered.length
-    ? dayPills(ordered, ordered, 'flipPill(this)')
-    : '<span class="text-xs text-gray-400 py-2 inline-block">Add class dates first</span>';
 }
 
 async function saveEnrollmentDays(btn, bookingId) {
@@ -1232,27 +1222,6 @@ async function loadSessionsKeepRoster() {
   if (enrData && !afterEnrollmentChange.running) loadStudentEnrollments();
   if (arState.studentId) refreshArStudent();
   await loadSessions();
-}
-
-async function enrollStudentInClass() {
-  const classId = document.getElementById('attClass').value;
-  const studentId = document.getElementById('enrollStudent').value;
-  if (!studentId) return showToast('Pick a student first.', true);
-  const box = document.getElementById('enrollDays');
-  const total = box.querySelectorAll('.daypill').length;
-  const days = pillsSelected(box);
-  if (total && !days.length) return showToast('Pick at least one day.', true);
-  try {
-    await api('/portal/admin/enroll', {
-      method: 'POST',
-      body: JSON.stringify({ classId, studentId, days: days.length === total ? [] : days }),
-    });
-    showToast('Student enrolled.');
-    await loadBookings();
-    loadSessionsKeepRoster();
-  } catch (err) {
-    showToast(err.message, true);
-  }
 }
 
 // ---------- Enroll section: student first, then classes ----------
