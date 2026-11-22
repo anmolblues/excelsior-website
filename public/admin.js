@@ -2,6 +2,15 @@
 
 let adminUser = null;
 
+// Admin sections hidden for now. They still load and keep their data; to
+// show one again, remove its id from this list:
+//   'leads', 'qr', 'workshopEvents', 'workshopBookings'
+const HIDDEN_ADMIN_SECTIONS = ['leads', 'qr', 'workshopEvents', 'workshopBookings'];
+HIDDEN_ADMIN_SECTIONS.forEach((id) => {
+  const el = document.getElementById(id);
+  if (el) el.classList.add('hidden');
+});
+
 function showToast(message, isError = false) {
   const toast = document.getElementById('toast');
   toast.textContent = message;
