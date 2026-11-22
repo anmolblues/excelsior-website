@@ -928,7 +928,7 @@ function populateAttendanceClasses() {
 
 async function loadSessions() {
   const classId = document.getElementById('attClass').value;
-  document.getElementById('addSessionsForm').classList.toggle('hidden', !classId);
+  document.getElementById('addSessionsCard').classList.toggle('hidden', !classId);
   document.getElementById('sessionsCard').classList.toggle('hidden', !classId);
   document.getElementById('enrollCard').classList.toggle('hidden', !classId);
   if (!classId) return;
@@ -938,7 +938,7 @@ async function loadSessions() {
   attSessions = data.sessions;
   const tbody = document.getElementById('sessionsTableBody');
   if (!attSessions.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">No dates yet — add some above.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">No dates yet — add some below, or enroll a student with Sessions.</td></tr>';
     return;
   }
   tbody.innerHTML = attSessions.map((s) => {
