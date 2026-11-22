@@ -8,7 +8,8 @@
 //
 // A student's schedule = the sessions of every class they have a
 // non-cancelled booking in, on the weekdays they attend (bookings.days;
-// empty = every day the class meets). Each session gets a status for the parent:
+// empty = every day the class meets), from their start date on
+// (bookings.startDate; empty = from the first class). Each session gets a status for the parent:
 //   attended  — record says 'present'  (green check, report viewable)
 //   absent    — record says 'absent'   (red X, no report)
 //   upcoming  — no record yet          (circle, "class hasn't started yet")
@@ -59,8 +60,14 @@ function parseDays(str) {
   return String(str || '').split(',').map((x) => parseInt(x, 10)).filter((n) => n >= 0 && n <= 6);
 }
 function attends(booking, session) {
+  if (booking.startDate && session.date < booking.startDate) return false; // joined later
   const days = parseDays(booking.days);
   return days.length === 0 || days.includes(weekdayOf(session.date));
+}
+// '' / null -> null (from the first class); otherwise must be YYYY-MM-DD.
+function cleanStartDate(v) {
+  if (v === '' || v == null) return null;
+  return isValidDate(String(v)) ? String(v) : undefined; // undefined = invalid
 }
 function cleanDays(input) {
   if (!Array.isArray(input)) return '';
@@ -297,8 +304,11 @@ router.get('/admin/sessions/:id/roster', requireAdmin, (req, res) => {
 // POST /api/portal/admin/enroll — admin enrolls a saved student in a class
 // (for sign-ups taken in person). Creates a normal booking on the parent's
 // account, so it also shows up in the parent's "My Bookings".
-// body: { classId, studentId, days: [2, 4] }  (days optional: empty = all)
+// body: { classId, studentId, days: [2, 4], startDate: 'YYYY-MM-DD' }
+// (days and startDate optional: empty = every day / from the first class)
 router.post('/admin/enroll', requireAdmin, (req, res) => {
+  const startDate = cleanStartDate(req.body.startDate);
+  if (startDate === undefined) return res.status(400).json({ error: 'Start date must be YYYY-MM-DD.' });
   const classId = parseInt(req.body.classId, 10);
   const studentId = parseInt(req.body.studentId, 10);
   const cls = readTable('classes').find((c) => c.id === classId);
@@ -327,6 +337,7 @@ router.post('/admin/enroll', requireAdmin, (req, res) => {
     studentId: student.id,
     studentGrade: student.grade || null,
     days: cleanDays(req.body.days),
+    startDate,
   };
   bookings.push(booking);
   writeTable('bookings', bookings);
@@ -356,6 +367,7 @@ router.get('/admin/classes/:classId/enrollments', requireAdmin, (req, res) => {
         grade: (st && st.grade) || b.studentGrade || '',
         parentName: parent ? parent.name : '',
         days: parseDays(b.days),
+        startDate: b.startDate || null,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -384,21 +396,29 @@ router.get('/admin/students/:studentId/enrollments', requireAdmin, (req, res) =>
       ageMax: c.ageMax,
       spotsLeft: Math.max(0, c.capacity - active),
       weekdays: [...new Set(sessions.filter((s) => s.classId === c.id).map((s) => weekdayOf(s.date)))].sort(),
-      enrolled: b ? { bookingId: b.id, days: parseDays(b.days) } : null,
+      enrolled: b ? { bookingId: b.id, days: parseDays(b.days), startDate: b.startDate || null } : null,
     };
   });
   res.json({ student: { id: student.id, name: student.name, grade: student.grade || '' }, classes });
 });
 
 // PUT /api/portal/admin/enrollments/:bookingId — change which days a
-// student attends. body: { days: [2, 4] } (empty = every day)
+// student attends and/or when they start. body: { days: [2, 4] } (empty =
+// every day) and/or { startDate: 'YYYY-MM-DD' } ('' = from the first class)
 router.put('/admin/enrollments/:bookingId', requireAdmin, (req, res) => {
   const bookings = readTable('bookings');
   const idx = bookings.findIndex((b) => b.id === parseInt(req.params.bookingId, 10));
   if (idx === -1) return res.status(404).json({ error: 'Enrollment not found.' });
-  bookings[idx] = { ...bookings[idx], days: cleanDays(req.body.days) };
+  const update = {};
+  if ('days' in req.body) update.days = cleanDays(req.body.days);
+  if ('startDate' in req.body) {
+    const startDate = cleanStartDate(req.body.startDate);
+    if (startDate === undefined) return res.status(400).json({ error: 'Start date must be YYYY-MM-DD.' });
+    update.startDate = startDate;
+  }
+  bookings[idx] = { ...bookings[idx], ...update };
   writeTable('bookings', bookings);
-  res.json({ ok: true, days: parseDays(bookings[idx].days) });
+  res.json({ ok: true, days: parseDays(bookings[idx].days), startDate: bookings[idx].startDate || null });
 });
 
 // DELETE /api/portal/admin/enrollments/:bookingId — unenroll (the booking is

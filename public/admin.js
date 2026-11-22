@@ -868,12 +868,42 @@ function attFmtTime(t) {
   return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
 }
 
+// Student filter for Attendance & Reports: null, or
+// { studentId, name, byClass: Map(classId -> { days, startDate }) }
+let attStudentFilter = null;
+
 function populateAttendanceClasses() {
   const sel = document.getElementById('attClass');
   const current = sel.value;
-  sel.innerHTML = '<option value="">Select a class…</option>' +
-    allClasses.map((c) => `<option value="${c.id}">${escapeHtml(c.title)}</option>`).join('');
-  if (current) sel.value = current;
+  const list = attStudentFilter ? allClasses.filter((c) => attStudentFilter.byClass.has(c.id)) : allClasses;
+  sel.innerHTML = '<option value="">' + (attStudentFilter && !list.length ? 'Not enrolled in any classes' : 'Select a class…') + '</option>' +
+    list.map((c) => `<option value="${c.id}">${escapeHtml(c.title)}</option>`).join('');
+  if (current && list.some((c) => String(c.id) === current)) sel.value = current;
+  else if (attStudentFilter && list.length === 1) sel.value = String(list[0].id);
+}
+
+// Loads the selected student's classes/days/start dates (or clears the filter).
+async function refreshAttStudentFilter() {
+  const id = document.getElementById('attStudent').value;
+  if (!id) { attStudentFilter = null; return; }
+  const data = await api(`/portal/admin/students/${id}/enrollments`);
+  const byClass = new Map(data.classes.filter((c) => c.enrolled).map((c) => [c.id, c.enrolled]));
+  attStudentFilter = { studentId: Number(id), name: data.student.name, byClass };
+}
+
+async function onAttStudentChange() {
+  try { await refreshAttStudentFilter(); } catch (err) { return showToast(err.message, true); }
+  populateAttendanceClasses();
+  loadSessions();
+}
+
+// Does the filtered student attend this date? (their days + start date)
+function attStudentAttends(session) {
+  if (!attStudentFilter) return true;
+  const e = attStudentFilter.byClass.get(session.classId);
+  if (!e) return false;
+  if (e.startDate && session.date < e.startDate) return false;
+  return !e.days.length || e.days.includes(new Date(session.date + 'T00:00:00Z').getUTCDay());
 }
 
 async function loadSessions() {
@@ -886,10 +916,18 @@ async function loadSessions() {
   loadEnrollments();
 
   const data = await api(`/portal/admin/sessions?classId=${classId}`);
-  attSessions = data.sessions;
+  attSessions = data.sessions.filter(attStudentAttends);
+
+  const note = document.getElementById('attStudentNote');
+  const e = attStudentFilter && attStudentFilter.byClass.get(Number(classId));
+  note.classList.toggle('hidden', !e);
+  if (e) {
+    const days = e.days.length ? WEEKDAY_ORDER.filter((d) => e.days.includes(d)).map((d) => WEEKDAY_SHORT[d]).join(', ') : 'every class day';
+    note.innerHTML = `<i class="fa-solid fa-filter mr-1"></i>Showing only <b>${escapeHtml(attStudentFilter.name)}</b>'s dates: ${escapeHtml(days)}${e.startDate ? ', starting ' + escapeHtml(attFmtDate(e.startDate)) : ''}. Choose "All students" to see the whole class.`;
+  }
   const tbody = document.getElementById('sessionsTableBody');
   if (!attSessions.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">No dates yet — add some above.</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">${attStudentFilter ? 'No dates for this student in this class.' : 'No dates yet — add some above.'}</td></tr>`;
     return;
   }
   tbody.innerHTML = attSessions.map((s) => {
@@ -970,9 +1008,12 @@ async function openRoster(sessionId) {
   } catch (err) {
     return showToast(err.message, true);
   }
+  if (attStudentFilter) {
+    attRoster.roster = attRoster.roster.filter((r) => r.studentId === attStudentFilter.studentId);
+  }
   const { session, roster } = attRoster;
   document.getElementById('rosterTitle').textContent = `${session.classTitle} — ${attFmtDate(session.date)}`;
-  document.getElementById('rosterSub').textContent = `${roster.length} enrolled${session.topic ? ' · ' + session.topic : ''}`;
+  document.getElementById('rosterSub').textContent = (attStudentFilter ? `Showing ${attStudentFilter.name} only` : `${roster.length} enrolled`) + (session.topic ? ' · ' + session.topic : '');
 
   renderRoster();
   const card = document.getElementById('rosterCard');
@@ -1095,7 +1136,7 @@ function renderEnrollments() {
       <div class="flex flex-wrap items-center gap-3 py-3" data-booking="${e.bookingId}">
         <div class="flex-1 min-w-[180px]">
           <p class="font-medium text-sm">${escapeHtml(e.name)} <span class="text-gray-400 font-normal">${escapeHtml(e.grade)}</span></p>
-          <p class="text-xs text-gray-400">Parent: ${escapeHtml(e.parentName || '—')}</p>
+          <p class="text-xs text-gray-400">Parent: ${escapeHtml(e.parentName || '—')}${e.startDate ? ' · starts ' + escapeHtml(attFmtDate(e.startDate)) : ''}</p>
         </div>
         <div class="flex flex-wrap gap-2">${ordered.length > 1
           ? dayPills(ordered, selected, `saveEnrollmentDays(this, ${e.bookingId})`)
@@ -1152,6 +1193,9 @@ async function unenrollStudent(bookingId, name) {
 // Reloads the dates table + enrollments, and re-opens the roster if one was open.
 async function loadSessionsKeepRoster() {
   const openId = attRoster && attRoster.session.id;
+  if (attStudentFilter) {
+    try { await refreshAttStudentFilter(); populateAttendanceClasses(); } catch (err) { /* keep old filter */ }
+  }
   if (enrData && !afterEnrollmentChange.running) loadStudentEnrollments();
   await loadSessions();
   if (openId) openRoster(openId);
@@ -1191,6 +1235,12 @@ function populateEnrollStudents() {
       .map((s) => `<option value="${s.id}">${escapeHtml(s.name)} : ${escapeHtml(s.parent ? s.parent.name : '—')}${s.grade ? ' (' + escapeHtml(s.grade) + ')' : ''}</option>`).join('');
   if (current && allStudents.some((s) => String(s.id) === current)) sel.value = current;
   else enrData = null;
+
+  // Attendance & Reports student filter uses the same list
+  const att = document.getElementById('attStudent');
+  const attCur = att.value;
+  att.innerHTML = '<option value="">All students</option>' + sel.innerHTML.replace('<option value="">Select a student…</option>', '');
+  if (attCur && allStudents.some((s) => String(s.id) === attCur)) att.value = attCur;
 }
 
 async function loadStudentEnrollments() {
@@ -1222,7 +1272,12 @@ function renderStudentEnrollments() {
   const enrolled = enrData.classes.filter((c) => c.enrolled);
   summary.innerHTML = enrolled.length
     ? `<i class="fa-solid fa-circle-check mr-1"></i><b>${escapeHtml(enrData.student.name)}</b> is enrolled in: ` +
-      enrolled.map((c) => `${escapeHtml(c.title)}${c.weekdays.length > 1 ? ' (' + daysLabel(c) + ')' : ''}`).join(' · ')
+      enrolled.map((c) => {
+        const bits = [];
+        if (c.weekdays.length > 1) bits.push(daysLabel(c));
+        if (c.enrolled.startDate) bits.push('from ' + attFmtDate(c.enrolled.startDate));
+        return escapeHtml(c.title) + (bits.length ? ' (' + escapeHtml(bits.join(', ')) + ')' : '');
+      }).join(' · ')
     : `${escapeHtml(enrData.student.name)} isn't enrolled in any classes yet.`;
   summary.className = `mt-4 text-sm rounded-xl px-4 py-2 ${enrolled.length ? 'bg-green-50 text-green-800' : 'bg-gray-50 text-gray-600'}`;
 
@@ -1245,6 +1300,9 @@ function renderStudentEnrollments() {
         <div class="flex-1 min-w-[200px]">
           <p class="font-medium text-sm">${escapeHtml(c.title)}</p>
           <p class="text-xs text-gray-400">${escapeHtml(c.schedule || '')}${c.enrolled ? '' : ` · ${c.spotsLeft} spot${c.spotsLeft === 1 ? '' : 's'} left`}</p>
+          ${c.enrolled ? `<label class="text-xs text-gray-500 inline-flex items-center gap-2 mt-1">Starts
+            <input type="date" value="${c.enrolled.startDate || ''}" onchange="saveStudentClassStart(this, ${c.id})" class="border border-gray-300 rounded-lg px-2 py-0.5 text-xs">
+            ${c.enrolled.startDate ? '' : '<span class="text-gray-400">(from the first class)</span>'}</label>` : ''}
         </div>
         <div class="flex flex-wrap gap-2 enr-days">${pills}</div>
         <div class="flex items-center gap-3 w-36 justify-end">${action}</div>
@@ -1273,7 +1331,7 @@ async function enrollFromEnrollSection(btn, classId) {
   try {
     await api('/portal/admin/enroll', {
       method: 'POST',
-      body: JSON.stringify({ classId, studentId: enrData.student.id, days: days.length === total ? [] : days }),
+      body: JSON.stringify({ classId, studentId: enrData.student.id, days: days.length === total ? [] : days, startDate: document.getElementById('enrStart').value }),
     });
     showToast('Enrolled.');
     afterEnrollmentChange();
@@ -1298,6 +1356,17 @@ async function saveStudentClassDays(btn, classId) {
     afterEnrollmentChange();
   } catch (err) {
     flipPill(btn);
+    showToast(err.message, true);
+  }
+}
+
+async function saveStudentClassStart(input, classId) {
+  const c = enrData.classes.find((x) => x.id === classId);
+  try {
+    await api(`/portal/admin/enrollments/${c.enrolled.bookingId}`, { method: 'PUT', body: JSON.stringify({ startDate: input.value }) });
+    showToast(input.value ? `Starts ${attFmtDate(input.value)}.` : 'Starts from the first class.');
+    afterEnrollmentChange();
+  } catch (err) {
     showToast(err.message, true);
   }
 }
