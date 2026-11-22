@@ -936,6 +936,8 @@ async function loadSessions() {
 
   const data = await api(`/portal/admin/sessions?classId=${classId}`);
   attSessions = data.sessions;
+  document.getElementById('sessionsCount').textContent = `(${attSessions.length})`;
+  applySessionsCollapsed();
   const tbody = document.getElementById('sessionsTableBody');
   if (!attSessions.length) {
     tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">No dates yet — add some below, or enroll a student with Sessions.</td></tr>';
@@ -1534,4 +1536,23 @@ function loadParentView() {
   const url = `/portal.html?asParent=${encodeURIComponent(id)}`;
   frame.src = url;
   open.href = url;
+}
+
+// ---------- Class Dates: collapsible dates table (state remembered) ----------
+let sessionsCollapsedMem = null; // used if localStorage is unavailable
+function sessionsCollapsed() {
+  try { return localStorage.getItem('eepSessionsCollapsed') === '1'; } catch (e) { return !!sessionsCollapsedMem; }
+}
+function applySessionsCollapsed() {
+  const collapsed = sessionsCollapsed();
+  document.getElementById('sessionsTable').classList.toggle('hidden', collapsed);
+  document.getElementById('sessionsToggleLabel').textContent = collapsed ? 'Show' : 'Hide';
+  document.getElementById('sessionsToggleIcon').className = 'fa-solid ' + (collapsed ? 'fa-chevron-down' : 'fa-chevron-up') + ' ml-1';
+  document.getElementById('sessionsToggle').setAttribute('aria-expanded', String(!collapsed));
+}
+function toggleSessionsTable() {
+  const next = !sessionsCollapsed();
+  sessionsCollapsedMem = next;
+  try { localStorage.setItem('eepSessionsCollapsed', next ? '1' : '0'); } catch (e) { /* storage unavailable */ }
+  applySessionsCollapsed();
 }

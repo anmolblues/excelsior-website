@@ -164,7 +164,12 @@
                 </div>
 
                 <div id="sessionsCard" class="hidden bg-white rounded-3xl shadow overflow-hidden mb-6">
-                    <table class="w-full text-sm">
+                    <button type="button" onclick="toggleSessionsTable()" aria-expanded="true" id="sessionsToggle"
+                        class="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50">
+                        <span class="font-semibold text-sm">Class dates <span id="sessionsCount" class="text-gray-400 font-normal"></span></span>
+                        <span class="text-sm text-blue-600 font-semibold"><span id="sessionsToggleLabel">Hide</span> <i id="sessionsToggleIcon" class="fa-solid fa-chevron-up ml-1"></i></span>
+                    </button>
+                    <table id="sessionsTable" class="w-full text-sm border-t">
                         <thead class="bg-gray-50 text-left text-gray-500">
                             <tr>
                                 <th class="px-4 py-3">Date</th>
