@@ -107,6 +107,7 @@ let allClasses = [];
 async function loadClasses() {
   const data = await api('/classes');
   allClasses = data.classes;
+  populateAttendanceClasses();
   const tbody = document.getElementById('classesTableBody');
   tbody.innerHTML = '';
 
@@ -774,3 +775,255 @@ document.getElementById('qrForm').addEventListener('submit', async (e) => {
     errorEl.classList.remove('hidden');
   }
 });
+
+// ---------- Attendance & Reports (Parent Portal) ----------
+
+let attSessions = [];
+let attRoster = null; // { session, roster }
+
+function attFmtDate(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function attFmtTime(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+}
+
+function populateAttendanceClasses() {
+  const sel = document.getElementById('attClass');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Select a class…</option>' +
+    allClasses.map((c) => `<option value="${c.id}">${escapeHtml(c.title)}</option>`).join('');
+  if (current) sel.value = current;
+}
+
+async function loadSessions() {
+  const classId = document.getElementById('attClass').value;
+  closeRoster();
+  document.getElementById('addSessionsForm').classList.toggle('hidden', !classId);
+  document.getElementById('sessionsCard').classList.toggle('hidden', !classId);
+  if (!classId) return;
+
+  const data = await api(`/portal/admin/sessions?classId=${classId}`);
+  attSessions = data.sessions;
+  const tbody = document.getElementById('sessionsTableBody');
+  if (!attSessions.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">No dates yet — add some above.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = attSessions.map((s) => {
+    const marked = s.present + s.absent;
+    const past = s.date <= data.today;
+    const status = marked
+      ? `<span class="text-green-700">${s.present} present</span> · <span class="text-red-600">${s.absent} absent</span>${marked < s.enrolled ? ` · <span class="text-gray-400">${s.enrolled - marked} not marked</span>` : ''}`
+      : (past && s.enrolled ? '<span class="text-orange-600 font-medium">Not taken yet</span>' : '<span class="text-gray-400">—</span>');
+    return `
+      <tr class="border-t">
+        <td class="px-4 py-3 font-medium whitespace-nowrap">${escapeHtml(attFmtDate(s.date))}</td>
+        <td class="px-4 py-3 whitespace-nowrap">${escapeHtml(attFmtTime(s.startTime))}${s.endTime ? ' – ' + escapeHtml(attFmtTime(s.endTime)) : ''}</td>
+        <td class="px-4 py-3">
+          <input value="${escapeHtml(s.topic)}" placeholder="Add topic" onchange="updateSessionTopic(${s.id}, this.value)"
+                 class="w-full border border-transparent hover:border-gray-300 focus:border-blue-500 rounded-lg px-2 py-1 text-sm">
+        </td>
+        <td class="px-4 py-3 text-xs whitespace-nowrap">${status}</td>
+        <td class="px-4 py-3 text-right whitespace-nowrap">
+          <button onclick="openRoster(${s.id})" class="text-blue-600 hover:underline font-semibold mr-3">Attendance &amp; reports</button>
+          <button onclick="deleteSession(${s.id})" class="text-red-500 hover:underline">Delete</button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+document.getElementById('addSessionsForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const classId = document.getElementById('attClass').value;
+  const start = document.getElementById('sessStart').value;
+  const step = parseInt(document.getElementById('sessRepeat').value, 10);
+  const count = step === 1 ? 1 : Math.min(52, Math.max(1, parseInt(document.getElementById('sessCount').value, 10) || 1));
+  const skip = new Set(document.getElementById('sessSkip').value.split(',').map((x) => x.trim()).filter(Boolean));
+
+  const dates = [];
+  const [y, m, d] = start.split('-').map(Number);
+  for (let i = 0; dates.length < count && i < count + skip.size + 5; i++) {
+    const dt = new Date(Date.UTC(y, m - 1, d + i * step));
+    const iso = dt.toISOString().slice(0, 10);
+    if (!skip.has(iso)) dates.push(iso);
+  }
+
+  try {
+    const data = await api('/portal/admin/sessions', {
+      method: 'POST',
+      body: JSON.stringify({
+        classId,
+        dates,
+        startTime: document.getElementById('sessStartTime').value,
+        endTime: document.getElementById('sessEndTime').value,
+      }),
+    });
+    showToast(`Added ${data.created.length} date(s)${data.skipped ? `, skipped ${data.skipped} duplicate(s)` : ''}.`);
+    loadSessions();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+});
+
+async function updateSessionTopic(id, topic) {
+  try {
+    await api(`/portal/admin/sessions/${id}`, { method: 'PUT', body: JSON.stringify({ topic }) });
+    showToast('Topic saved.');
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+async function deleteSession(id) {
+  const s = attSessions.find((x) => x.id === id);
+  if (!confirm(`Delete ${attFmtDate(s.date)}? Any attendance and reports for this date will also be removed.`)) return;
+  try {
+    await api(`/portal/admin/sessions/${id}`, { method: 'DELETE' });
+    showToast('Date deleted.');
+    loadSessions();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+function closeRoster() {
+  attRoster = null;
+  document.getElementById('rosterCard').classList.add('hidden');
+}
+
+async function openRoster(sessionId) {
+  try {
+    attRoster = await api(`/portal/admin/sessions/${sessionId}/roster`);
+  } catch (err) {
+    return showToast(err.message, true);
+  }
+  const { session, roster } = attRoster;
+  document.getElementById('rosterTitle').textContent = `${session.classTitle} — ${attFmtDate(session.date)}`;
+  document.getElementById('rosterSub').textContent = `${roster.length} enrolled${session.topic ? ' · ' + session.topic : ''}`;
+
+  // Students not already in the roster, for the enroll picker
+  const inRoster = new Set(roster.map((r) => r.studentId));
+  document.getElementById('enrollStudent').innerHTML = '<option value="">Select a student…</option>' +
+    allStudents.filter((s) => !inRoster.has(s.id))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((s) => `<option value="${s.id}">${escapeHtml(s.name)}${s.parent ? ' (parent: ' + escapeHtml(s.parent.name) + ')' : ''}</option>`).join('');
+
+  renderRoster();
+  const card = document.getElementById('rosterCard');
+  card.classList.remove('hidden');
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderRoster() {
+  const list = document.getElementById('rosterList');
+  const { roster } = attRoster;
+  if (!roster.length) {
+    list.innerHTML = '<p class="text-sm text-gray-400 text-center py-6">No students enrolled in this class yet.</p>';
+    return;
+  }
+  const opt = (v, label, cur) => `<option value="${v}" ${String(cur ?? '') === String(v) ? 'selected' : ''}>${label}</option>`;
+  list.innerHTML = roster.map((r, i) => {
+    if (r.unlinked) {
+      return `<div class="border border-dashed rounded-2xl p-4 text-sm text-gray-500"><b>${escapeHtml(r.name)}</b> — booking isn't linked to a saved student, so a report can't be attached. Add them under Students for that parent.</div>`;
+    }
+    const rec = r.record || {};
+    return `
+      <div class="border rounded-2xl p-4" data-idx="${i}">
+        <div class="grid sm:grid-cols-12 gap-3 items-end">
+          <div class="sm:col-span-3">
+            <p class="font-semibold">${escapeHtml(r.name)}</p>
+            <p class="text-xs text-gray-400">${escapeHtml(r.grade || '')}</p>
+          </div>
+          <div class="sm:col-span-3">
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Attendance</label>
+            <select data-f="attendance" onchange="toggleReportFields(${i})" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm">
+              ${opt('', '— Not marked', rec.attendance)}${opt('present', '✓ Present', rec.attendance)}${opt('absent', '✗ Absent', rec.attendance)}
+            </select>
+          </div>
+          <div class="sm:col-span-2 rf">
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Score (0–100)</label>
+            <input data-f="score" type="number" min="0" max="100" value="${rec.score ?? ''}" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm">
+          </div>
+          <div class="sm:col-span-2 rf">
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Participation</label>
+            <select data-f="participation" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm">
+              ${opt('', '—', rec.participation)}${[1, 2, 3, 4, 5].map((n) => opt(n, '★'.repeat(n), rec.participation)).join('')}
+            </select>
+          </div>
+          <div class="sm:col-span-2 rf">
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Homework</label>
+            <select data-f="homework" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm">
+              ${opt('', '—', rec.homework)}${opt('complete', 'Complete', rec.homework)}${opt('partial', 'Partial', rec.homework)}${opt('missing', 'Missing', rec.homework)}${opt('none', 'None assigned', rec.homework)}
+            </select>
+          </div>
+        </div>
+        <div class="rf grid sm:grid-cols-2 gap-3 mt-3">
+          <div><label class="block text-xs font-semibold text-gray-500 mb-1">What we covered</label><textarea data-f="skills" rows="2" placeholder="What we covered / skills practiced" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm">${escapeHtml(rec.skills || '')}</textarea></div>
+          <div><label class="block text-xs font-semibold text-gray-500 mb-1">Strengths</label><textarea data-f="strengths" rows="2" placeholder="Strengths" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm">${escapeHtml(rec.strengths || '')}</textarea></div>
+          <div><label class="block text-xs font-semibold text-gray-500 mb-1">Areas to work on</label><textarea data-f="improve" rows="2" placeholder="Areas to work on" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm">${escapeHtml(rec.improve || '')}</textarea></div>
+          <div><label class="block text-xs font-semibold text-gray-500 mb-1">Comments for the parent</label><textarea data-f="comments" rows="2" placeholder="Comments for the parent" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm">${escapeHtml(rec.comments || '')}</textarea></div>
+        </div>
+      </div>`;
+  }).join('');
+  roster.forEach((r, i) => { if (!r.unlinked) toggleReportFields(i); });
+}
+
+// Report fields only apply to students marked present.
+function toggleReportFields(i) {
+  const card = document.querySelector(`#rosterList [data-idx="${i}"]`);
+  const present = card.querySelector('[data-f="attendance"]').value === 'present';
+  card.querySelectorAll('.rf').forEach((el) => {
+    el.style.opacity = present ? '1' : '0.35';
+    el.querySelectorAll('input,select,textarea').forEach((f) => { f.disabled = !present; });
+  });
+}
+
+function markAllPresent() {
+  document.querySelectorAll('#rosterList [data-idx]').forEach((card) => {
+    const sel = card.querySelector('[data-f="attendance"]');
+    if (!sel.value) sel.value = 'present';
+    toggleReportFields(Number(card.dataset.idx));
+  });
+}
+
+async function saveRoster() {
+  const records = [];
+  document.querySelectorAll('#rosterList [data-idx]').forEach((card) => {
+    const r = attRoster.roster[Number(card.dataset.idx)];
+    const rec = { studentId: r.studentId };
+    card.querySelectorAll('[data-f]').forEach((f) => { rec[f.dataset.f] = f.value; });
+    records.push(rec);
+  });
+  try {
+    await api(`/portal/admin/sessions/${attRoster.session.id}/records`, { method: 'PUT', body: JSON.stringify({ records }) });
+    showToast('Attendance & reports saved.');
+    const id = attRoster.session.id;
+    await loadSessions();
+    openRoster(id);
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+async function enrollStudentInClass() {
+  const studentId = document.getElementById('enrollStudent').value;
+  if (!studentId) return showToast('Pick a student first.', true);
+  try {
+    await api('/portal/admin/enroll', {
+      method: 'POST',
+      body: JSON.stringify({ classId: attRoster.session.classId, studentId }),
+    });
+    showToast('Student enrolled.');
+    const id = attRoster.session.id;
+    await loadBookings();
+    await loadSessions();
+    openRoster(id);
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}

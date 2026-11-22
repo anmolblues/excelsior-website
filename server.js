@@ -12,6 +12,7 @@ const studentRoutes = require('./routes/students');
 const leadRoutes = require('./routes/leads');
 const messageRoutes = require('./routes/messages');
 const qrRoutes = require('./routes/qr');
+const portalRoutes = require('./routes/portal');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,6 +30,7 @@ app.use('/api/students', studentRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/qr', qrRoutes);
+app.use('/api/portal', portalRoutes);
 
 // Trackable QR-code short links (see routes/qr.js): /go/flyer etc.
 app.get('/go/:code', qrRoutes.goHandler);
@@ -38,6 +40,8 @@ app.get('/go/:code', qrRoutes.goHandler);
 app.get('/schedule.html', (req, res) => res.redirect(301, '/#classSchedule'));
 // The standalone contact page was removed; Contact Us now lives on the home page.
 app.get('/contact.html', (req, res) => res.redirect(301, '/#contactUs'));
+// Parent Portal: friendly URL
+app.get('/portal', (req, res) => res.redirect(301, '/portal.html'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Fallback: send index.html for any other non-API GET request

@@ -21,11 +21,11 @@
       ['After-school Homework Help', 'Grade 3–7', 'afterschool'],
       ['After-school Homework Help', 'Grade 3–7', 'afterschool'] ] },
     { time: '4:30 – 5:30 PM', classes: [
-      ['Art', 'Grade 3–6', 'elementary'],
+      ['Reading & Writing', 'Grade 3–6', 'elementary'],
       ['Math', 'Grade 3–6', 'elementary'],
       ['Scratch Coding', 'Grade 3–6', 'elementary'],
       ['Debate', 'Grade 3–6', 'elementary'],
-      ['Reading & Writing', 'Grade 3–6', 'elementary'] ] },
+      ['Art', 'Grade 3–6', 'elementary'] ] },
     { time: '5:30 – 6:30 PM', classes: [
       ['Reading & Writing', 'Grade 7–8', 'middle'],
       ['Debate', 'Grade 7–8', 'middle'],

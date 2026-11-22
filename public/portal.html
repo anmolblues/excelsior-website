@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google Analytics (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZD3NB67R0R"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-ZD3NB67R0R');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>Parent Portal - Excelsior Enrichment Program</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .hero-bg { background: linear-gradient(135deg, #2047bb 0%, #241d95 100%); }
+        .date-row.selected { background: #eff6ff; border-color: #2047bb; }
+        .schedule-scroll { scrollbar-width: thin; }
+        .schedule-scroll::-webkit-scrollbar { width: 6px; }
+        .schedule-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
+
+    <!-- Navigation -->
+    <nav class="border-b bg-white sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+            <a href="/" class="flex items-center gap-2 shrink-0">
+                <div class="w-10 h-10 bg-yellow-400 rounded-3xl flex items-center justify-center font-bold text-blue-800 shadow-md overflow-hidden">
+                    <img src="images/eep_short_logo.png" alt="Excelsior Enrichment Program logo" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='EEP'">
+                </div>
+                <span class="text-sm font-bold tracking-tighter text-blue-700 leading-tight">
+                    Excelsior Enrichment<br><span class="text-gray-500 font-semibold tracking-normal">Parent Portal</span>
+                </span>
+            </a>
+            <div id="navUser" class="hidden items-center gap-3">
+                <span class="hidden sm:inline text-sm text-gray-600"><i class="fa-solid fa-circle-user mr-1"></i><span id="navUserName"></span></span>
+                <button onclick="logout()" class="text-sm bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl font-medium">Log Out</button>
+            </div>
+            <a id="navBackSite" href="/" class="text-sm text-gray-500 hover:text-gray-800">&larr; Back to site</a>
+        </div>
+    </nav>
+
+    <main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-8">
+
+        <!-- Loading -->
+        <div id="loadingView" class="text-center text-gray-400 py-24"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></div>
+
+        <!-- ================= Auth (log in / sign up) ================= -->
+        <section id="authView" class="hidden">
+            <div class="max-w-md mx-auto">
+                <div class="text-center mb-6">
+                    <h1 class="text-3xl font-bold text-blue-800" style="font-family:'Playfair Display',serif">Parent Portal</h1>
+                    <p class="text-gray-500 text-sm mt-2">See your child's class schedule, attendance, and progress reports.</p>
+                </div>
+                <div class="bg-white rounded-3xl shadow p-8">
+                    <div id="authTabs" class="flex gap-2 mb-6">
+                        <button id="tabLogin" onclick="showAuthTab('login')" class="flex-1 py-2 rounded-xl font-semibold text-sm bg-blue-600 text-white">Log In</button>
+                        <button id="tabSignup" onclick="showAuthTab('signup')" class="flex-1 py-2 rounded-xl font-semibold text-sm bg-gray-100 text-gray-600">Create Account</button>
+                    </div>
+                    <p id="authError" class="hidden bg-red-50 text-red-600 text-sm rounded-xl px-4 py-2 mb-4"></p>
+                    <p id="authInfo" class="hidden bg-green-50 text-green-700 text-sm rounded-xl px-4 py-2 mb-4"></p>
+
+                    <form id="loginForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Email</label>
+                            <input type="email" required id="loginEmail" autocomplete="email" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Password</label>
+                            <input type="password" required id="loginPassword" autocomplete="current-password" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-2xl font-semibold">Log In</button>
+                        <button type="button" onclick="showAuthTab('forgot')" class="w-full text-sm text-blue-600 hover:underline">Forgot password?</button>
+                    </form>
+
+                    <form id="forgotForm" class="hidden space-y-4">
+                        <p class="text-sm text-gray-500">Enter your account email and we'll send you a link to reset your password.</p>
+                        <input type="email" required id="forgotEmail" placeholder="you@example.com" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500">
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-2xl font-semibold">Send Reset Link</button>
+                        <button type="button" onclick="showAuthTab('login')" class="w-full text-sm text-blue-600 hover:underline">&larr; Back to Log In</button>
+                    </form>
+
+                    <form id="signupForm" class="hidden space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Parent's full name</label>
+                            <input type="text" required id="signupName" autocomplete="name" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Email</label>
+                            <input type="email" required id="signupEmail" autocomplete="email" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Password</label>
+                            <input type="password" required id="signupPassword" autocomplete="new-password" oninput="updatePwRules()" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500">
+                            <ul id="pwRules" class="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-gray-400">
+                                <li data-rule="len"><i class="fa-regular fa-circle mr-1"></i>8+ characters</li>
+                                <li data-rule="upper"><i class="fa-regular fa-circle mr-1"></i>Uppercase letter</li>
+                                <li data-rule="lower"><i class="fa-regular fa-circle mr-1"></i>Lowercase letter</li>
+                                <li data-rule="num"><i class="fa-regular fa-circle mr-1"></i>Number</li>
+                                <li data-rule="sym"><i class="fa-regular fa-circle mr-1"></i>Symbol (!@#$)</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Confirm password</label>
+                            <input type="password" required id="signupConfirm" autocomplete="new-password" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-2xl font-semibold">Create Account</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= Kids list ================= -->
+        <section id="kidsView" class="hidden">
+            <div class="hero-bg rounded-3xl text-white px-6 sm:px-8 py-8 mb-8 shadow">
+                <p class="text-blue-200 text-sm font-medium">Welcome back,</p>
+                <h1 id="welcomeName" class="text-2xl sm:text-3xl font-bold"></h1>
+                <p class="text-blue-100 text-sm mt-2">Choose a child to see their class dates, attendance, and reports.</p>
+            </div>
+
+            <h2 class="text-lg font-semibold mb-4">My Children</h2>
+            <div id="kidsGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+            <div id="kidsEmpty" class="hidden bg-white rounded-3xl shadow p-8 text-center">
+                <i class="fa-solid fa-children text-4xl text-blue-200 mb-3"></i>
+                <p class="font-semibold">No children on your account yet</p>
+                <p class="text-sm text-gray-500 mt-1">Add your child below. Once they're enrolled in a class, their dates will show up here.</p>
+            </div>
+
+            <!-- Add a child -->
+            <div class="mt-6">
+                <button id="addKidBtn" onclick="toggleAddKid(true)" class="text-sm font-semibold text-blue-600 hover:text-blue-800"><i class="fa-solid fa-plus mr-1"></i> Add a child</button>
+                <form id="addKidForm" class="hidden bg-white rounded-3xl shadow p-6 mt-3 grid sm:grid-cols-3 gap-4 max-w-2xl">
+                    <div class="sm:col-span-3"><h3 class="font-semibold">Add a child</h3></div>
+                    <div class="sm:col-span-1">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Child's name</label>
+                        <input required id="kidName" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Grade</label>
+                        <select id="kidGrade" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Age</label>
+                        <select id="kidAge" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm"></select>
+                    </div>
+                    <p id="kidError" class="hidden sm:col-span-3 bg-red-50 text-red-600 text-sm rounded-xl px-4 py-2"></p>
+                    <div class="sm:col-span-3 flex gap-3">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-2xl font-semibold text-sm">Save</button>
+                        <button type="button" onclick="toggleAddKid(false)" class="bg-gray-100 hover:bg-gray-200 px-5 py-2 rounded-2xl font-semibold text-sm">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- ================= One child's schedule + report ================= -->
+        <section id="kidView" class="hidden">
+            <button onclick="location.hash=''" class="text-sm text-blue-600 hover:text-blue-800 font-medium mb-4"><i class="fa-solid fa-arrow-left mr-1"></i> All children</button>
+
+            <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+                <div>
+                    <h1 id="kidTitle" class="text-2xl sm:text-3xl font-bold"></h1>
+                    <p id="kidSub" class="text-sm text-gray-500 mt-1"></p>
+                </div>
+                <!-- Legend -->
+                <div class="flex flex-wrap gap-4 text-xs text-gray-600 bg-white rounded-2xl shadow-sm px-4 py-2">
+                    <span><i class="fa-solid fa-circle-check text-green-600 mr-1"></i>Attended</span>
+                    <span><i class="fa-solid fa-circle-xmark text-red-500 mr-1"></i>Absent</span>
+                    <span><i class="fa-regular fa-circle text-gray-400 mr-1"></i>Not started yet</span>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-5 gap-6 items-start">
+                <!-- Dates list -->
+                <div id="datesPanel" class="lg:col-span-2 bg-white rounded-3xl shadow overflow-hidden">
+                    <div class="px-5 py-4 border-b flex items-center justify-between">
+                        <h2 class="font-semibold">Class Dates</h2>
+                        <span id="datesCount" class="text-xs text-gray-400"></span>
+                    </div>
+                    <div id="datesList" class="relative schedule-scroll max-h-[60vh] overflow-y-auto divide-y"></div>
+                    <div id="datesEmpty" class="hidden p-8 text-center text-sm text-gray-500">
+                        <i class="fa-regular fa-calendar text-3xl text-blue-200 mb-2"></i>
+                        <p>No class dates scheduled yet.</p>
+                        <p class="mt-1">Once your child is enrolled and dates are set, they'll appear here.</p>
+                        <a href="/#classSchedule" class="inline-block mt-4 text-blue-600 font-semibold hover:underline">Browse classes &rarr;</a>
+                    </div>
+                </div>
+
+                <!-- Detail / report -->
+                <div id="detailPanel" class="lg:col-span-3">
+                    <div id="detailPlaceholder" style="display:none" class="max-lg:hidden flex bg-white rounded-3xl shadow p-10 flex-col items-center justify-center text-center text-gray-400 min-h-[300px]">
+                        <i class="fa-solid fa-hand-pointer text-3xl mb-3 text-blue-200"></i>
+                        <p class="text-sm">Select a date to see the class report.</p>
+                    </div>
+                    <div id="detailContent" class="hidden"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="text-center text-xs text-gray-400 py-6">
+        Excelsior Enrichment Program &middot; 100 N Middletown Rd, Suite C, Pearl River, NY 10965
+    </footer>
+
+    <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 text-white text-sm px-5 py-3 rounded-2xl shadow-lg z-50"></div>
+
+    <script src="portal.js"></script>
+</body>
+</html>

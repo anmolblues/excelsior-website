@@ -225,6 +225,45 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_qrScans_code ON qrScans(code);
 
+  -- Parent Portal (routes/portal.js, public/portal.html).
+  -- classSessions = the individual dated meetings of a class (classes.schedule
+  -- is only freeform text like "Saturdays 10am", so the actual dates live
+  -- here, added from the admin panel). A student is "scheduled" for every
+  -- session of every class they have a non-cancelled booking in.
+  CREATE TABLE IF NOT EXISTS classSessions (
+    id        INTEGER PRIMARY KEY,
+    classId   INTEGER NOT NULL,
+    date      TEXT NOT NULL,              -- YYYY-MM-DD
+    startTime TEXT NOT NULL DEFAULT '',   -- HH:MM (24h)
+    endTime   TEXT NOT NULL DEFAULT '',
+    topic     TEXT NOT NULL DEFAULT '',
+    createdAt TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_classSessions_classId ON classSessions(classId);
+
+  -- One row per (session, student): attendance plus the teacher's report.
+  -- attendance is 'present' or 'absent'. The report fields are only shown to
+  -- parents when attendance = 'present'.
+  CREATE TABLE IF NOT EXISTS sessionRecords (
+    id            INTEGER PRIMARY KEY,
+    sessionId     INTEGER NOT NULL,
+    studentId     INTEGER NOT NULL,
+    attendance    TEXT NOT NULL,
+    score         INTEGER,                -- 0-100, optional
+    participation INTEGER,                -- 1-5, optional
+    homework      TEXT NOT NULL DEFAULT '', -- complete / partial / missing / none
+    skills        TEXT NOT NULL DEFAULT '', -- what was covered / skills practiced
+    strengths     TEXT NOT NULL DEFAULT '',
+    improve       TEXT NOT NULL DEFAULT '', -- areas to work on
+    comments      TEXT NOT NULL DEFAULT '',
+    createdAt     TEXT NOT NULL,
+    updatedAt     TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_sessionRecords_sessionId ON sessionRecords(sessionId);
+  CREATE INDEX IF NOT EXISTS idx_sessionRecords_studentId ON sessionRecords(studentId);
+
   CREATE TABLE IF NOT EXISTS counters (
     name  TEXT PRIMARY KEY,
     value INTEGER NOT NULL DEFAULT 0
@@ -287,6 +326,8 @@ const TABLE_COLUMNS = {
   passwordResets: ['id', 'userId', 'tokenHash', 'expiresAt', 'used', 'createdAt'],
   eventRegistrations: ['id', 'userId', 'eventId', 'eventName', 'eventDate', 'studentName', 'studentGrade', 'studentAge', 'optIn', 'status', 'createdAt', 'studentId'],
   students: ['id', 'userId', 'name', 'grade', 'age', 'notes', 'createdAt'],
+  classSessions: ['id', 'classId', 'date', 'startTime', 'endTime', 'topic', 'createdAt'],
+  sessionRecords: ['id', 'sessionId', 'studentId', 'attendance', 'score', 'participation', 'homework', 'skills', 'strengths', 'improve', 'comments', 'createdAt', 'updatedAt'],
   events: ['id', 'slug', 'status', 'name', 'category', 'eventType', 'grades', 'date', 'recurrence', 'recurrenceEnds', 'skipDates', 'startTime', 'endTime', 'capacity', 'createdAt', 'price'],
 };
 
