@@ -448,7 +448,17 @@ function escapeHtml(str) {
 
 // Anyone can open this and fill it in — we only ask for login/signup right
 // before submitting, so the class details and student info come first.
+// Parent self-enrollment is turned off for now (see PARENT_ENROLLMENT_OPEN
+// in routes/bookings.js); Enroll buttons point parents to Contact Us instead.
+const PARENT_ENROLLMENT_OPEN = false;
+
 async function openBookingModal(classId, classTitle) {
+  if (!PARENT_ENROLLMENT_OPEN) {
+    showToast('To enroll, please contact us and we will sign your child up.');
+    const contact = document.getElementById('contactUs');
+    if (contact) contact.scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
   document.getElementById('bookingForm').reset();
   document.getElementById('bookingClassId').value    = classId;
   document.getElementById('bookingClassTitle').textContent = classTitle;

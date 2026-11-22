@@ -16,7 +16,16 @@ const router = express.Router();
 // way (even a saved student whose profile doesn't have one yet needs one
 // supplied here), and that grade (and age, if given) is written back onto
 // the student's saved profile so it stays current.
+// Parents can't enroll themselves right now: the admin enrolls students
+// (admin panel > Attendance & Reports > Enroll a student). Set to true to
+// let parents enroll online again (also update public/app.js and
+// public/portal.html, which point parents to "contact us" instead).
+const PARENT_ENROLLMENT_OPEN = false;
+
 router.post('/', requireAuth, (req, res) => {
+  if (!PARENT_ENROLLMENT_OPEN && req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Online enrollment is closed for now. Please contact us and we will enroll your child.' });
+  }
   const { classId, studentId, studentName, studentGrade, studentAge, notes } = req.body;
 
   if (!classId) {
