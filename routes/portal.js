@@ -219,10 +219,19 @@ function buildSchedule(student) {
 
 // ======================= Parent endpoints =======================
 
-// GET /api/portal/students — the logged-in parent's children, with counts
+// GET /api/portal/students — the logged-in parent's children, with counts.
+// Admins can pass ?parentId=N to see a parent's view (admin "Parent View").
 router.get('/students', requireAuth, (req, res) => {
+  let parentId = req.user.id;
+  let parent = null;
+  if (req.query.parentId && req.user.role === 'admin') {
+    parentId = parseInt(req.query.parentId, 10);
+    const u = readTable('users').find((x) => x.id === parentId);
+    if (!u) return res.status(404).json({ error: 'Parent not found.' });
+    parent = { id: u.id, name: u.name };
+  }
   const students = readTable('students')
-    .filter((s) => s.userId === req.user.id)
+    .filter((s) => s.userId === parentId)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   const classes = readTable('classes');
   const bookings = readTable('bookings');
@@ -243,7 +252,7 @@ router.get('/students', requireAuth, (req, res) => {
       },
     };
   });
-  res.json({ students: result });
+  res.json({ students: result, parent });
 });
 
 // GET /api/portal/students/:studentId/schedule — every scheduled date

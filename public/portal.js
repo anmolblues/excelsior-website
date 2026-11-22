@@ -6,6 +6,10 @@
 //   #kid/<studentId>/<sessionId> → that child's report for one date
 
 let currentUser = null;
+
+// Admin preview: portal.html?asParent=N shows parent N's portal (admins only).
+const PREVIEW_PARENT_ID = new URLSearchParams(location.search).get('asParent');
+let previewMode = false;
 let kidsCache = [];
 let scheduleCache = null; // { studentId, data }
 
@@ -186,6 +190,15 @@ function showLoggedOut() {
 }
 
 function onLoggedIn() {
+  previewMode = !!(PREVIEW_PARENT_ID && currentUser.role === 'admin');
+  if (previewMode) {
+    document.getElementById('previewBanner').classList.remove('hidden');
+    document.getElementById('addKidBtn').classList.add('hidden');
+    document.getElementById('navBackSite').classList.add('hidden');
+    document.getElementById('welcomeName').textContent = '';
+    route();
+    return;
+  }
   document.getElementById('navUserName').textContent = currentUser.name;
   document.getElementById('navUser').classList.remove('hidden');
   document.getElementById('navUser').classList.add('flex');
@@ -200,8 +213,12 @@ async function renderKids() {
   show('kidsView');
   const grid = document.getElementById('kidsGrid');
   grid.innerHTML = '<div class="text-gray-400 text-sm"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading…</div>';
-  const data = await api('/portal/students');
+  const data = await api('/portal/students' + (previewMode ? `?parentId=${encodeURIComponent(PREVIEW_PARENT_ID)}` : ''));
   kidsCache = data.students;
+  if (previewMode && data.parent) {
+    document.getElementById('previewParentName').textContent = data.parent.name;
+    document.getElementById('welcomeName').textContent = data.parent.name.split(' ')[0];
+  }
 
   document.getElementById('kidsEmpty').classList.toggle('hidden', kidsCache.length > 0);
   grid.innerHTML = '';

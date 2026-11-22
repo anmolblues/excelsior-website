@@ -57,6 +57,7 @@
             <button type="button" role="tab" data-tab="classes" onclick="setAdminTab('classes')" class="admin-tab whitespace-nowrap px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800"><i class="fa-solid fa-chalkboard mr-2"></i>Classes</button>
             <button type="button" role="tab" data-tab="students" onclick="setAdminTab('students')" class="admin-tab whitespace-nowrap px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800"><i class="fa-solid fa-user-graduate mr-2"></i>Students</button>
             <button type="button" role="tab" data-tab="attendance" onclick="setAdminTab('attendance')" class="admin-tab whitespace-nowrap px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800"><i class="fa-solid fa-clipboard-check mr-2"></i>Attendance</button>
+            <button type="button" role="tab" data-tab="parentview" onclick="setAdminTab('parentview')" class="admin-tab whitespace-nowrap px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800"><i class="fa-solid fa-eye mr-2"></i>Parent View</button>
             <button type="button" role="tab" data-tab="workshops" onclick="setAdminTab('workshops')" class="admin-tab whitespace-nowrap px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800"><i class="fa-solid fa-calendar-days mr-2"></i>Workshops</button>
             <button type="button" role="tab" data-tab="marketing" onclick="setAdminTab('marketing')" class="admin-tab whitespace-nowrap px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800"><i class="fa-solid fa-bullhorn mr-2"></i>Marketing</button>
         </div>
@@ -471,6 +472,25 @@
                         <div id="arPlaceholder" class="bg-white rounded-3xl shadow p-10 text-center text-sm text-gray-400">Select a date to mark attendance and write the report.</div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div class="tab-panel" data-tab="parentview">
+            <!-- Parent View: the real Parent Portal, previewed as a chosen parent -->
+            <div id="parentView" class="mt-12">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-semibold">Parent View</h2>
+                    <p class="text-sm text-gray-500">See exactly what a parent sees in the Parent Portal: their children, class dates and reports. Read-only.</p>
+                </div>
+                <div class="bg-white rounded-3xl shadow p-6 mb-6 flex flex-wrap items-end gap-4">
+                    <div class="flex-1 min-w-[260px]">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Parent : Children</label>
+                        <select id="pvParent" onchange="loadParentView()" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm"></select>
+                    </div>
+                    <a id="pvOpen" href="#" target="_blank" class="hidden text-sm font-semibold text-blue-600 hover:underline pb-2"><i class="fa-solid fa-up-right-from-square mr-1"></i>Open in a new tab</a>
+                </div>
+                <div id="pvPlaceholder" class="bg-white rounded-3xl shadow p-10 text-center text-sm text-gray-400">Pick a parent to see their Parent Portal.</div>
+                <iframe id="pvFrame" title="Parent Portal preview" class="hidden w-full h-[900px] rounded-3xl shadow bg-white border-0"></iframe>
             </div>
         </div>
 

@@ -5,7 +5,7 @@ let adminUser = null;
 // ---------- Tabs ----------
 // Each tab shows one .tab-panel. The URL hash (#classes, #students, ...) and
 // localStorage remember the current tab.
-const ADMIN_TABS = ['classes', 'students', 'attendance', 'workshops', 'marketing'];
+const ADMIN_TABS = ['classes', 'students', 'attendance', 'parentview', 'workshops', 'marketing'];
 
 // The tab that holds a section, for deep links like admin.html#leads.
 function tabForSectionId(id) {
@@ -1269,6 +1269,8 @@ function populateEnrollStudents() {
   if (current && allStudents.some((s) => String(s.id) === current)) sel.value = current;
   else enrData = null;
 
+  populateParentView();
+
   // Attendance & Reports uses the same list
   const ar = document.getElementById('arStudent');
   const arCur = ar.value;
@@ -1529,4 +1531,38 @@ async function loadArDates(selectId) {
 
 function selectArDate(sessionId) {
   loadArDates(sessionId);
+}
+
+// ---------- Parent View: the Parent Portal as a chosen parent sees it ----------
+
+function populateParentView() {
+  const sel = document.getElementById('pvParent');
+  if (!sel) return;
+  const current = sel.value;
+  const kidsByParent = new Map();
+  allStudents.forEach((s) => {
+    if (!kidsByParent.has(s.userId)) kidsByParent.set(s.userId, []);
+    kidsByParent.get(s.userId).push(s.name);
+  });
+  const parents = [...allUsers]
+    .filter((u) => kidsByParent.has(u.id) || u.role !== 'admin')
+    .sort((a, b) => (kidsByParent.has(b.id) - kidsByParent.has(a.id)) || a.name.localeCompare(b.name));
+  sel.innerHTML = '<option value="">Select a parent…</option>' + parents.map((u) => {
+    const kids = kidsByParent.get(u.id);
+    return `<option value="${u.id}">${escapeHtml(u.name)} : ${kids ? escapeHtml(kids.join(', ')) : '(no children yet)'}</option>`;
+  }).join('');
+  if (current && parents.some((u) => String(u.id) === current)) sel.value = current;
+}
+
+function loadParentView() {
+  const id = document.getElementById('pvParent').value;
+  const frame = document.getElementById('pvFrame');
+  const open = document.getElementById('pvOpen');
+  document.getElementById('pvPlaceholder').classList.toggle('hidden', !!id);
+  frame.classList.toggle('hidden', !id);
+  open.classList.toggle('hidden', !id);
+  if (!id) { frame.removeAttribute('src'); return; }
+  const url = `/portal.html?asParent=${encodeURIComponent(id)}`;
+  frame.src = url;
+  open.href = url;
 }

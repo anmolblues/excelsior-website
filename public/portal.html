@@ -48,6 +48,11 @@
 
     <main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-8">
 
+        <!-- Shown only in admin preview (portal.html?asParent=N) -->
+        <div id="previewBanner" class="hidden mb-6 bg-yellow-100 text-yellow-900 text-sm rounded-2xl px-4 py-3">
+            <i class="fa-solid fa-eye mr-1"></i> Admin preview — this is what <b id="previewParentName"></b> sees. Read-only.
+        </div>
+
         <!-- Loading -->
         <div id="loadingView" class="text-center text-gray-400 py-24"><i class="fa-solid fa-spinner fa-spin text-2xl"></i></div>
 
