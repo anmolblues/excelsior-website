@@ -1098,7 +1098,7 @@ function renderEnrollments() {
       <div class="flex flex-wrap items-center gap-3 py-3" data-booking="${e.bookingId}">
         <div class="flex-1 min-w-[180px]">
           <p class="font-medium text-sm">${escapeHtml(e.name)} <span class="text-gray-400 font-normal">${escapeHtml(e.grade)}</span></p>
-          <p class="text-xs text-gray-400">Parent: ${escapeHtml(e.parentName || '—')}${e.startDate ? ' · starts ' + escapeHtml(attFmtDate(e.startDate)) : ''}</p>
+          <p class="text-xs text-gray-400">Parent: ${escapeHtml(e.parentName || '—')}${e.startDate ? ' · starts ' + escapeHtml(attFmtDate(e.startDate)) : ''}${e.sessions ? ' · ' + e.sessions + ' sessions, ends ' + escapeHtml(attFmtDate(e.endDate)) : ''}</p>
         </div>
         <div class="flex flex-wrap gap-2">${ordered.length > 1
           ? dayPills(ordered, selected, `saveEnrollmentDays(this, ${e.bookingId})`)
@@ -1235,6 +1235,7 @@ function renderStudentEnrollments() {
         const bits = [];
         if (c.weekdays.length > 1) bits.push(daysLabel(c));
         if (c.enrolled.startDate) bits.push('from ' + attFmtDate(c.enrolled.startDate));
+        if (c.enrolled.sessions) bits.push(c.enrolled.sessions + ' sessions');
         return escapeHtml(c.title) + (bits.length ? ' (' + escapeHtml(bits.join(', ')) + ')' : '');
       }).join(' · ')
     : `${escapeHtml(enrData.student.name)} isn't enrolled in any classes yet.`;
@@ -1261,7 +1262,10 @@ function renderStudentEnrollments() {
           <p class="text-xs text-gray-400">${escapeHtml(c.schedule || '')}${c.enrolled ? '' : ` · ${c.spotsLeft} spot${c.spotsLeft === 1 ? '' : 's'} left`}</p>
           ${c.enrolled ? `<label class="text-xs text-gray-500 inline-flex items-center gap-2 mt-1">Starts
             <input type="date" value="${c.enrolled.startDate || ''}" onchange="saveStudentClassStart(this, ${c.id})" class="border border-gray-300 rounded-lg px-2 py-0.5 text-xs">
-            ${c.enrolled.startDate ? '' : '<span class="text-gray-400">(from the first class)</span>'}</label>` : ''}
+            ${c.enrolled.startDate ? '' : '<span class="text-gray-400">(from the first class)</span>'}</label>
+          <label class="text-xs text-gray-500 inline-flex items-center gap-2 mt-1 ml-3">Sessions
+            <input type="number" min="1" max="100" value="${c.enrolled.sessions || ''}" placeholder="no end" onchange="saveStudentClassSessions(this, ${c.id})" class="w-20 border border-gray-300 rounded-lg px-2 py-0.5 text-xs">
+            ${c.enrolled.endDate ? '<span class="text-gray-400">ends ' + escapeHtml(attFmtDate(c.enrolled.endDate)) + '</span>' : ''}</label>` : ''}
         </div>
         <div class="flex flex-wrap gap-2 enr-days">${pills}</div>
         <div class="flex items-center gap-3 w-36 justify-end">${action}</div>
@@ -1291,9 +1295,16 @@ async function enrollFromEnrollSection(btn, classId) {
   try {
     await api('/portal/admin/enroll', {
       method: 'POST',
-      body: JSON.stringify({ classId, studentId: enrData.student.id, days: days.length === total ? [] : days, startDate: document.getElementById('enrStart').value }),
+      body: JSON.stringify({
+        classId,
+        studentId: enrData.student.id,
+        days: days.length === total ? [] : days,
+        startDate: document.getElementById('enrStart').value,
+        sessions: document.getElementById('enrSessions').value,
+      }),
     });
-    showToast('Enrolled.');
+    const sess = document.getElementById('enrSessions').value;
+    showToast(sess ? `Enrolled — ${sess} class dates set up.` : 'Enrolled.');
     afterEnrollmentChange();
   } catch (err) {
     showToast(err.message, true);
@@ -1316,6 +1327,17 @@ async function saveStudentClassDays(btn, classId) {
     afterEnrollmentChange();
   } catch (err) {
     flipPill(btn);
+    showToast(err.message, true);
+  }
+}
+
+async function saveStudentClassSessions(input, classId) {
+  const c = enrData.classes.find((x) => x.id === classId);
+  try {
+    const r = await api(`/portal/admin/enrollments/${c.enrolled.bookingId}`, { method: 'PUT', body: JSON.stringify({ sessions: input.value }) });
+    showToast(r.sessions ? `${r.sessions} sessions — ends ${attFmtDate(r.endDate)}.` : 'No end date.');
+    afterEnrollmentChange();
+  } catch (err) {
     showToast(err.message, true);
   }
 }

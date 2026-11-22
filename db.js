@@ -309,6 +309,13 @@ if (!existingBookingColumns.includes('startDate')) {
   // for students who join partway through. NULL = from the first class.
   db.exec('ALTER TABLE bookings ADD COLUMN startDate TEXT');
 }
+if (!existingBookingColumns.includes('sessions')) {
+  // Parent Portal: number of sessions the student enrolled for (6, 10, 20…).
+  // Their dates are generated on enrollment and end at endDate (the last of
+  // those sessions). NULL = open-ended: every class date from startDate on.
+  db.exec('ALTER TABLE bookings ADD COLUMN sessions INTEGER');
+  db.exec('ALTER TABLE bookings ADD COLUMN endDate TEXT');
+}
 // Additive migration: per-session price on events. NULL = no price shown
 // on the calendar, 0 = "Free".
 const existingEventColumns = db.prepare('PRAGMA table_info(events)').all().map((c) => c.name);
@@ -333,7 +340,7 @@ if (!existingEventRegColumns.includes('studentId')) {
 const TABLE_COLUMNS = {
   users: ['id', 'name', 'email', 'passwordHash', 'role', 'phone', 'address', 'createdAt'],
   classes: ['id', 'title', 'description', 'subject', 'ageMin', 'ageMax', 'format', 'price', 'priceUnit', 'schedule', 'image', 'capacity', 'rating', 'createdAt'],
-  bookings: ['id', 'classId', 'userId', 'studentName', 'studentAge', 'notes', 'status', 'createdAt', 'studentId', 'studentGrade', 'days', 'startDate'],
+  bookings: ['id', 'classId', 'userId', 'studentName', 'studentAge', 'notes', 'status', 'createdAt', 'studentId', 'studentGrade', 'days', 'startDate', 'sessions', 'endDate'],
   passwordResets: ['id', 'userId', 'tokenHash', 'expiresAt', 'used', 'createdAt'],
   eventRegistrations: ['id', 'userId', 'eventId', 'eventName', 'eventDate', 'studentName', 'studentGrade', 'studentAge', 'optIn', 'status', 'createdAt', 'studentId'],
   students: ['id', 'userId', 'name', 'grade', 'age', 'notes', 'createdAt'],

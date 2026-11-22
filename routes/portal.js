@@ -61,9 +61,108 @@ function parseDays(str) {
 }
 function attends(booking, session) {
   if (booking.startDate && session.date < booking.startDate) return false; // joined later
+  if (booking.endDate && session.date > booking.endDate) return false;     // their sessions are used up
   const days = parseDays(booking.days);
   return days.length === 0 || days.includes(weekdayOf(session.date));
 }
+// --- Generating a student's class dates on enrollment ---
+// Days with no classes when dates are generated automatically. Add to this
+// list for new holidays / breaks (YYYY-MM-DD).
+const HOLIDAYS = new Set([
+  '2026-11-26', '2026-11-27', '2026-12-24', '2026-12-25', '2026-12-31', '2027-01-01',
+]);
+const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+function addDaysIso(iso, n) {
+  const d = new Date(iso + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+// Reads days + times out of a class's schedule text, e.g.
+// "Tuesdays 4:30 – 5:30 PM" or "Monday to Friday 2:30 – 4:30 PM".
+function parseScheduleText(text) {
+  const t = String(text || '').toLowerCase();
+  let days = [];
+  const range = t.match(/(sunday|monday|tuesday|wednesday|thursday|friday|saturday)s?\s+(?:to|through|-|–)\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)/);
+  if (range) {
+    const a = DAY_NAMES.indexOf(range[1]); const b = DAY_NAMES.indexOf(range[2]);
+    for (let d = a; d <= b; d++) days.push(d);
+  } else {
+    DAY_NAMES.forEach((n, i) => { if (t.includes(n) || new RegExp(`\\b${n.slice(0, 3)}s?\\b`).test(t)) days.push(i); });
+  }
+  const m = t.match(/(\d{1,2}):(\d{2})\s*(am|pm)?\s*[–-]\s*(\d{1,2}):(\d{2})\s*(am|pm)?/);
+  if (!days.length || !m) return null;
+  const to24 = (h, min, ampm) => {
+    h = parseInt(h, 10);
+    if (ampm === 'pm' && h < 12) h += 12;
+    if (ampm === 'am' && h === 12) h = 0;
+    return `${String(h).padStart(2, '0')}:${min}`;
+  };
+  const endAmPm = m[6] || 'pm';
+  let startTime = to24(m[1], m[2], m[3] || endAmPm);
+  const endTime = to24(m[4], m[5], endAmPm);
+  if (!m[3] && startTime > endTime) startTime = to24(m[1], m[2], 'am');
+  return { days, startTime, endTime };
+}
+
+// A class's weekly pattern: Map(weekday -> { startTime, endTime }). Taken
+// from its existing dates (so extra days added in Class Dates count), or
+// from its schedule text if it has no dates yet.
+function classPattern(cls, sessions) {
+  const pattern = new Map();
+  const mine = sessions.filter((s) => s.classId === cls.id).sort((a, b) => b.date.localeCompare(a.date));
+  for (const s of mine) {
+    const wd = weekdayOf(s.date);
+    if (!pattern.has(wd)) pattern.set(wd, { startTime: s.startTime, endTime: s.endTime }); // most recent wins
+  }
+  if (!pattern.size) {
+    const parsed = parseScheduleText(cls.schedule);
+    if (parsed) parsed.days.forEach((d) => pattern.set(d, { startTime: parsed.startTime, endTime: parsed.endTime }));
+  }
+  return pattern;
+}
+
+// Makes sure the class has `count` dates on `days` from `startDate` on
+// (skipping HOLIDAYS unless a date already exists), creating missing ones.
+// Returns the date of the last of those sessions. Writes classSessions.
+function generateDates(cls, days, startDate, count) {
+  const sessions = readTable('classSessions');
+  const pattern = classPattern(cls, sessions);
+  const useDays = (days.length ? days : [...pattern.keys()]).filter((d) => pattern.has(d));
+  if (!useDays.length) return { error: 'This class has no meeting days yet. Add its dates in Class Dates, or set its schedule (e.g. "Tuesdays 4:30 – 5:30 PM").' };
+
+  const existing = new Map(sessions.filter((s) => s.classId === cls.id).map((s) => [s.date, s]));
+  let date = startDate;
+  let found = 0;
+  let last = null;
+  let created = 0;
+  const now = new Date().toISOString();
+  for (let i = 0; i < 800 && found < count; i++, date = addDaysIso(date, 1)) {
+    const wd = weekdayOf(date);
+    if (!useDays.includes(wd)) continue;
+    if (!existing.has(date)) {
+      if (HOLIDAYS.has(date)) continue;
+      const p = pattern.get(wd);
+      const s = { id: nextId('classSessions'), classId: cls.id, date, startTime: p.startTime, endTime: p.endTime, topic: '', createdAt: now };
+      sessions.push(s);
+      existing.set(date, s);
+      created++;
+    }
+    found++;
+    last = date;
+  }
+  if (created) writeTable('classSessions', sessions);
+  return { endDate: last, created };
+}
+
+// '' / null -> null; otherwise a whole number 1-100 (undefined = invalid).
+function cleanSessions(v) {
+  if (v === '' || v == null) return null;
+  const n = Number(v);
+  return Number.isInteger(n) && n >= 1 && n <= 100 ? n : undefined;
+}
+
 // '' / null -> null (from the first class); otherwise must be YYYY-MM-DD.
 function cleanStartDate(v) {
   if (v === '' || v == null) return null;
@@ -304,11 +403,16 @@ router.get('/admin/sessions/:id/roster', requireAdmin, (req, res) => {
 // POST /api/portal/admin/enroll — admin enrolls a saved student in a class
 // (for sign-ups taken in person). Creates a normal booking on the parent's
 // account, so it also shows up in the parent's "My Bookings".
-// body: { classId, studentId, days: [2, 4], startDate: 'YYYY-MM-DD' }
-// (days and startDate optional: empty = every day / from the first class)
+// body: { classId, studentId, days: [2, 4], startDate: 'YYYY-MM-DD', sessions: 10 }
+// days, startDate and sessions are optional (empty = every class day / from
+// the first class / no end). With sessions, the student's next N class dates
+// are created automatically from startDate (today if empty).
 router.post('/admin/enroll', requireAdmin, (req, res) => {
-  const startDate = cleanStartDate(req.body.startDate);
+  let startDate = cleanStartDate(req.body.startDate);
   if (startDate === undefined) return res.status(400).json({ error: 'Start date must be YYYY-MM-DD.' });
+  const sessionCount = cleanSessions(req.body.sessions);
+  if (sessionCount === undefined) return res.status(400).json({ error: 'Sessions must be a whole number from 1 to 100.' });
+  if (sessionCount && !startDate) startDate = todayLocal();
   const classId = parseInt(req.body.classId, 10);
   const studentId = parseInt(req.body.studentId, 10);
   const cls = readTable('classes').find((c) => c.id === classId);
@@ -325,6 +429,14 @@ router.post('/admin/enroll', requireAdmin, (req, res) => {
     return res.status(409).json({ error: 'This class is full.' });
   }
 
+  const days = cleanDays(req.body.days);
+  let endDate = null;
+  if (sessionCount) {
+    const gen = generateDates(cls, parseDays(days), startDate, sessionCount);
+    if (gen.error) return res.status(400).json({ error: gen.error });
+    endDate = gen.endDate;
+  }
+
   const booking = {
     id: nextId('bookings'),
     classId,
@@ -336,8 +448,10 @@ router.post('/admin/enroll', requireAdmin, (req, res) => {
     createdAt: new Date().toISOString(),
     studentId: student.id,
     studentGrade: student.grade || null,
-    days: cleanDays(req.body.days),
+    days,
     startDate,
+    sessions: sessionCount,
+    endDate,
   };
   bookings.push(booking);
   writeTable('bookings', bookings);
@@ -350,7 +464,8 @@ router.get('/admin/classes/:classId/enrollments', requireAdmin, (req, res) => {
   const classId = parseInt(req.params.classId, 10);
   if (!readTable('classes').find((c) => c.id === classId)) return res.status(404).json({ error: 'Class not found.' });
 
-  const weekdays = [...new Set(readTable('classSessions').filter((s) => s.classId === classId).map((s) => weekdayOf(s.date)))].sort();
+  const cls = readTable('classes').find((c) => c.id === classId);
+  const weekdays = [...classPattern(cls, readTable('classSessions')).keys()].sort();
   const students = readTable('students');
   const users = readTable('users');
   const enrollments = readTable('bookings')
@@ -368,6 +483,8 @@ router.get('/admin/classes/:classId/enrollments', requireAdmin, (req, res) => {
         parentName: parent ? parent.name : '',
         days: parseDays(b.days),
         startDate: b.startDate || null,
+        sessions: b.sessions || null,
+        endDate: b.endDate || null,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -395,16 +512,17 @@ router.get('/admin/students/:studentId/enrollments', requireAdmin, (req, res) =>
       ageMin: c.ageMin,
       ageMax: c.ageMax,
       spotsLeft: Math.max(0, c.capacity - active),
-      weekdays: [...new Set(sessions.filter((s) => s.classId === c.id).map((s) => weekdayOf(s.date)))].sort(),
-      enrolled: b ? { bookingId: b.id, days: parseDays(b.days), startDate: b.startDate || null } : null,
+      weekdays: [...classPattern(c, sessions).keys()].sort(),
+      enrolled: b ? { bookingId: b.id, days: parseDays(b.days), startDate: b.startDate || null, sessions: b.sessions || null, endDate: b.endDate || null } : null,
     };
   });
   res.json({ student: { id: student.id, name: student.name, grade: student.grade || '' }, classes });
 });
 
 // PUT /api/portal/admin/enrollments/:bookingId — change which days a
-// student attends and/or when they start. body: { days: [2, 4] } (empty =
-// every day) and/or { startDate: 'YYYY-MM-DD' } ('' = from the first class)
+// student attends, when they start and/or how many sessions. body: any of
+// { days: [2, 4] } (empty = every day), { startDate: 'YYYY-MM-DD' } ('' =
+// from the first class), { sessions: 10 } ('' = no end)
 router.put('/admin/enrollments/:bookingId', requireAdmin, (req, res) => {
   const bookings = readTable('bookings');
   const idx = bookings.findIndex((b) => b.id === parseInt(req.params.bookingId, 10));
@@ -416,9 +534,26 @@ router.put('/admin/enrollments/:bookingId', requireAdmin, (req, res) => {
     if (startDate === undefined) return res.status(400).json({ error: 'Start date must be YYYY-MM-DD.' });
     update.startDate = startDate;
   }
-  bookings[idx] = { ...bookings[idx], ...update };
+  if ('sessions' in req.body) {
+    const n = cleanSessions(req.body.sessions);
+    if (n === undefined) return res.status(400).json({ error: 'Sessions must be a whole number from 1 to 100.' });
+    update.sessions = n;
+  }
+  const b = { ...bookings[idx], ...update };
+  // A session-count enrollment: regenerate its dates for the new days /
+  // start / count, and move its end date.
+  if (b.sessions) {
+    if (!b.startDate) b.startDate = todayLocal();
+    const cls = readTable('classes').find((c) => c.id === b.classId);
+    const gen = cls ? generateDates(cls, parseDays(b.days), b.startDate, b.sessions) : { error: 'Class not found.' };
+    if (gen.error) return res.status(400).json({ error: gen.error });
+    b.endDate = gen.endDate;
+  } else {
+    b.endDate = null;
+  }
+  bookings[idx] = b;
   writeTable('bookings', bookings);
-  res.json({ ok: true, days: parseDays(bookings[idx].days), startDate: bookings[idx].startDate || null });
+  res.json({ ok: true, days: parseDays(b.days), startDate: b.startDate || null, sessions: b.sessions || null, endDate: b.endDate || null });
 });
 
 // DELETE /api/portal/admin/enrollments/:bookingId — unenroll (the booking is
