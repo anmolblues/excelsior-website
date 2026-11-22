@@ -971,10 +971,17 @@ async function openRoster(sessionId) {
   } catch (err) {
     return showToast(err.message, true);
   }
+  attRoster.classCount = attRoster.roster.length;
   attRoster.roster = attRoster.roster.filter((r) => r.studentId === arState.studentId);
   const { session } = attRoster;
   document.getElementById('rosterTitle').textContent = `${session.classTitle} — ${attFmtDate(session.date)}`;
   document.getElementById('rosterSub').textContent = arState.studentName + (session.topic ? ' · ' + session.topic : '');
+  document.getElementById('rosterDate').value = session.date;
+  document.getElementById('rosterStart').value = session.startTime || '';
+  document.getElementById('rosterEnd').value = session.endTime || '';
+  const others = attRoster.classCount > 1 ? ` (${attRoster.classCount} students)` : '';
+  document.getElementById('rosterWhenNote').textContent =
+    `Changing the date or time moves this class for everyone in it on this date${others}. Saved with the report.`;
   document.querySelector('#rosterCard [onclick="markAllPresent()"]').classList.add('hidden');
   document.querySelector('#rosterCard [onclick="closeRoster()"]').classList.add('hidden');
 
@@ -1063,9 +1070,26 @@ async function saveRoster() {
     card.querySelectorAll('[data-f]').forEach((f) => { rec[f.dataset.f] = f.value; });
     records.push(rec);
   });
+  const sess = attRoster.session;
+  const when = {
+    date: document.getElementById('rosterDate').value,
+    startTime: document.getElementById('rosterStart').value,
+    endTime: document.getElementById('rosterEnd').value,
+  };
+  if (!when.date) return showToast('Pick a date.', true);
+  const whenChanged = when.date !== sess.date || when.startTime !== (sess.startTime || '') || when.endTime !== (sess.endTime || '');
+  if (whenChanged && attRoster.classCount > 1 &&
+      !confirm(`This moves the class on ${attFmtDate(sess.date)} for all ${attRoster.classCount} students in it. Continue?`)) return;
   try {
-    await api(`/portal/admin/sessions/${attRoster.session.id}/records`, { method: 'PUT', body: JSON.stringify({ records }) });
-    showToast('Attendance & report saved.');
+    let moveNote = '';
+    if (whenChanged) {
+      const r = await api(`/portal/admin/sessions/${sess.id}`, { method: 'PUT', body: JSON.stringify(when) });
+      if (r.notShownTo && r.notShownTo.length) {
+        moveNote = ` Note: ${r.notShownTo.join(', ')} won't see this date (it's not on their days).`;
+      }
+    }
+    await api(`/portal/admin/sessions/${sess.id}/records`, { method: 'PUT', body: JSON.stringify({ records }) });
+    showToast((whenChanged ? 'Date/time and report saved.' : 'Attendance & report saved.') + moveNote, !!moveNote);
     const id = attRoster.session.id;
     if (document.getElementById('attClass').value) loadSessions(); // refresh Class Dates counts
     await loadArDates(id);

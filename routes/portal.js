@@ -352,10 +352,43 @@ router.put('/admin/sessions/:id', requireAdmin, (req, res) => {
   const endTime = req.body.endTime != null ? String(req.body.endTime).trim() : s.endTime;
   if (!isValidDate(date)) return res.status(400).json({ error: 'Date must be YYYY-MM-DD.' });
   if (!isValidTime(startTime) || !isValidTime(endTime)) return res.status(400).json({ error: 'Times must be HH:MM.' });
+  if (startTime && endTime && endTime <= startTime) return res.status(400).json({ error: 'End time must be after the start time.' });
+  if (sessions.some((x) => x.id !== s.id && x.classId === s.classId && x.date === date && x.startTime === startTime)) {
+    return res.status(409).json({ error: 'This class already has a date at that day and time.' });
+  }
 
-  sessions[idx] = { ...s, date, startTime, endTime, topic: req.body.topic != null ? String(req.body.topic).trim() : s.topic };
+  const moved = { ...s, date, startTime, endTime, topic: req.body.topic != null ? String(req.body.topic).trim() : s.topic };
+
+  // Moving a date shouldn't make it disappear for students who had it:
+  // stretch their start/end dates to cover the new date. A student whose
+  // days don't include the new weekday will no longer see it; they're
+  // returned in `notShownTo` so the admin can be told.
+  const notShownTo = [];
+  sessions[idx] = moved;
+  if (date !== s.date) {
+    const bookings = readTable('bookings');
+    const classDates = sessions.filter((x) => x.classId === s.classId);
+    let changed = false;
+    for (const b of bookings) {
+      if (b.classId !== s.classId || b.status === 'cancelled' || !attends(b, s)) continue;
+      if (b.startDate && date < b.startDate) { b.startDate = date; changed = true; }
+      if (b.sessions) {
+        // their end = the date of their Nth session after the move
+        const mine = classDates
+          .filter((x) => (!b.startDate || x.date >= b.startDate) && attends({ ...b, endDate: null }, x))
+          .map((x) => x.date).sort();
+        const end = mine[Math.min(b.sessions, mine.length) - 1] || b.endDate;
+        if (end !== b.endDate) { b.endDate = end; changed = true; }
+      } else if (b.endDate && date > b.endDate) {
+        b.endDate = date; changed = true;
+      }
+      if (!attends(b, moved)) notShownTo.push(b.studentName);
+    }
+    if (changed) writeTable('bookings', bookings);
+  }
+
   writeTable('classSessions', sessions);
-  res.json({ session: sessions[idx] });
+  res.json({ session: moved, notShownTo });
 });
 
 // DELETE /api/portal/admin/sessions/:id — remove a date (and its records)
