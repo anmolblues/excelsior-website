@@ -298,6 +298,12 @@ if (!existingBookingColumns.includes('studentGrade')) {
   // with no grade, same as how studentId was added above.
   db.exec('ALTER TABLE bookings ADD COLUMN studentGrade TEXT');
 }
+if (!existingBookingColumns.includes('days')) {
+  // Parent Portal: which weekdays of a class this student attends, as
+  // comma-separated day numbers (0 = Sunday ... 6 = Saturday), e.g. '2,4'
+  // for Tuesdays and Thursdays. NULL/empty = every day the class meets.
+  db.exec('ALTER TABLE bookings ADD COLUMN days TEXT');
+}
 // Additive migration: per-session price on events. NULL = no price shown
 // on the calendar, 0 = "Free".
 const existingEventColumns = db.prepare('PRAGMA table_info(events)').all().map((c) => c.name);
@@ -322,7 +328,7 @@ if (!existingEventRegColumns.includes('studentId')) {
 const TABLE_COLUMNS = {
   users: ['id', 'name', 'email', 'passwordHash', 'role', 'phone', 'address', 'createdAt'],
   classes: ['id', 'title', 'description', 'subject', 'ageMin', 'ageMax', 'format', 'price', 'priceUnit', 'schedule', 'image', 'capacity', 'rating', 'createdAt'],
-  bookings: ['id', 'classId', 'userId', 'studentName', 'studentAge', 'notes', 'status', 'createdAt', 'studentId', 'studentGrade'],
+  bookings: ['id', 'classId', 'userId', 'studentName', 'studentAge', 'notes', 'status', 'createdAt', 'studentId', 'studentGrade', 'days'],
   passwordResets: ['id', 'userId', 'tokenHash', 'expiresAt', 'used', 'createdAt'],
   eventRegistrations: ['id', 'userId', 'eventId', 'eventName', 'eventDate', 'studentName', 'studentGrade', 'studentAge', 'optIn', 'status', 'createdAt', 'studentId'],
   students: ['id', 'userId', 'name', 'grade', 'age', 'notes', 'createdAt'],

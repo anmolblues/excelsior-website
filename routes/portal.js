@@ -6,8 +6,9 @@
 //   classSessions  — dated meetings of a class, added by an admin
 //   sessionRecords — one row per (session, student): attendance + report
 //
-// A student's schedule = every session of every class they have a
-// non-cancelled booking in. Each session gets a status for the parent:
+// A student's schedule = the sessions of every class they have a
+// non-cancelled booking in, on the weekdays they attend (bookings.days;
+// empty = every day the class meets). Each session gets a status for the parent:
 //   attended  — record says 'present'  (green check, report viewable)
 //   absent    — record says 'absent'   (red X, no report)
 //   upcoming  — no record yet          (circle, "class hasn't started yet")
@@ -48,6 +49,25 @@ function bookingsForStudent(student, bookings) {
   );
 }
 
+// --- Which days a student attends ---
+// bookings.days holds weekday numbers ('2,4' = Tue + Thu). Empty = all days
+// the class meets. A student only "has" the sessions on their days.
+function weekdayOf(isoDate) {
+  return new Date(isoDate + 'T00:00:00Z').getUTCDay();
+}
+function parseDays(str) {
+  return String(str || '').split(',').map((x) => parseInt(x, 10)).filter((n) => n >= 0 && n <= 6);
+}
+function attends(booking, session) {
+  const days = parseDays(booking.days);
+  return days.length === 0 || days.includes(weekdayOf(session.date));
+}
+function cleanDays(input) {
+  if (!Array.isArray(input)) return '';
+  const days = [...new Set(input.map((x) => parseInt(x, 10)).filter((n) => n >= 0 && n <= 6))].sort();
+  return days.join(',');
+}
+
 function sessionStatus(record) {
   if (!record) return 'upcoming';
   return record.attendance === 'present' ? 'attended' : 'absent';
@@ -68,12 +88,12 @@ function loadOwnedStudent(req, res) {
 // Builds the full, date-sorted schedule for one student.
 function buildSchedule(student) {
   const classes = readTable('classes');
-  const myClassIds = new Set(bookingsForStudent(student, readTable('bookings')).map((b) => b.classId));
+  const bookingByClass = new Map(bookingsForStudent(student, readTable('bookings')).map((b) => [b.classId, b]));
   const records = readTable('sessionRecords').filter((r) => r.studentId === student.id);
   const recordBySession = new Map(records.map((r) => [r.sessionId, r]));
 
   return readTable('classSessions')
-    .filter((s) => myClassIds.has(s.classId))
+    .filter((s) => bookingByClass.has(s.classId) && attends(bookingByClass.get(s.classId), s))
     .map((s) => {
       const cls = classes.find((c) => c.id === s.classId);
       return {
@@ -165,7 +185,7 @@ router.get('/admin/sessions', requireAdmin, (req, res) => {
   const classId = parseInt(req.query.classId, 10);
   if (!classId) return res.status(400).json({ error: 'classId is required.' });
   const records = readTable('sessionRecords');
-  const enrolled = readTable('bookings').filter((b) => b.classId === classId && b.status !== 'cancelled').length;
+  const classBookings = readTable('bookings').filter((b) => b.classId === classId && b.status !== 'cancelled');
   const sessions = readTable('classSessions')
     .filter((s) => s.classId === classId)
     .map((s) => {
@@ -174,7 +194,7 @@ router.get('/admin/sessions', requireAdmin, (req, res) => {
         ...s,
         present: rs.filter((r) => r.attendance === 'present').length,
         absent: rs.filter((r) => r.attendance === 'absent').length,
-        enrolled,
+        enrolled: classBookings.filter((b) => attends(b, s)).length,
       };
     })
     .sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime));
@@ -250,7 +270,7 @@ router.get('/admin/sessions/:id/roster', requireAdmin, (req, res) => {
 
   const students = readTable('students');
   const records = readTable('sessionRecords').filter((r) => r.sessionId === id);
-  const bookings = readTable('bookings').filter((b) => b.classId === session.classId && b.status !== 'cancelled');
+  const bookings = readTable('bookings').filter((b) => b.classId === session.classId && b.status !== 'cancelled' && attends(b, session));
 
   // Resolve each booking to a saved student (needed so reports link to the
   // child the parent sees in the portal). Older bookings without studentId
@@ -277,7 +297,7 @@ router.get('/admin/sessions/:id/roster', requireAdmin, (req, res) => {
 // POST /api/portal/admin/enroll — admin enrolls a saved student in a class
 // (for sign-ups taken in person). Creates a normal booking on the parent's
 // account, so it also shows up in the parent's "My Bookings".
-// body: { classId, studentId }
+// body: { classId, studentId, days: [2, 4] }  (days optional: empty = all)
 router.post('/admin/enroll', requireAdmin, (req, res) => {
   const classId = parseInt(req.body.classId, 10);
   const studentId = parseInt(req.body.studentId, 10);
@@ -306,10 +326,91 @@ router.post('/admin/enroll', requireAdmin, (req, res) => {
     createdAt: new Date().toISOString(),
     studentId: student.id,
     studentGrade: student.grade || null,
+    days: cleanDays(req.body.days),
   };
   bookings.push(booking);
   writeTable('bookings', bookings);
   res.status(201).json({ booking });
+});
+
+// GET /api/portal/admin/classes/:classId/enrollments — who is enrolled in a
+// class and on which days, plus the weekdays the class has dates on
+router.get('/admin/classes/:classId/enrollments', requireAdmin, (req, res) => {
+  const classId = parseInt(req.params.classId, 10);
+  if (!readTable('classes').find((c) => c.id === classId)) return res.status(404).json({ error: 'Class not found.' });
+
+  const weekdays = [...new Set(readTable('classSessions').filter((s) => s.classId === classId).map((s) => weekdayOf(s.date)))].sort();
+  const students = readTable('students');
+  const users = readTable('users');
+  const enrollments = readTable('bookings')
+    .filter((b) => b.classId === classId && b.status !== 'cancelled')
+    .map((b) => {
+      const st = b.studentId != null
+        ? students.find((s) => s.id === b.studentId)
+        : students.find((s) => s.userId === b.userId && s.name.trim().toLowerCase() === (b.studentName || '').trim().toLowerCase());
+      const parent = users.find((u) => u.id === b.userId);
+      return {
+        bookingId: b.id,
+        studentId: st ? st.id : null,
+        name: st ? st.name : b.studentName,
+        grade: (st && st.grade) || b.studentGrade || '',
+        parentName: parent ? parent.name : '',
+        days: parseDays(b.days),
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+  res.json({ weekdays, enrollments });
+});
+
+// GET /api/portal/admin/students/:studentId/enrollments — every class, with
+// the weekdays it has dates on and whether this student is enrolled (and on
+// which days). Feeds the admin "Enroll" section.
+router.get('/admin/students/:studentId/enrollments', requireAdmin, (req, res) => {
+  const studentId = parseInt(req.params.studentId, 10);
+  const student = readTable('students').find((s) => s.id === studentId);
+  if (!student) return res.status(404).json({ error: 'Student not found.' });
+
+  const sessions = readTable('classSessions');
+  const allBookings = readTable('bookings');
+  const mine = bookingsForStudent(student, allBookings);
+  const classes = readTable('classes').map((c) => {
+    const b = mine.find((x) => x.classId === c.id);
+    const active = allBookings.filter((x) => x.classId === c.id && x.status !== 'cancelled').length;
+    return {
+      id: c.id,
+      title: c.title,
+      schedule: c.schedule,
+      ageMin: c.ageMin,
+      ageMax: c.ageMax,
+      spotsLeft: Math.max(0, c.capacity - active),
+      weekdays: [...new Set(sessions.filter((s) => s.classId === c.id).map((s) => weekdayOf(s.date)))].sort(),
+      enrolled: b ? { bookingId: b.id, days: parseDays(b.days) } : null,
+    };
+  });
+  res.json({ student: { id: student.id, name: student.name, grade: student.grade || '' }, classes });
+});
+
+// PUT /api/portal/admin/enrollments/:bookingId — change which days a
+// student attends. body: { days: [2, 4] } (empty = every day)
+router.put('/admin/enrollments/:bookingId', requireAdmin, (req, res) => {
+  const bookings = readTable('bookings');
+  const idx = bookings.findIndex((b) => b.id === parseInt(req.params.bookingId, 10));
+  if (idx === -1) return res.status(404).json({ error: 'Enrollment not found.' });
+  bookings[idx] = { ...bookings[idx], days: cleanDays(req.body.days) };
+  writeTable('bookings', bookings);
+  res.json({ ok: true, days: parseDays(bookings[idx].days) });
+});
+
+// DELETE /api/portal/admin/enrollments/:bookingId — unenroll (the booking is
+// marked cancelled, same as cancelling it from Bookings; past attendance and
+// reports are kept)
+router.delete('/admin/enrollments/:bookingId', requireAdmin, (req, res) => {
+  const bookings = readTable('bookings');
+  const idx = bookings.findIndex((b) => b.id === parseInt(req.params.bookingId, 10));
+  if (idx === -1) return res.status(404).json({ error: 'Enrollment not found.' });
+  bookings[idx] = { ...bookings[idx], status: 'cancelled' };
+  writeTable('bookings', bookings);
+  res.json({ ok: true });
 });
 
 function cleanInt(v, min, max) {

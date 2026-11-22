@@ -468,6 +468,7 @@ let allStudents = [];
 async function loadStudents() {
   const data = await api('/students');
   allStudents = data.students;
+  populateEnrollStudents();
   const tbody = document.getElementById('studentsTableBody');
   tbody.innerHTML = '';
 
@@ -780,6 +781,81 @@ document.getElementById('qrForm').addEventListener('submit', async (e) => {
 
 let attSessions = [];
 let attRoster = null; // { session, roster }
+let attEnroll = { weekdays: [], enrollments: [] };
+
+const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0]; // Mon first
+
+// Toggle-able day "pills". selected = array of weekday numbers.
+function dayPills(days, selected, onClick) {
+  return days.map((d) => {
+    const on = selected.includes(d);
+    return `<button type="button" data-day="${d}" aria-pressed="${on}" onclick="${onClick}"
+      class="daypill px-3 py-1.5 rounded-full text-xs font-semibold border ${on ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'}">${WEEKDAY_SHORT[d]}</button>`;
+  }).join('');
+}
+function pillsSelected(container) {
+  return [...container.querySelectorAll('.daypill[aria-pressed="true"]')].map((b) => Number(b.dataset.day));
+}
+function flipPill(btn) {
+  const on = btn.getAttribute('aria-pressed') !== 'true';
+  btn.setAttribute('aria-pressed', on);
+  btn.className = btn.className.replace(/bg-blue-600 text-white border-blue-600|bg-white text-gray-600 border-gray-300 hover:border-blue-400/,
+    on ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400');
+  return on;
+}
+
+// ----- "Add class dates" form: days + repeat -----
+function renderSessDays(selected = []) {
+  document.getElementById('sessDays').innerHTML = dayPills(WEEKDAY_ORDER, selected, 'flipPill(this); updateSessPreview()');
+}
+function syncStartDay() {
+  const start = document.getElementById('sessStart').value;
+  const box = document.getElementById('sessDays');
+  if (start && pillsSelected(box).length === 0) {
+    const d = new Date(start + 'T00:00:00Z').getUTCDay();
+    const btn = box.querySelector(`[data-day="${d}"]`);
+    if (btn) flipPill(btn);
+  }
+  updateSessPreview();
+}
+function toggleRepeatFields() {
+  const once = document.getElementById('sessRepeat').value === '1';
+  document.querySelectorAll('#addSessionsForm .repeat-only').forEach((el) => el.classList.toggle('hidden', once));
+  updateSessPreview();
+}
+// Builds the list of dates the form describes.
+function buildSessDates() {
+  const start = document.getElementById('sessStart').value;
+  if (!start) return [];
+  const step = parseInt(document.getElementById('sessRepeat').value, 10);
+  if (step === 1) return [start];
+  const weeks = Math.min(52, Math.max(1, parseInt(document.getElementById('sessCount').value, 10) || 1));
+  const skip = new Set(document.getElementById('sessSkip').value.split(',').map((x) => x.trim()).filter(Boolean));
+  let days = pillsSelected(document.getElementById('sessDays'));
+  if (!days.length) days = [new Date(start + 'T00:00:00Z').getUTCDay()];
+  const base = new Date(start + 'T00:00:00Z');
+  const dates = [];
+  for (const d of days) {
+    const first = new Date(base);
+    first.setUTCDate(base.getUTCDate() + ((d - base.getUTCDay() + 7) % 7)); // first such weekday on/after start
+    for (let w = 0; w < weeks; w++) {
+      const dt = new Date(first);
+      dt.setUTCDate(first.getUTCDate() + w * step);
+      const iso = dt.toISOString().slice(0, 10);
+      if (!skip.has(iso)) dates.push(iso);
+    }
+  }
+  return dates.sort();
+}
+function updateSessPreview() {
+  const dates = buildSessDates();
+  document.getElementById('sessPreview').textContent = dates.length
+    ? `Will add ${dates.length} date${dates.length === 1 ? '' : 's'}: ${attFmtDate(dates[0])}${dates.length > 1 ? ' → ' + attFmtDate(dates[dates.length - 1]) : ''}`
+    : '';
+}
+['sessCount', 'sessSkip'].forEach((id) => document.getElementById(id).addEventListener('input', updateSessPreview));
+renderSessDays();
 
 function attFmtDate(iso) {
   const [y, m, d] = iso.split('-').map(Number);
@@ -805,7 +881,9 @@ async function loadSessions() {
   closeRoster();
   document.getElementById('addSessionsForm').classList.toggle('hidden', !classId);
   document.getElementById('sessionsCard').classList.toggle('hidden', !classId);
+  document.getElementById('enrollCard').classList.toggle('hidden', !classId);
   if (!classId) return;
+  loadEnrollments();
 
   const data = await api(`/portal/admin/sessions?classId=${classId}`);
   attSessions = data.sessions;
@@ -840,18 +918,8 @@ async function loadSessions() {
 document.getElementById('addSessionsForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const classId = document.getElementById('attClass').value;
-  const start = document.getElementById('sessStart').value;
-  const step = parseInt(document.getElementById('sessRepeat').value, 10);
-  const count = step === 1 ? 1 : Math.min(52, Math.max(1, parseInt(document.getElementById('sessCount').value, 10) || 1));
-  const skip = new Set(document.getElementById('sessSkip').value.split(',').map((x) => x.trim()).filter(Boolean));
-
-  const dates = [];
-  const [y, m, d] = start.split('-').map(Number);
-  for (let i = 0; dates.length < count && i < count + skip.size + 5; i++) {
-    const dt = new Date(Date.UTC(y, m - 1, d + i * step));
-    const iso = dt.toISOString().slice(0, 10);
-    if (!skip.has(iso)) dates.push(iso);
-  }
+  const dates = buildSessDates();
+  if (!dates.length) return showToast('Pick a start date.', true);
 
   try {
     const data = await api('/portal/admin/sessions', {
@@ -905,13 +973,6 @@ async function openRoster(sessionId) {
   const { session, roster } = attRoster;
   document.getElementById('rosterTitle').textContent = `${session.classTitle} — ${attFmtDate(session.date)}`;
   document.getElementById('rosterSub').textContent = `${roster.length} enrolled${session.topic ? ' · ' + session.topic : ''}`;
-
-  // Students not already in the roster, for the enroll picker
-  const inRoster = new Set(roster.map((r) => r.studentId));
-  document.getElementById('enrollStudent').innerHTML = '<option value="">Select a student…</option>' +
-    allStudents.filter((s) => !inRoster.has(s.id))
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((s) => `<option value="${s.id}">${escapeHtml(s.name)}${s.parent ? ' (parent: ' + escapeHtml(s.parent.name) + ')' : ''}</option>`).join('');
 
   renderRoster();
   const card = document.getElementById('rosterCard');
@@ -1010,19 +1071,244 @@ async function saveRoster() {
   }
 }
 
+// ----- Enrolled students panel -----
+async function loadEnrollments() {
+  const classId = document.getElementById('attClass').value;
+  if (!classId) return;
+  try {
+    attEnroll = await api(`/portal/admin/classes/${classId}/enrollments`);
+  } catch (err) {
+    return showToast(err.message, true);
+  }
+  renderEnrollments();
+}
+
+function renderEnrollments() {
+  const { weekdays, enrollments } = attEnroll;
+  const ordered = WEEKDAY_ORDER.filter((d) => weekdays.includes(d));
+  document.getElementById('enrollCount').textContent = `(${enrollments.length})`;
+
+  const list = document.getElementById('enrollList');
+  list.innerHTML = enrollments.length ? enrollments.map((e) => {
+    const selected = e.days.length ? e.days : ordered; // empty = every day
+    return `
+      <div class="flex flex-wrap items-center gap-3 py-3" data-booking="${e.bookingId}">
+        <div class="flex-1 min-w-[180px]">
+          <p class="font-medium text-sm">${escapeHtml(e.name)} <span class="text-gray-400 font-normal">${escapeHtml(e.grade)}</span></p>
+          <p class="text-xs text-gray-400">Parent: ${escapeHtml(e.parentName || '—')}</p>
+        </div>
+        <div class="flex flex-wrap gap-2">${ordered.length > 1
+          ? dayPills(ordered, selected, `saveEnrollmentDays(this, ${e.bookingId})`)
+          : `<span class="text-xs text-gray-500">${ordered.length ? 'Every ' + WEEKDAY_SHORT[ordered[0]] : 'All dates'}</span>`}</div>
+        <button onclick="unenrollStudent(${e.bookingId}, '${escapeHtml(e.name).replace(/'/g, "\\'")}')" class="text-xs text-red-500 hover:underline">Unenroll</button>
+      </div>`;
+  }).join('') : '<p class="text-sm text-gray-400 py-3">No students enrolled yet.</p>';
+
+  // enroll form: student picker (not already enrolled) + day pills
+  const enrolledIds = new Set(enrollments.map((e) => e.studentId));
+  document.getElementById('enrollStudent').innerHTML = '<option value="">Select a student…</option>' +
+    allStudents.filter((s) => !enrolledIds.has(s.id))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((s) => `<option value="${s.id}">${escapeHtml(s.name)}${s.parent ? ' (parent: ' + escapeHtml(s.parent.name) + ')' : ''}</option>`).join('');
+  document.getElementById('enrollDays').innerHTML = ordered.length
+    ? dayPills(ordered, ordered, 'flipPill(this)')
+    : '<span class="text-xs text-gray-400 py-2 inline-block">Add class dates first</span>';
+}
+
+async function saveEnrollmentDays(btn, bookingId) {
+  const on = flipPill(btn);
+  const box = btn.parentElement;
+  const days = pillsSelected(box);
+  if (!days.length) {
+    flipPill(btn); // undo: a student needs at least one day
+    return showToast('A student needs at least one day. Use Unenroll to remove them.', true);
+  }
+  const all = box.querySelectorAll('.daypill').length === days.length;
+  try {
+    await api(`/portal/admin/enrollments/${bookingId}`, { method: 'PUT', body: JSON.stringify({ days: all ? [] : days }) });
+    showToast(`Saved: ${days.map((d) => WEEKDAY_SHORT[d]).join(', ')}`);
+    const e = attEnroll.enrollments.find((x) => x.bookingId === bookingId);
+    if (e) e.days = all ? [] : days;
+    loadSessionsKeepRoster();
+  } catch (err) {
+    flipPill(btn);
+    showToast(err.message, true);
+  }
+  return on;
+}
+
+async function unenrollStudent(bookingId, name) {
+  if (!confirm(`Unenroll ${name} from this class? Their past attendance and reports are kept.`)) return;
+  try {
+    await api(`/portal/admin/enrollments/${bookingId}`, { method: 'DELETE' });
+    showToast(`${name} unenrolled.`);
+    await loadBookings();
+    loadSessionsKeepRoster();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+// Reloads the dates table + enrollments, and re-opens the roster if one was open.
+async function loadSessionsKeepRoster() {
+  const openId = attRoster && attRoster.session.id;
+  if (enrData && !afterEnrollmentChange.running) loadStudentEnrollments();
+  await loadSessions();
+  if (openId) openRoster(openId);
+}
+
 async function enrollStudentInClass() {
+  const classId = document.getElementById('attClass').value;
   const studentId = document.getElementById('enrollStudent').value;
   if (!studentId) return showToast('Pick a student first.', true);
+  const box = document.getElementById('enrollDays');
+  const total = box.querySelectorAll('.daypill').length;
+  const days = pillsSelected(box);
+  if (total && !days.length) return showToast('Pick at least one day.', true);
   try {
     await api('/portal/admin/enroll', {
       method: 'POST',
-      body: JSON.stringify({ classId: attRoster.session.classId, studentId }),
+      body: JSON.stringify({ classId, studentId, days: days.length === total ? [] : days }),
     });
     showToast('Student enrolled.');
-    const id = attRoster.session.id;
     await loadBookings();
-    await loadSessions();
-    openRoster(id);
+    loadSessionsKeepRoster();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+// ---------- Enroll section: student first, then classes ----------
+
+let enrData = null; // { student, classes }
+
+function populateEnrollStudents() {
+  const sel = document.getElementById('enrStudent');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Select a student…</option>' +
+    [...allStudents].sort((a, b) => a.name.localeCompare(b.name))
+      .map((s) => `<option value="${s.id}">${escapeHtml(s.name)} : ${escapeHtml(s.parent ? s.parent.name : '—')}${s.grade ? ' (' + escapeHtml(s.grade) + ')' : ''}</option>`).join('');
+  if (current && allStudents.some((s) => String(s.id) === current)) sel.value = current;
+  else enrData = null;
+}
+
+async function loadStudentEnrollments() {
+  const id = document.getElementById('enrStudent').value;
+  if (!id) {
+    enrData = null;
+    return renderStudentEnrollments();
+  }
+  try {
+    enrData = await api(`/portal/admin/students/${id}/enrollments`);
+  } catch (err) {
+    return showToast(err.message, true);
+  }
+  renderStudentEnrollments();
+}
+
+function renderStudentEnrollments() {
+  const list = document.getElementById('enrClasses');
+  const summary = document.getElementById('enrSummary');
+  document.getElementById('enrEmpty').classList.toggle('hidden', !!enrData);
+  list.classList.toggle('hidden', !enrData);
+  if (!enrData) { summary.classList.add('hidden'); return; }
+
+  const daysLabel = (c) => {
+    const ordered = WEEKDAY_ORDER.filter((d) => c.weekdays.includes(d));
+    const days = c.enrolled.days.length ? WEEKDAY_ORDER.filter((d) => c.enrolled.days.includes(d)) : ordered;
+    return days.map((d) => WEEKDAY_SHORT[d]).join(', ');
+  };
+  const enrolled = enrData.classes.filter((c) => c.enrolled);
+  summary.innerHTML = enrolled.length
+    ? `<i class="fa-solid fa-circle-check mr-1"></i><b>${escapeHtml(enrData.student.name)}</b> is enrolled in: ` +
+      enrolled.map((c) => `${escapeHtml(c.title)}${c.weekdays.length > 1 ? ' (' + daysLabel(c) + ')' : ''}`).join(' · ')
+    : `${escapeHtml(enrData.student.name)} isn't enrolled in any classes yet.`;
+  summary.className = `mt-4 text-sm rounded-xl px-4 py-2 ${enrolled.length ? 'bg-green-50 text-green-800' : 'bg-gray-50 text-gray-600'}`;
+
+  const q = document.getElementById('enrFilter').value.trim().toLowerCase();
+  const rows = enrData.classes.filter((c) => !q || (c.title + ' ' + c.schedule).toLowerCase().includes(q));
+  list.innerHTML = rows.length ? rows.map((c) => {
+    const ordered = WEEKDAY_ORDER.filter((d) => c.weekdays.includes(d));
+    const sel = c.enrolled ? (c.enrolled.days.length ? c.enrolled.days : ordered) : ordered;
+    const pills = ordered.length > 1
+      ? dayPills(ordered, sel, c.enrolled ? `saveStudentClassDays(this, ${c.id})` : 'flipPill(this)')
+      : `<span class="text-xs text-gray-500">${ordered.length ? 'Every ' + WEEKDAY_SHORT[ordered[0]] : 'No dates yet'}</span>`;
+    const action = c.enrolled
+      ? `<span class="text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded-lg"><i class="fa-solid fa-check mr-1"></i>Enrolled</span>
+         <button onclick="unenrollFromEnrollSection(${c.id})" class="text-xs text-red-500 hover:underline">Unenroll</button>`
+      : (c.spotsLeft === 0
+        ? '<span class="text-xs text-red-500 font-semibold">Full</span>'
+        : `<button onclick="enrollFromEnrollSection(this, ${c.id})" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-xl font-semibold text-xs">Enroll</button>`);
+    return `
+      <div class="enr-row flex flex-wrap items-center gap-3 px-4 py-3 ${c.enrolled ? 'bg-green-50/50' : ''}">
+        <div class="flex-1 min-w-[200px]">
+          <p class="font-medium text-sm">${escapeHtml(c.title)}</p>
+          <p class="text-xs text-gray-400">${escapeHtml(c.schedule || '')}${c.enrolled ? '' : ` · ${c.spotsLeft} spot${c.spotsLeft === 1 ? '' : 's'} left`}</p>
+        </div>
+        <div class="flex flex-wrap gap-2 enr-days">${pills}</div>
+        <div class="flex items-center gap-3 w-36 justify-end">${action}</div>
+      </div>`;
+  }).join('') : '<p class="text-sm text-gray-400 px-4 py-3">No classes match.</p>';
+}
+
+// After any enrollment change, refresh every view that shows enrollments.
+async function afterEnrollmentChange() {
+  afterEnrollmentChange.running = true;
+  try {
+    await loadStudentEnrollments();
+    await loadBookings();
+    if (document.getElementById('attClass').value) await loadSessionsKeepRoster();
+  } finally {
+    afterEnrollmentChange.running = false;
+  }
+}
+
+async function enrollFromEnrollSection(btn, classId) {
+  const row = btn.closest('.enr-row');
+  const box = row.querySelector('.enr-days');
+  const total = box.querySelectorAll('.daypill').length;
+  const days = pillsSelected(box);
+  if (total && !days.length) return showToast('Pick at least one day.', true);
+  try {
+    await api('/portal/admin/enroll', {
+      method: 'POST',
+      body: JSON.stringify({ classId, studentId: enrData.student.id, days: days.length === total ? [] : days }),
+    });
+    showToast('Enrolled.');
+    afterEnrollmentChange();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+async function saveStudentClassDays(btn, classId) {
+  const c = enrData.classes.find((x) => x.id === classId);
+  flipPill(btn);
+  const box = btn.parentElement;
+  const days = pillsSelected(box);
+  if (!days.length) {
+    flipPill(btn);
+    return showToast('A student needs at least one day. Use Unenroll to remove them.', true);
+  }
+  const all = box.querySelectorAll('.daypill').length === days.length;
+  try {
+    await api(`/portal/admin/enrollments/${c.enrolled.bookingId}`, { method: 'PUT', body: JSON.stringify({ days: all ? [] : days }) });
+    showToast(`Saved: ${WEEKDAY_ORDER.filter((d) => days.includes(d)).map((d) => WEEKDAY_SHORT[d]).join(', ')}`);
+    afterEnrollmentChange();
+  } catch (err) {
+    flipPill(btn);
+    showToast(err.message, true);
+  }
+}
+
+async function unenrollFromEnrollSection(classId) {
+  const c = enrData.classes.find((x) => x.id === classId);
+  if (!confirm(`Unenroll ${enrData.student.name} from ${c.title}? Past attendance and reports are kept.`)) return;
+  try {
+    await api(`/portal/admin/enrollments/${c.enrolled.bookingId}`, { method: 'DELETE' });
+    showToast('Unenrolled.');
+    afterEnrollmentChange();
   } catch (err) {
     showToast(err.message, true);
   }
