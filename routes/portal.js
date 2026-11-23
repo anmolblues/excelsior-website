@@ -130,7 +130,7 @@ function generateDates(cls, days, startDate, count) {
   const sessions = readTable('classSessions');
   const pattern = classPattern(cls, sessions);
   const useDays = (days.length ? days : [...pattern.keys()]).filter((d) => pattern.has(d));
-  if (!useDays.length) return { error: 'This class has no meeting days yet. Add its dates in Class Dates, or set its schedule (e.g. "Tuesdays 4:30 – 5:30 PM").' };
+  if (!useDays.length) return { error: 'This class has no meeting days yet. Add its dates in Class Sessions, or set its schedule (e.g. "Tuesdays 4:30 – 5:30 PM").' };
 
   const existing = new Map(sessions.filter((s) => s.classId === cls.id).map((s) => [s.date, s]));
   let date = startDate;

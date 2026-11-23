@@ -1143,7 +1143,7 @@ async function saveRoster() {
     await api(`/portal/admin/sessions/${sess.id}/records`, { method: 'PUT', body: JSON.stringify({ records }) });
     showToast((whenChanged ? 'Date/time and report saved.' : 'Attendance & report saved.') + moveNote, !!moveNote);
     const id = attRoster.session.id;
-    if (document.getElementById('attClass').value) loadSessions(); // refresh Class Dates counts
+    if (document.getElementById('attClass').value) loadSessions(); // refresh Class Sessions counts
     await loadArDates(id);
   } catch (err) {
     showToast(err.message, true);
@@ -1481,7 +1481,7 @@ async function loadArDates(selectId) {
   body.classList.remove('hidden');
   const list = document.getElementById('arDates');
   if (!dates.length) {
-    list.innerHTML = '<p class="p-6 text-sm text-gray-400 text-center">No dates for this student in this class yet. Add dates in Class Dates.</p>';
+    list.innerHTML = '<p class="p-6 text-sm text-gray-400 text-center">No dates for this student in this class yet. Add dates in Class Sessions.</p>';
     closeRoster();
     return;
   }
