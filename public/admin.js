@@ -1316,11 +1316,17 @@ function renderStudentEnrollments() {
           <p class="font-medium text-sm">${escapeHtml(c.title)}</p>
           <p class="text-xs text-gray-400">${escapeHtml(c.schedule || '')}${c.enrolled ? '' : ` · ${c.spotsLeft} spot${c.spotsLeft === 1 ? '' : 's'} left`}</p>
           ${c.enrolled ? `<label class="text-xs text-gray-500 inline-flex items-center gap-2 mt-1">Starts
-            <input type="date" value="${c.enrolled.startDate || ''}" onchange="saveStudentClassStart(this, ${c.id})" class="border border-gray-300 rounded-lg px-2 py-0.5 text-xs">
+            <input type="date" value="${c.enrolled.startDate || ''}" onchange="saveStudentClassStart(this, ${c.id})" onkeydown="if (event.key === 'Enter') this.blur()" class="border border-gray-300 rounded-lg px-2 py-0.5 text-xs">
             ${c.enrolled.startDate ? '' : '<span class="text-gray-400">(from the first class)</span>'}</label>
           <label class="text-xs text-gray-500 inline-flex items-center gap-2 mt-1 ml-3">Sessions
-            <input type="number" min="1" max="100" value="${c.enrolled.sessions || ''}" placeholder="no end" onchange="saveStudentClassSessions(this, ${c.id})" class="w-20 border border-gray-300 rounded-lg px-2 py-0.5 text-xs">
-            ${c.enrolled.endDate ? '<span class="text-gray-400">ends ' + escapeHtml(attFmtDate(c.enrolled.endDate)) + '</span>' : ''}</label>` : ''}
+            <input type="number" min="1" max="100" value="${c.enrolled.sessions || ''}" placeholder="no end" onchange="saveStudentClassSessions(this, ${c.id})" onkeydown="if (event.key === 'Enter') this.blur()" class="w-20 border border-gray-300 rounded-lg px-2 py-0.5 text-xs">
+            ${c.enrolled.endDate ? '<span class="text-gray-400">ends ' + escapeHtml(attFmtDate(c.enrolled.endDate)) + '</span>' : ''}</label>`
+          : (c.spotsLeft === 0 ? '' : `<label class="text-xs text-gray-500 inline-flex items-center gap-2 mt-1">Starts
+            <input type="date" class="enr-start border border-gray-300 rounded-lg px-2 py-0.5 text-xs" title="Empty = today">
+          </label>
+          <label class="text-xs text-gray-500 inline-flex items-center gap-2 mt-1 ml-3">Sessions
+            <input type="number" min="1" max="100" placeholder="e.g. 10" class="enr-sessions w-20 border border-gray-300 rounded-lg px-2 py-0.5 text-xs" title="Empty = no end date (no dates are created)">
+          </label>`)}
         </div>
         <div class="flex flex-wrap gap-2 enr-days">${pills}</div>
         <div class="flex items-center gap-3 w-36 justify-end">${action}</div>
@@ -1354,11 +1360,11 @@ async function enrollFromEnrollSection(btn, classId) {
         classId,
         studentId: enrData.student.id,
         days: days.length === total ? [] : days,
-        startDate: document.getElementById('enrStart').value,
-        sessions: document.getElementById('enrSessions').value,
+        startDate: row.querySelector('.enr-start').value,
+        sessions: row.querySelector('.enr-sessions').value,
       }),
     });
-    const sess = document.getElementById('enrSessions').value;
+    const sess = row.querySelector('.enr-sessions').value;
     showToast(sess ? `Enrolled — ${sess} class dates set up.` : 'Enrolled.');
     afterEnrollmentChange();
   } catch (err) {
